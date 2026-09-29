@@ -244,3 +244,79 @@ footer .logo{font-size:17px}
 .body-sec{padding-top:0;padding-bottom:clamp(32px,4vw,56px)}
 @media (min-width:900px){.rel{grid-template-columns:repeat(3,1fr)}
 .foot{flex-direction:row;justify-content:space-between;align-items:flex-start;font-size:15px;padding-top:24px;padding-bottom:48px}}
+
+/* ===== Google / Material 3 layer ===== */
+:root{
+  --outline:#747775;--outline-v:#c4c7c5;--surf-1:#f8fafd;--surf-2:#eef3fd;--surf-3:#e9eef6;
+  --e1:0 1px 2px rgba(60,64,67,.30),0 1px 3px 1px rgba(60,64,67,.15);
+  --e2:0 1px 2px rgba(60,64,67,.30),0 2px 6px 2px rgba(60,64,67,.15);
+  --e3:0 4px 8px 3px rgba(60,64,67,.15),0 1px 3px rgba(60,64,67,.30);
+  --g-blue:#4285f4;--g-red:#ea4335;--g-yellow:#fbbc04;--g-green:#34a853;
+  --ease:cubic-bezier(.2,0,0,1);
+}
+body{font-weight:400;letter-spacing:.005em;-webkit-font-smoothing:antialiased}
+/* Type: Google uses regular/medium weights with open tracking, not heavy black */
+h1,.h2,.prod h2,.feat h3,.prose h2,.tog h2,.cta-b h2{font-weight:400;letter-spacing:-.02em}
+h1{line-height:1.08}
+.big,.price strong{font-weight:500;letter-spacing:-.02em}
+.plan h3,.step h3,.q h3,.fl h3,.found h3,.rel strong,.prose h3{font-weight:500}
+.eyebrow{font-weight:500;letter-spacing:.01em}
+.logo{font-weight:500;letter-spacing:-.01em}
+.logo b{border-radius:50%;font-weight:500}
+strong,b{font-weight:600}
+
+/* Top app bar: sticky, tonal surface that lifts on scroll region */
+header.px{position:sticky;top:0;z-index:20;background:rgba(240,244,249,.92);backdrop-filter:saturate(180%) blur(12px);-webkit-backdrop-filter:saturate(180%) blur(12px)}
+.nav li a.l{font-weight:500;position:relative;transition:background .2s var(--ease)}
+.nav li a.l:hover{background:rgba(11,87,208,.08);color:var(--ink)}
+.nav li a.l:active{background:rgba(11,87,208,.12)}
+
+/* Buttons: filled, tonal, outlined + state layers */
+.btn,.nav .cta,.done{font-weight:500;letter-spacing:.01em;transition:box-shadow .2s var(--ease),background .2s var(--ease)}
+.btn:hover,.nav .cta:hover{box-shadow:var(--e1)}
+.btn:active,.nav .cta:active{box-shadow:none}
+.btn-w{background:transparent;color:var(--blue);border:1px solid var(--outline)}
+.btn-w:hover{background:rgba(11,87,208,.08);color:var(--blue);box-shadow:none}
+.hl .btn-w,.plan.hl .btn-w{background:#fff;color:var(--blue);border-color:#fff}
+.hl .btn-w:hover{background:var(--blue-xl)}
+.cta-b .btn{background:#a8c7fa;color:var(--navy);font-weight:500}
+a:focus-visible,.btn:focus-visible{outline:2px solid var(--blue);outline-offset:3px}
+
+/* Chips & badges: 8px-radius assist chips like Google Workspace */
+.badge{background:var(--blue-l);color:var(--navy);font-weight:500;border-radius:8px;padding:6px 12px}
+.tag,.chg span,.plan .best{border-radius:8px;font-weight:500}
+.chips li{border-radius:8px;background:#fff;border:1px solid var(--outline-v);font-weight:500}
+
+/* Cards: outlined/elevated surfaces, larger radius, no heavy shadows */
+.card,.today,.ui,.chat,.fl li,.step,.q,.rel a,.plan,.found{box-shadow:none}
+.card,.ui,.chat,.fl li,.step,.q,.rel a,.plan{border:1px solid transparent;transition:box-shadow .2s var(--ease),background .2s var(--ease)}
+.today{box-shadow:var(--e1)}
+.rel a:hover,.q:hover,.fl li:hover,.step:hover{box-shadow:var(--e2)}
+.rel a:hover{background:#fff}
+.plan:not(.hl){border-color:var(--outline-v)}
+.plan.hl{box-shadow:var(--e3)}
+.feat{background:#fff;border:1px solid var(--outline-v)}
+.feat .ui{background:var(--surf-1)}
+.tog{background:var(--blue-l)}
+.tog h2{color:var(--navy)}
+.sep{background:var(--ink)}
+
+/* Inputs / search pill like google.com */
+.srch{background:#fff;border:1px solid var(--outline-v);box-shadow:none}
+.srch:hover{box-shadow:var(--e1);border-color:transparent}
+
+/* Tables (Sheets-like) */
+.tbl{border:1px solid var(--outline-v);background:#fff}
+.tbl thead th{background:var(--surf-2);font-weight:500}
+.tbl tbody tr:hover td,.tbl tbody tr:hover th{background:var(--surf-1)}
+
+/* Lists */
+.chg span{font-weight:500}
+.step b{background:var(--blue);color:#fff;font-weight:500}
+
+/* Google four-color accent on the hero badge dot and footer rule */
+.badge::before{content:"";width:8px;height:8px;border-radius:50%;margin-right:8px;background:conic-gradient(var(--g-red) 0 25%,var(--g-yellow) 0 50%,var(--g-green) 0 75%,var(--g-blue) 0)}
+.foot,footer{border-top:1px solid var(--outline-v);margin-top:8px}
+
+/* Motion */
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
