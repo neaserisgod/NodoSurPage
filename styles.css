@@ -320,3 +320,71 @@ a:focus-visible,.btn:focus-visible{outline:2px solid var(--blue);outline-offset:
 
 /* Motion */
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
+
+/* ===== Google layout: centered hero, 1200px column, tonal bands, list FAQ ===== */
+:root{--px:max(clamp(20px,calc(20px + (100vw - 390px)*.1),120px),calc((100vw - 1240px)/2));--py:clamp(64px,calc(64px + (100vw - 390px)*.05),112px)}
+
+/* Hero: centered stack, product mock below like workspace.google.com */
+.hero{display:flex;flex-direction:column;align-items:center;gap:clamp(36px,4vw,64px);padding-top:clamp(24px,4vw,64px);padding-bottom:clamp(40px,5vw,80px)}
+.hero-t{align-items:center;text-align:center;gap:24px}
+.hero-t .badge{align-self:center}
+h1{font-size:clamp(38px,3.6vw + 24px,76px);line-height:1.06;max-width:17em;text-wrap:balance}
+.hero p.sub{max-width:640px;margin:0 auto}
+.ctas{justify-content:center;align-items:center}
+.ctas .btn{width:100%}
+.fine{text-align:center}
+.dash{width:100%;max-width:1040px;background:var(--surf-3);border-radius:clamp(28px,3vw,40px);padding:clamp(12px,1.6vw,20px);display:grid;gap:clamp(12px,1.4vw,16px)}
+.dash .today{box-shadow:none}
+.dash .sep{border-radius:clamp(20px,2vw,28px)}
+
+/* Product pair: three-up feel, outlined, icon on top, link as text button */
+.two{padding-top:clamp(8px,2vw,24px)}
+.prod{border:1px solid var(--outline-v);background:#fff;border-radius:28px}
+.prod .ico{border-radius:50%}
+.prod a{font-weight:500;align-self:flex-start;padding:10px 16px;margin-left:-16px;border-radius:999px}
+.prod a:hover{background:rgba(11,87,208,.08)}
+
+/* Bands */
+.white{background:#fff}
+.sys .feat{background:var(--surf-1)}
+.sys .feat .ui{background:#fff;border:1px solid var(--outline-v)}
+.tog{background:var(--surf-2)}
+.cta-b{background:var(--blue-l);color:var(--navy)}
+.cta-b h2{color:var(--navy)}
+.cta-b p{color:var(--blue-d)}
+.cta-b .btn{background:var(--blue);color:#fff}
+.cta-b .btn:hover{background:var(--blue-d);color:#fff}
+.cta-b .ig{color:var(--blue)}
+
+/* Steps: numbered columns, no boxes */
+.step{background:transparent;border:0;padding:8px 0}
+.step:hover{box-shadow:none}
+
+/* FAQ: divided list, single column (Google support style) */
+.faq{display:flex!important;flex-direction:column;gap:0!important;max-width:820px;width:100%;margin:0 auto}
+.faq .q{background:transparent;border:0;border-bottom:1px solid var(--outline-v);border-radius:0;padding:22px 4px;box-shadow:none}
+.faq .q:hover{box-shadow:none;background:transparent}
+.faq .q:first-child{border-top:1px solid var(--outline-v)}
+.faq .q h3{font-weight:500}
+
+/* Footer: tonal, ruled */
+.foot,footer{background:transparent}
+
+@media (min-width:900px){
+  /* centered section heads */
+  section>.head,section>h2.h2{align-items:center;text-align:center;margin-left:auto;margin-right:auto}
+  section>.head .lead{max-width:680px}
+  .bot-t .head{align-items:flex-start;text-align:left;margin:0}
+  .dash{grid-template-columns:1.1fr 1fr}
+  .dash .sep{height:100%}
+  .ctas .btn{width:auto}
+  .g3.plans,#precios .g3{gap:20px}
+  .step{align-items:flex-start;flex-direction:column;text-align:left}
+  .tog{text-align:left}
+  .foot{border-top:1px solid var(--outline-v)}
+}
+@media (max-width:899px){
+  .hero-t{gap:20px}
+  .dash{padding:10px}
+  .ctas{width:100%}
+}
