@@ -14,9 +14,10 @@ export async function onRequestGet({ request, env }) {
   if (!hasDB(env)) return json({ error: 'no_db' }, 503);
 
   const users = await listUsers(env);
+  let mpStale = false;
   let subs = [], mpError = !env.MP_ACCESS_TOKEN, mpDetail = env.MP_ACCESS_TOKEN ? null : { reason: 'no_token' };
   if (env.MP_ACCESS_TOKEN) {
-    try { subs = await listAllSubscribers(env); }
+    try { subs = await listAllSubscribers(env); mpStale = Boolean(subs.stale); }
     catch (e) { mpError = true; mpDetail = { status: e.status || null, message: e.detail || String(e.message || '').slice(0, 120) }; }
   }
 
@@ -47,6 +48,7 @@ export async function onRequestGet({ request, env }) {
     subscribersWithoutAccount: subs.filter((s) => !emails.has(s.payerEmail)).map((s) => ({ email: s.payerEmail, plan: s.plan, status: s.status, amount: s.amount })),
     config: { db: true, mp: !mpError, autoDelete: env.AUTO_DELETE === 'on', notifier: notifierReady(env) },
     mpError,
+    mpStale,
     mpDetail,
     rules: RULES,
   });

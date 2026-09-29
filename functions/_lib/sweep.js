@@ -12,7 +12,7 @@ const DAY = 86400;
 // un aviso que efectivamente se envió. Si no se puede verificar Mercado Pago, no se hace nada.
 export async function sweep(env, { apply = false, t = nowSec() } = {}) {
   let subs;
-  try { subs = await listAllSubscribers(env); } catch { return { ok: false, error: 'mp_error', actions: [], rules: RULES }; }
+  try { subs = await listAllSubscribers(env, { fresh: true }); } catch { return { ok: false, error: 'mp_error', actions: [], rules: RULES }; }
   const paying = new Set(subs.filter((s) => PROTECTED.includes(s.status)).map((s) => s.payerEmail));
   const canDelete = apply && env.AUTO_DELETE === 'on';
   const actions = [];

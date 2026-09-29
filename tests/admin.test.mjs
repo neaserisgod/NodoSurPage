@@ -9,11 +9,12 @@ import * as overview from '../functions/api/admin/overview.js';
 import * as adminUser from '../functions/api/admin/user.js';
 import * as adminSweep from '../functions/api/admin/sweep.js';
 import { sweep } from '../functions/_lib/sweep.js';
+import { clearMpCache } from '../functions/_lib/mp.js';
 
 const DAY = 86400, nowS = () => Math.floor(Date.now() / 1000);
 function fakeD1() { const db = new DatabaseSync(':memory:'); db.exec(readFileSync(new URL('../migrations/0001_users.sql', import.meta.url), 'utf8'));
   return { raw: db, prepare(sql) { let a = []; const st = db.prepare(sql); const o = { bind(...x) { a = x; return o }, first() { return st.get(...a) ?? null }, all() { return { results: st.all(...a) } }, run() { const r = st.run(...a); return { meta: { changes: Number(r.changes) } } } }; return o } }; }
-const mkEnv = (extra = {}) => ({ GOOGLE_CLIENT_ID: 'cid', GOOGLE_CLIENT_SECRET: 'gs', SESSION_SECRET: 'x'.repeat(48), SITE_URL: 'https://horsepos.com', MP_ACCESS_TOKEN: 'tok', DB: fakeD1(), ...extra });
+const mkEnv = (extra = {}) => (clearMpCache(), { GOOGLE_CLIENT_ID: 'cid', GOOGLE_CLIENT_SECRET: 'gs', SESSION_SECRET: 'x'.repeat(48), SITE_URL: 'https://horsepos.com', MP_ACCESS_TOKEN: 'tok', DB: fakeD1(), ...extra });
 let pass = 0; const t = async (n, f) => { await f(); pass++; console.log('ok  ', n); };
 const sess = async (env, email, sub, name = 'X') => `ns_session=${await sign({ sub, email, name, iat: nowS(), exp: nowS() + 999 }, env.SESSION_SECRET)}`;
 const req = (cookie, method = 'GET', body, extra = {}) => new Request('https://horsepos.com/api/x', { method, body, headers: { Cookie: cookie, Origin: 'https://horsepos.com', 'X-Requested-With': 'fetch', ...extra } });
@@ -88,6 +89,25 @@ await t('admin: si Mercado Pago rechaza el token, el panel muestra el motivo (si
   assert.equal(d.mpError, true); assert.equal(d.config.mp, false); assert.equal(d.mpDetail.status, 401); assert.equal(d.mpDetail.message, 'invalid_token'); assert.ok(!raw.includes('SECRETO-XYZ'));
   const env2 = mkEnv({ MP_ACCESS_TOKEN: undefined }); addUser(env2, { sub: 'a', email: 'gtalovergamer@gmail.com', created: t0, lastSeen: t0 });
   assert.equal((await (await overview.onRequestGet({ request: req(await sess(env2, 'gtalovergamer@gmail.com', 'a')), env: env2 })).json()).mpDetail.reason, 'no_token');
+});
+await t('mp: 429 se reintenta una vez; el panel usa datos recientes si sigue limitado; la limpieza NO', async () => {
+  const env = mkEnv({ MP_RETRY_MS: 1 }); const t0 = nowS(); addUser(env, { sub: 'a', email: 'gtalovergamer@gmail.com', created: t0, lastSeen: t0 });
+  addUser(env, { sub: 'x', email: 'x@x.com', created: t0 - 90 * DAY, lastSeen: t0 - 45 * DAY }); const A = await sess(env, 'gtalovergamer@gmail.com', 'a');
+  let calls = 0, limited = false;
+  globalThis.fetch = async (url) => { const u = new URL(url); if (u.pathname !== '/preapproval/search') return new Response('{}', { status: 404 }); calls++;
+    if (limited) return new Response(JSON.stringify({ message: 'local_rate_limited' }), { status: 429 });
+    return new Response(JSON.stringify({ results: [sub('x@x.com', 'authorized')] }), { status: 200 }); };
+  let d = await (await overview.onRequestGet({ request: req(A), env })).json(); assert.equal(d.kpis.activeSubs, 1); const first = calls;
+  await overview.onRequestGet({ request: req(A), env }); assert.equal(calls, first); // memoria de 1 minuto: no vuelve a pedir
+  limited = true; clearMpCache(); // sin memoria => 429 real, con un reintento
+  const bad = await (await overview.onRequestGet({ request: req(A), env })).json(); assert.equal(bad.mpDetail.status, 429); assert.equal(calls, first + 2);
+  // con datos recientes en memoria y 429 => se muestran, marcados como viejos
+  limited = false; clearMpCache(); await overview.onRequestGet({ request: req(A), env }); limited = true;
+  const CACHE_AGE = Date.now(); const real = Date.now; Date.now = () => CACHE_AGE + 120_000;
+  const stale = await (await overview.onRequestGet({ request: req(A), env })).json(); Date.now = real;
+  assert.equal(stale.mpStale, true); assert.equal(stale.kpis.activeSubs, 1);
+  // la limpieza automática nunca usa datos viejos: con 429 aborta
+  const r = await sweep(env, { apply: true, t: t0 }); assert.equal(r.ok, false); assert.ok(row(env, 'x@x.com'));
 });
 await t('admin/user: eximir, quitar aviso, eliminar; protege al dueño; exige CSRF', async () => {
   const env = mkEnv(); mockNet(); const t0 = nowS(); const A = await sess(env, 'gtalovergamer@gmail.com', 'a');

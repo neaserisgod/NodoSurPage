@@ -9,10 +9,16 @@ export const PLANS = {
 };
 
 async function mp(env, path, init = {}) {
-  const res = await fetch(API + path, {
+  const go = () => fetch(API + path, {
     ...init,
     headers: { Authorization: `Bearer ${String(env.MP_ACCESS_TOKEN).trim()}`, 'Content-Type': 'application/json', ...(init.headers || {}) },
   });
+  let res = await go();
+  // Mercado Pago limita la frecuencia (429): un único reintento corto, solo para lecturas.
+  if (res.status === 429 && (!init.method || init.method === 'GET')) {
+    await new Promise((r) => setTimeout(r, env.MP_RETRY_MS ?? 900));
+    res = await go();
+  }
   return res;
 }
 
@@ -71,8 +77,28 @@ async function failWith(res) {
   throw new MpError(res.status, detail);
 }
 
-// Se pide todo el listado de la cuenta y se filtra acá por nuestros planes (más robusto que filtrar en la API).
-export async function listAllSubscribers(env) {
+// Memoria breve por instancia: el panel no vuelve a pedir el listado en cada recarga.
+const CACHE = new Map();
+const FRESH_MS = 60_000, STALE_MS = 10 * 60_000;
+export const clearMpCache = () => CACHE.clear();
+
+// `fresh: true` (limpieza automática) ignora la memoria: nunca decide con datos viejos.
+export async function listAllSubscribers(env, { fresh = false } = {}) {
+  const key = String(env.MP_ACCESS_TOKEN || '').trim();
+  const hit = CACHE.get(key), t = Date.now();
+  if (!fresh && hit && t - hit.at < FRESH_MS) return hit.data;
+  try {
+    const data = await fetchAllSubscribers(env);
+    CACHE.set(key, { at: t, data });
+    return data;
+  } catch (e) {
+    // Si Mercado Pago pide esperar y hay datos recientes, se muestran esos (solo en pantalla, nunca para borrar).
+    if (!fresh && e.status === 429 && hit && t - hit.at < STALE_MS) { const data = hit.data.slice(); data.stale = true; return data; }
+    throw e;
+  }
+}
+
+async function fetchAllSubscribers(env) {
   const out = [];
   for (let offset = 0; offset < 2000; offset += 50) {
     const res = await mp(env, `/preapproval/search?limit=50&offset=${offset}`);
