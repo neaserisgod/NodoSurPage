@@ -1,0 +1,13 @@
+# No se publica como sitio: código interno y configuración.
+.assetsignore
+.git
+.gitignore
+node_modules
+functions
+tests
+migrations
+worker.js
+wrangler.jsonc
+README.md
+cuenta.js.map
+.wrangler
