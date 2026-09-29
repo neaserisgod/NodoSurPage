@@ -9,6 +9,15 @@
   var hdr=$('header.px');
   if(hdr){var on=function(){hdr.classList.toggle('lifted',scrollY>8)};addEventListener('scroll',on,{passive:true});on()}
 
+  /* signed-in hint: swap "Ingresar" for the customer's account link (cookie is display-only, not auth) */
+  var hm=document.cookie.match(/(?:^|; )ns_hint=([^;]*)/);
+  if(hm){
+    var nm='';try{nm=decodeURIComponent(hm[1])}catch(e){}
+    var lg=$('.nav .login');
+    if(lg&&nm){lg.href='/cuenta/';lg.textContent=nm.charAt(0).toUpperCase()+nm.slice(1);lg.classList.add('in');lg.title='Mi cuenta'}
+    var ml=$('.mp-login');if(ml){ml.href='/cuenta/';ml.textContent='Mi cuenta'}
+  }
+
   if(reduce||!('IntersectionObserver' in window))return;
   root.classList.add('js');
 
