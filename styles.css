@@ -445,7 +445,7 @@ header.px.lifted{background:rgba(255,255,255,.88);box-shadow:0 1px 0 var(--outli
 .wm{font-size:20px;font-weight:500;letter-spacing:-.01em;color:var(--ink)}
 .wm em{font-style:normal;color:var(--blue)}
 .foot .logo .wm{font-size:17px}
-.links{display:none}
+.nav .links{display:none}
 .nav-r{display:flex;align-items:center;gap:6px}
 .nav .cta{display:inline-flex;align-items:center;gap:8px;height:44px;padding:0 18px 0 16px;font-size:15px;font-weight:500;white-space:nowrap}
 .mnav{position:relative}
@@ -459,7 +459,7 @@ header.px.lifted{background:rgba(255,255,255,.88);box-shadow:0 1px 0 var(--outli
 @media (min-width:900px){
   .nav{height:80px}
   .mnav{display:none}
-  .links{display:flex;align-items:center;gap:2px;padding:4px;margin:0 auto;background:var(--surf-3);border-radius:999px}
+  .nav .links{display:flex;align-items:center;gap:2px;padding:4px;margin:0 auto;background:var(--surf-3);border-radius:999px}
   .nav li a.l{display:block;padding:9px 16px;border-radius:999px;font-size:14.5px;font-weight:500;color:var(--muted);transition:background .2s var(--ease),color .2s}
   .nav li a.l:hover{background:rgba(11,87,208,.10);color:var(--ink)}
   .nav li a.l[aria-current=page]{background:#fff;color:var(--ink);box-shadow:var(--e1)}
@@ -482,3 +482,10 @@ header.px.lifted{background:rgba(255,255,255,.88);box-shadow:0 1px 0 var(--outli
 .hero{overflow:clip}
 html,body{overflow-x:clip}
 @media (max-width:899px){.hero::before{width:280px;height:280px;left:-40px}.hero::after{width:240px;height:240px;right:-40px}}
+
+/* wide screens: the column limit belongs on the content, not on the padded section */
+.ph{max-width:none}
+.ph>*{max-width:900px}
+.ph>h1{max-width:24ch}
+.ph>.lead{max-width:60ch}
+.page{max-width:none}
