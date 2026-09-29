@@ -80,3 +80,6 @@ export function sameOriginPost(request, env) {
 export const adminEmails = (env) =>
   String(env.ADMIN_EMAILS || 'gtalovergamer@gmail.com').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
 export const isAdminEmail = (env, email) => adminEmails(env).includes(String(email || '').toLowerCase());
+
+// Nombres (nunca valores) de las variables obligatorias que faltan.
+export const missingConfig = (env, names) => names.filter((n) => !env[n] || !String(env[n]).trim());

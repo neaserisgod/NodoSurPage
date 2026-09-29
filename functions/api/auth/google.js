@@ -1,10 +1,9 @@
-import { randomHex, sha256b64u, sign, cookie, now, siteUrl } from '../../_lib/util.js';
+import { randomHex, sha256b64u, sign, cookie, now, siteUrl, json, missingConfig } from '../../_lib/util.js';
 
 // Inicia el login: guarda state/nonce/PKCE en una cookie firmada y redirige a Google.
 export async function onRequestGet({ env }) {
-  if (!env.GOOGLE_CLIENT_ID || !env.SESSION_SECRET) {
-    return new Response('Login no configurado', { status: 500 });
-  }
+  const missing = missingConfig(env, ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'SESSION_SECRET']);
+  if (missing.length) return json({ error: 'login_no_configurado', faltan: missing }, 500);
   const site = siteUrl(env);
   const state = randomHex(16), nonce = randomHex(16), verifier = randomHex(32);
   const flow = await sign({ state, nonce, verifier, exp: now() + 600 }, env.SESSION_SECRET);

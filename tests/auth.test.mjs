@@ -37,7 +37,8 @@ await t('google: redirige con PKCE, state y nonce', async () => {
   const setc = r.headers.get('Set-Cookie'); assert.match(setc, /HttpOnly/); assert.match(setc, /Secure/); assert.match(setc, /SameSite=Lax/);
 });
 await t('google: sin configuración devuelve 500', async () => {
-  assert.equal((await google.onRequestGet({ env: {} })).status, 500);
+  const r0 = await google.onRequestGet({ env: {} }); assert.equal(r0.status, 500); assert.deepEqual((await r0.json()).faltan, ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'SESSION_SECRET']);
+  const r1 = await google.onRequestGet({ env: { GOOGLE_CLIENT_ID: 'a', SESSION_SECRET: ' ' } }); assert.deepEqual((await r1.json()).faltan, ['GOOGLE_CLIENT_SECRET', 'SESSION_SECRET']);
 });
 
 // --- callback
