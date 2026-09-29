@@ -436,3 +436,4 @@ header.px.lifted{background:rgba(255,255,255,.88);box-shadow:0 1px 0 var(--outli
 @keyframes dot{0%,60%,100%{transform:none;opacity:.5}30%{transform:translateY(-4px);opacity:1}}
 
 @media (prefers-reduced-motion:reduce){.hero::before,.hero::after,.tag::before{animation:none}}
+.ph .ctas{justify-content:flex-start}
