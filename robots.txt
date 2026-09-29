@@ -2,6 +2,7 @@ User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /cuenta/
+Disallow: /admin/
 Disallow: /ingresar/
 
 Sitemap: https://horsepos.com/sitemap.xml

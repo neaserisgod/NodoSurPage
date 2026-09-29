@@ -1,4 +1,5 @@
 import { verify, sign, parseCookies, cookie, now, siteUrl, unb64u } from '../../_lib/util.js';
+import { hasDB, upsertLogin } from '../../_lib/db.js';
 
 const back = (site, err) => {
   const h = new Headers({ Location: `${site}/ingresar/?error=${err}`, 'Cache-Control': 'no-store' });
@@ -41,6 +42,10 @@ export async function onRequestGet({ request, env }) {
   }
 
   const iat = now();
+  if (hasDB(env)) {
+    try { await upsertLogin(env, { sub: claims.sub, email: String(claims.email).toLowerCase(), name: claims.name || claims.email }, iat); }
+    catch { return back(site, 'servidor'); }
+  }
   const session = await sign({
     sub: claims.sub,
     email: String(claims.email).toLowerCase(),

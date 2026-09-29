@@ -18,6 +18,7 @@ async function mp(env, path, init = {}) {
 
 const mapSub = (r) => ({
   id: String(r.id),
+  payerEmail: String(r.payer_email || '').trim().toLowerCase(),
   plan: PLANS[r.preapproval_plan_id] || r.reason || 'Suscripción',
   status: r.status,
   amount: r.auto_recurring && r.auto_recurring.transaction_amount,
@@ -58,4 +59,19 @@ export async function cancelSubscription(env, id) {
     if (res.status !== 400) return { ok: false, status: res.status };
   }
   return { ok: false, status: 400 };
+}
+
+// Todos los suscriptores de nuestros planes (para el panel de administración y la limpieza).
+export async function listAllSubscribers(env) {
+  const out = [];
+  for (const planId of Object.keys(PLANS)) {
+    for (let offset = 0; offset < 1000; offset += 50) {
+      const res = await mp(env, `/preapproval/search?preapproval_plan_id=${planId}&limit=50&offset=${offset}`);
+      if (!res.ok) throw new Error(`mp_search_${res.status}`);
+      const rows = (await res.json()).results || [];
+      out.push(...rows.filter((r) => r.preapproval_plan_id === planId).map(mapSub));
+      if (rows.length < 50) break;
+    }
+  }
+  return out;
 }

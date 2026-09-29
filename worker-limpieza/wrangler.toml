@@ -1,0 +1,17 @@
+name = "nodosur-limpieza"
+main = "index.js"
+compatibility_date = "2026-09-01"
+
+[triggers]
+crons = ["0 12 * * *"]   # todos los días 12:00 UTC (09:00 en Argentina)
+
+[[d1_databases]]
+binding = "DB"
+database_name = "nodosur"
+database_id = "REEMPLAZAR_POR_EL_ID_DE_D1"
+
+# Secretos (wrangler secret put ...): MP_ACCESS_TOKEN, y opcionales RESEND_API_KEY, MAIL_FROM
+# Variables: AUTO_DELETE = "on" para habilitar el borrado real (por defecto: solo avisa/simula).
+[vars]
+SITE_URL = "https://horsepos.com"
+AUTO_DELETE = "off"

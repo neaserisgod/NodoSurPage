@@ -546,3 +546,17 @@ html,body{overflow-x:clip}
 .dlg-fine{font-size:14px}
 .dlg-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:16px;flex-wrap:wrap}
 .dlg .btn{min-height:44px;padding:0 20px;font:inherit;font-size:15px;border:1px solid var(--outline);cursor:pointer}
+
+/* ===== Admin ===== */
+.adm{max-width:1100px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px}
+.kpi{background:#fff;border:1px solid var(--outline-v);border-radius:20px;padding:16px 18px;display:flex;flex-direction:column;gap:4px}
+.kpi span{font-size:13px;color:var(--soft)}.kpi strong{font-size:26px;font-weight:500;letter-spacing:-.02em}
+.adm .tbl{border-radius:16px}
+.adm .tbl table{min-width:820px;font-size:14.5px}
+.adm .tbl td small{color:var(--soft)}
+.acts{white-space:nowrap}
+.lnk{background:none;border:0;padding:6px 8px;font:inherit;font-size:14px;color:var(--blue);cursor:pointer;border-radius:8px}
+.lnk:hover{background:rgba(11,87,208,.08)}.lnk.danger{color:#b3261e}.lnk.danger:hover{background:#fce8e6}
+.sim{margin-top:8px}
+.acc>.btn{align-self:flex-start}

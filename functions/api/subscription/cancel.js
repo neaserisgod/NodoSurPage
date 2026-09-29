@@ -1,12 +1,14 @@
-import { getSession, json, sameOriginPost } from '../../_lib/util.js';
+import { json, sameOriginPost } from '../../_lib/util.js';
+import { currentUser } from '../../_lib/auth.js';
 import { listSubscriptions, cancelSubscription } from '../../_lib/mp.js';
 
 export async function onRequestPost({ request, env }) {
   if (!sameOriginPost(request, env) || request.headers.get('X-Requested-With') !== 'fetch') {
     return json({ error: 'forbidden' }, 403);
   }
-  const s = await getSession(request, env);
-  if (!s) return json({ error: 'no_session' }, 401);
+  const cu = await currentUser(request, env);
+  if (!cu.session || cu.gone) return json({ error: 'no_session' }, 401);
+  const s = cu.session;
   if (!env.MP_ACCESS_TOKEN) return json({ error: 'not_configured' }, 503);
 
   let id;

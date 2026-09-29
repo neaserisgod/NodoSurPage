@@ -33,7 +33,14 @@
     var out = el('form', 'acc-out'); out.method = 'post'; out.action = '/api/auth/logout';
     var ob = el('button', 'btn btn-w', 'Cerrar sesión'); ob.type = 'submit'; out.appendChild(ob);
     p.appendChild(out);
+    if (d.isAdmin) { var ad = el('a', 'btn', 'Ir al panel de administración'); ad.href = '/admin/'; ad.style.alignSelf = 'flex-start'; p.appendChild(ad); }
     root.appendChild(p);
+
+    if (d.notice) {
+      var nb = el('div', 'login-err'); nb.setAttribute('role', 'alert');
+      nb.textContent = 'Tu cuenta figura sin suscripción ni uso reciente y se eliminaría el ' + date(d.notice.deleteAfter * 1000) + '. Al haber ingresado hoy, el aviso se canceló.';
+      root.appendChild(nb);
+    }
 
     var s = card('Tu suscripción');
     if (!d.mpConfigured) {

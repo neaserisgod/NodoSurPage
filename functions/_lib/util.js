@@ -76,3 +76,7 @@ export function sameOriginPost(request, env) {
   if (!origin) return false;
   return origin === siteUrl(env) || origin === new URL(request.url).origin;
 }
+
+export const adminEmails = (env) =>
+  String(env.ADMIN_EMAILS || 'gtalovergamer@gmail.com').split(',').map((e) => e.trim().toLowerCase()).filter(Boolean);
+export const isAdminEmail = (env, email) => adminEmails(env).includes(String(email || '').toLowerCase());
