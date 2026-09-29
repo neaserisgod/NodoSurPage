@@ -494,3 +494,6 @@ html,body{overflow-x:clip}
 .logo .mark{border-radius:0;overflow:visible}
 .wm{color:#444746;font-weight:500;letter-spacing:0}
 .wm em{color:inherit}
+
+/* logo v3: NS tile (Instagram-derived) */
+.logo .mark{border-radius:30%}
