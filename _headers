@@ -17,3 +17,6 @@
 
 /sitemap.xml
   Cache-Control: public, max-age=3600
+
+/main.js
+  Cache-Control: public, max-age=86400, stale-while-revalidate=604800
