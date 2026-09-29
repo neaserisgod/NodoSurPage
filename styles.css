@@ -489,3 +489,8 @@ html,body{overflow-x:clip}
 .ph>h1{max-width:24ch}
 .ph>.lead{max-width:60ch}
 .page{max-width:none}
+
+/* logo v2: flat Southern-Cross node mark, single-ink wordmark */
+.logo .mark{border-radius:0;overflow:visible}
+.wm{color:#444746;font-weight:500;letter-spacing:0}
+.wm em{color:inherit}
