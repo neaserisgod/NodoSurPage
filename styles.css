@@ -479,3 +479,6 @@ header.px.lifted{background:rgba(255,255,255,.88);box-shadow:0 1px 0 var(--outli
   .nav .cta{width:44px;padding:0;justify-content:center}
   .nav .cta span{display:none}
 }
+.hero{overflow:clip}
+html,body{overflow-x:clip}
+@media (max-width:899px){.hero::before{width:280px;height:280px;left:-40px}.hero::after{width:240px;height:240px;right:-40px}}
