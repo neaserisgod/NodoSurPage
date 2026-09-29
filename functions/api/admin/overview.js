@@ -14,8 +14,11 @@ export async function onRequestGet({ request, env }) {
   if (!hasDB(env)) return json({ error: 'no_db' }, 503);
 
   const users = await listUsers(env);
-  let subs = [], mpError = !env.MP_ACCESS_TOKEN;
-  if (env.MP_ACCESS_TOKEN) { try { subs = await listAllSubscribers(env); } catch { mpError = true; } }
+  let subs = [], mpError = !env.MP_ACCESS_TOKEN, mpDetail = env.MP_ACCESS_TOKEN ? null : { reason: 'no_token' };
+  if (env.MP_ACCESS_TOKEN) {
+    try { subs = await listAllSubscribers(env); }
+    catch (e) { mpError = true; mpDetail = { status: e.status || null, message: e.detail || String(e.message || '').slice(0, 120) }; }
+  }
 
   const byEmail = new Map();
   for (const s of subs) byEmail.set(s.payerEmail, best(byEmail.get(s.payerEmail), s));
@@ -44,6 +47,7 @@ export async function onRequestGet({ request, env }) {
     subscribersWithoutAccount: subs.filter((s) => !emails.has(s.payerEmail)).map((s) => ({ email: s.payerEmail, plan: s.plan, status: s.status, amount: s.amount })),
     config: { db: true, mp: !mpError, autoDelete: env.AUTO_DELETE === 'on', notifier: notifierReady(env) },
     mpError,
+    mpDetail,
     rules: RULES,
   });
 }

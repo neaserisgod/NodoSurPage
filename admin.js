@@ -38,6 +38,13 @@
     cf.appendChild(chip('Avisos por mail: ' + (cfg.notifier ? 'activos' : 'sin configurar'), cfg.notifier ? 'ok' : 'wait'));
     cf.appendChild(chip('Borrado automático: ' + (cfg.autoDelete ? 'ACTIVADO' : 'apagado (solo simula)'), cfg.autoDelete ? 'bad' : 'wait'));
     root.appendChild(cf);
+    if (d.mpError && d.mpDetail) {
+      var md = d.mpDetail, why = md.reason === 'no_token' ? 'Falta la variable MP_ACCESS_TOKEN en Cloudflare.' :
+        (md.status === 401 ? 'Mercado Pago rechazó el token (401): revisá que sea el Access Token de producción, completo y sin espacios.' :
+         md.status === 403 ? 'Mercado Pago no autorizó la consulta (403): el token no tiene permiso para suscripciones.' :
+         'Mercado Pago respondió con error' + (md.status ? ' ' + md.status : '') + (md.message ? ': ' + md.message : '') + '.');
+      cf.after(el('p', 'login-err', why));
+    }
 
     var s1 = el('section', 'acc'); s1.appendChild(el('h2', null, 'Clientes'));
     var wrap = el('div', 'tbl'); var t = el('table');

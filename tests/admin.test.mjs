@@ -81,6 +81,14 @@ await t('admin: overview solo para el dueño (401/403/200) y con datos reales', 
   assert.deepEqual(d.subscribersWithoutAccount.map((s) => s.email).sort(), ['sincuenta@x.com', 'viejo@x.com']);
   assert.equal(d.config.autoDelete, false);
 });
+await t('admin: si Mercado Pago rechaza el token, el panel muestra el motivo (sin exponer el token)', async () => {
+  const env = mkEnv(); const t0 = nowS(); addUser(env, { sub: 'a', email: 'gtalovergamer@gmail.com', created: t0, lastSeen: t0 });
+  globalThis.fetch = async () => new Response(JSON.stringify({ message: 'invalid_token', status: 401 }), { status: 401 });
+  const r = await overview.onRequestGet({ request: req(await sess(env, 'gtalovergamer@gmail.com', 'a')), env }); const d = await r.json(); const raw = JSON.stringify(d);
+  assert.equal(d.mpError, true); assert.equal(d.config.mp, false); assert.equal(d.mpDetail.status, 401); assert.equal(d.mpDetail.message, 'invalid_token'); assert.ok(!raw.includes('tok'));
+  const env2 = mkEnv({ MP_ACCESS_TOKEN: undefined }); addUser(env2, { sub: 'a', email: 'gtalovergamer@gmail.com', created: t0, lastSeen: t0 });
+  assert.equal((await (await overview.onRequestGet({ request: req(await sess(env2, 'gtalovergamer@gmail.com', 'a')), env: env2 })).json()).mpDetail.reason, 'no_token');
+});
 await t('admin/user: eximir, quitar aviso, eliminar; protege al dueño; exige CSRF', async () => {
   const env = mkEnv(); mockNet(); const t0 = nowS(); const A = await sess(env, 'gtalovergamer@gmail.com', 'a');
   addUser(env, { sub: 'a', email: 'gtalovergamer@gmail.com', created: t0, lastSeen: t0 }); addUser(env, { sub: 'b', email: 'b@x.com', created: t0, lastSeen: t0, deleteAfter: t0 + 5 });
