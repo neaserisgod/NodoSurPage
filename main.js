@@ -52,7 +52,10 @@
   });
   var io=new IntersectionObserver(function(es){es.forEach(function(x){
     if(x.isIntersecting){x.target.classList.add('in');io.unobserve(x.target)}})},{threshold:.12,rootMargin:'0px 0px -6% 0px'});
-  els.forEach(function(e){io.observe(e)});
+  /* bloques más altos que la pantalla: nunca llegan al 12 % visible, así que aparecen apenas entran */
+  var ioTall=new IntersectionObserver(function(es){es.forEach(function(x){
+    if(x.isIntersecting){x.target.classList.add('in');ioTall.unobserve(x.target)}})},{threshold:0,rootMargin:'0px 0px -6% 0px'});
+  els.forEach(function(e){(e.offsetHeight>innerHeight*.8?ioTall:io).observe(e)});
 
   /* hero: numbers count up, then the day keeps selling */
   var today=$('.today .big');
