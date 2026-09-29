@@ -18,6 +18,27 @@
     var ml=$('.mp-login');if(ml){ml.href='/cuenta/';ml.textContent='Mi cuenta'}
   }
 
+  /* recorrido por pantallas: pestañas accesibles (funciona también con movimiento reducido) */
+  var tl=$('.tabs[role=tablist]');
+  if(tl){
+    root.classList.add('t-on');
+    var tabs=$$('[role=tab]',tl),panels=tabs.map(function(t){return d.getElementById(t.getAttribute('aria-controls'))});
+    var pick=function(i,focus){
+      tabs.forEach(function(t,k){var on=k===i;t.setAttribute('aria-selected',on?'true':'false');t.tabIndex=on?0:-1;panels[k].hidden=!on});
+      if(focus)tabs[i].focus();
+    };
+    tabs.forEach(function(t,i){
+      t.addEventListener('click',function(){pick(i)});
+      t.addEventListener('keydown',function(e){
+        var n=null;
+        if(e.key==='ArrowRight')n=(i+1)%tabs.length;else if(e.key==='ArrowLeft')n=(i-1+tabs.length)%tabs.length;
+        else if(e.key==='Home')n=0;else if(e.key==='End')n=tabs.length-1;
+        if(n!==null){e.preventDefault();pick(n,true)}
+      });
+    });
+    pick(0);
+  }
+
   if(reduce||!('IntersectionObserver' in window))return;
   root.classList.add('js');
 

@@ -26,7 +26,7 @@
 <meta name="twitter:image" content="https://horsepos.com/og.png">
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%231f1f1f'/%3E%3Ctext x='6.5' y='25.9' font-family='Arial,sans-serif' font-size='16.5' font-weight='800' letter-spacing='-.4' fill='white'%3ENS%3C/text%3E%3Ccircle cx='32' cy='23.6' r='2.3' fill='%2334a853'/%3E%3C/svg%3E">
 <link rel="preload" href="/fonts/figtree-0.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/styles.css?v=20260929g">
+<link rel="stylesheet" href="/styles.css?v=20260930d">
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -193,24 +193,11 @@
     </div>
     <p class="fine">7 días de prueba en tu compu · Devolución dentro de los 30 días</p>
   </div>
-  <div class="dash" role="group" aria-label="Ejemplo del resumen del día">
-    <div class="card today">
-      <div class="row"><span style="font-size:15px;font-weight:700;color:var(--muted)">Hoy · lunes</span><span class="pill tag">Caja abierta</span></div>
-      <div><div class="lbl">Vendido</div><div class="big">$ 482.300</div></div>
-      <div class="mix">
-        <div class="cash"><span>Efectivo</span><strong>$ 214.500</strong></div>
-        <div class="mp"><span>Mercado Pago</span><strong>$ 267.800</strong></div>
-      </div>
-    </div>
-    <div class="sep">
-      <div class="row b tot"><span>Para separar hoy</span><strong>$ 233.800</strong></div>
-      <div class="row"><span>Bebidas Patagonia</span><strong>$ 96.400</strong></div>
-      <div class="row"><span>Lácteos del Sur</span><strong>$ 61.200</strong></div>
-      <div class="row"><span>Fiambrería Nahuel</span><strong>$ 48.900</strong></div>
-      <div class="row"><span>Panadería Centro</span><strong>$ 27.300</strong></div>
-      <div class="note">Datos de ejemplo</div>
-    </div>
+  <div class="showcase">
+    <figure class="frame"><img src="/img/pos/vender-v1.webp" width="1600" height="1138" fetchpriority="high" decoding="async" alt="Pantalla Vender del sistema POS: productos por rubro a la izquierda y el ticket con el total y los botones para cobrar en efectivo o Mercado Pago a la derecha"></figure>
+    <figure class="phone"><img src="/img/pos/m-cobro-v1.webp" width="520" height="1125" decoding="async" alt="Pantalla de cobro en efectivo en el celular: con cuánto paga el cliente y el vuelto calculado"></figure>
   </div>
+  <p class="fine cap-ejemplo">Pantallas reales del sistema, con datos de ejemplo.</p>
 </section>
 
 <section class="two px" aria-label="Qué ofrece Nodo Sur">
@@ -239,46 +226,75 @@
   <div class="g2">
     <article class="feat">
       <div><h3>Cobrás en un toque</h3><p>Buscás el producto, lo tocás y cobrás. Efectivo o Mercado Pago, cada uno con su color.</p></div>
-      <div class="ui" role="group" aria-label="Ejemplo de venta">
-        <div class="srch">Buscar producto o código</div>
-        <div class="li"><span>Cerveza lata × 2</span><strong>$ 4.800</strong></div>
-        <div class="li"><span>Pan francés · 0,5 kg</span><strong>$ 2.100</strong></div>
-        <div class="li"><span>Alfajor triple</span><strong>$ 1.900</strong></div>
-        <div class="total"><span>Total</span><strong>$ 8.800</strong></div>
-        <div class="pay"><span style="background:#b45309">Efectivo</span><span style="background:var(--blue)">Mercado Pago</span></div>
-      </div>
-    </article>
+      <figure class="crop"><img src="/img/pos/f-cobrar-v2.webp" width="800" height="600" loading="lazy" decoding="async" alt="Total de la venta y botones para cobrar en efectivo o con Mercado Pago"></figure>
+      </article>
     <article class="feat">
       <div><h3>Sabés cuánto separar para cada proveedor</h3><p>Al final del día ves qué le corresponde a cada uno, y cuánto te queda de ganancia.</p></div>
-      <div class="ui" role="group" aria-label="Ejemplo de proveedores" style="gap:14px">
-        <div class="bar"><div class="row"><span>Bebidas Patagonia</span><strong>$ 96.400</strong></div><i><b style="width:100%"></b></i></div>
-        <div class="bar"><div class="row"><span>Lácteos del Sur</span><strong>$ 61.200</strong></div><i><b style="width:63%"></b></i></div>
-        <div class="bar"><div class="row"><span>Fiambrería Nahuel</span><strong>$ 48.900</strong></div><i><b style="width:51%"></b></i></div>
-        <div class="bar"><div class="row"><span>Panadería Centro</span><strong>$ 27.300</strong></div><i><b style="width:28%"></b></i></div>
-        <div class="gain"><span>Ganancia del día</span><strong>$ 118.000</strong></div>
-      </div>
-    </article>
+      <figure class="crop"><img src="/img/pos/f-separar-v2.webp" width="800" height="600" loading="lazy" decoding="async" alt="Lo que hay que separar en efectivo y en Mercado Pago, y las tarjetas de cada proveedor"></figure>
+      </article>
     <article class="feat">
       <div><h3>Cerrás la caja sin calculadora</h3><p>Contás la plata, la escribís y el sistema te dice si cierra o cuánto falta.</p></div>
-      <div class="ui" role="group" aria-label="Ejemplo de cierre de caja" style="gap:14px">
-        <div class="kv"><span>Esperado en caja</span><strong>$ 361.100</strong></div>
-        <div class="kv"><span>Contado</span><strong>$ 360.600</strong></div>
-        <div class="gain diff"><span>Diferencia</span><strong style="font-size:21px">− $ 500</strong></div>
-        <div class="done">Cerrar caja</div>
-      </div>
-    </article>
+      <figure class="crop"><img src="/img/pos/f-cierre-v1.webp" width="800" height="600" loading="lazy" decoding="async" alt="Cierre de caja: lo que debería haber, lo contado y la diferencia"></figure>
+      </article>
     <article class="feat">
       <div><h3>Precios y stock al día</h3><p>Contás el stock y ves cuándo un proveedor te subió un precio, antes de que se coma tu margen.</p></div>
-      <div class="ui" role="group" aria-label="Ejemplo de cambios de precio" style="gap:0;padding-top:8px;padding-bottom:8px">
-        <div class="chg"><div><strong>Gaseosa cola 2 L</strong><small>$ 2.150 → $ 2.320</small></div><span>+8 %</span></div>
-        <div class="chg"><div><strong>Yerba 1 kg</strong><small>$ 4.980 → $ 5.100</small></div><span>+2 %</span></div>
-        <div class="chg"><div><strong>Fideos 500 g</strong><small>$ 1.320 → $ 1.320</small></div><span class="ok">Sin cambios</span></div>
-      </div>
-    </article>
+      <figure class="crop"><img src="/img/pos/f-precios-v2.webp" width="800" height="600" loading="lazy" decoding="async" alt="Costo de un producto en tres proveedores y cuánto ganarías cambiando"></figure>
+      </article>
   </div>
   <ul class="chips" aria-label="Otras funciones">
     <li>Funciona sin internet</li><li>Respaldo de datos</li><li>Historial de ventas y cierres</li><li>Impresión de tickets</li><li>Carga de tus productos por Excel</li>
   </ul>
+</section>
+
+<section id="asi-se-ve" class="sec px tour" aria-labelledby="t-tour">
+  <div class="head">
+    <p class="eyebrow">Así se ve</p>
+    <h2 class="h2" id="t-tour">Recorré el sistema pantalla por pantalla.</h2>
+    <p class="lead">Son pantallas reales del sistema POS, con datos de ejemplo.</p>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Pantallas del sistema">
+    <button type="button" role="tab" id="tab-vender" aria-controls="p-vender" aria-selected="true">Vender</button>
+    <button type="button" role="tab" id="tab-separar" aria-controls="p-separar" aria-selected="false" tabindex="-1">Separaciones</button>
+    <button type="button" role="tab" id="tab-dash" aria-controls="p-dash" aria-selected="false" tabindex="-1">Dashboard</button>
+    <button type="button" role="tab" id="tab-caja" aria-controls="p-caja" aria-selected="false" tabindex="-1">Cierre de caja</button>
+    <button type="button" role="tab" id="tab-precios" aria-controls="p-precios" aria-selected="false" tabindex="-1">Comparar precios</button>
+    <button type="button" role="tab" id="tab-cel" aria-controls="p-cel" aria-selected="false" tabindex="-1">En el celular</button>
+  </div>
+  <div class="panel" role="tabpanel" id="p-vender" aria-labelledby="tab-vender">
+    <div class="panel-t"><h3>Vender en un toque</h3><p>Buscás o escaneás, tocás el producto y cobrás. Lo más vendido siempre a mano.</p>
+      <ul class="ck"><li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#146c2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Productos por rubro, con lo que ya está en el ticket marcado</li><li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#146c2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>El total bien grande, a la vista del cliente</li><li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#146c2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Efectivo o Mercado Pago, y pago mixto en el paso siguiente</li></ul></div>
+    <figure class="frame"><img src="/img/pos/vender-v1.webp" width="1600" height="1138" loading="lazy" decoding="async" alt="Pantalla Vender del sistema POS"></figure>
+  </div>
+  <div class="panel" role="tabpanel" id="p-separar" aria-labelledby="tab-separar">
+    <div class="panel-t"><h3>Cuánta plata separar</h3><p>Al final del día sabés qué le corresponde a cada proveedor y cuánto te queda de ganancia.</p>
+      <ul class="ck"><li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#146c2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Separado por efectivo y por Mercado Pago</li><li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#146c2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Tildás cada proveedor cuando ya apartaste su plata</li><li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#146c2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Hoy, la semana o el mes</li></ul></div>
+    <figure class="frame"><img src="/img/pos/separaciones-v1.webp" width="1600" height="1138" loading="lazy" decoding="async" alt="Pantalla Separaciones: tarjetas por proveedor con lo que hay que separar en efectivo y Mercado Pago"></figure>
+  </div>
+  <div class="panel" role="tabpanel" id="p-dash" aria-labelledby="tab-dash">
+    <div class="panel-t"><h3>El día de un vistazo</h3><p>Cómo viene el día sin abrir un reporte: vendido, ganancia y lo que falta separar.</p>
+      <ul class="ck"><li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#146c2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Ventas por hora y cómo te pagaron</li><li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#146c2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Los productos más vendidos</li><li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#146c2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Stock bajo, para reponer a tiempo</li></ul></div>
+    <figure class="frame"><img src="/img/pos/dashboard-v1.webp" width="1600" height="1138" loading="lazy" decoding="async" alt="Dashboard del sistema POS con vendido, ganancia, tickets, ventas por hora, medios de pago, más vendidos y stock bajo"></figure>
+  </div>
+  <div class="panel" role="tabpanel" id="p-caja" aria-labelledby="tab-caja">
+    <div class="panel-t"><h3>Cerrás la caja sin calculadora</h3><p>Contás la lata y el sistema te dice si cuadra o cuánto falta.</p>
+      <ul class="ck"><li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#146c2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Lo que tiene que haber: fondo inicial, ventas, pagos y retiros</li><li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#146c2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>La diferencia en vivo, en rojo si falta</li><li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#146c2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Mercado Pago no se cuenta: ya está en la cuenta</li></ul></div>
+    <figure class="frame"><img src="/img/pos/cierre-v1.webp" width="1200" height="790" loading="lazy" decoding="async" alt="Cierre de caja: efectivo que debería haber, efectivo contado y la diferencia"></figure>
+  </div>
+  <div class="panel" role="tabpanel" id="p-precios" aria-labelledby="tab-precios">
+    <div class="panel-t"><h3>Quién te vende más barato</h3><p>Comparás el costo de cada producto entre tus proveedores y ves cuánto ganarías cambiando.</p>
+      <ul class="ck"><li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#146c2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Costo de cada proveedor y cuánto subió</li><li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#146c2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Cuánto más ganás por mes si cambiás</li><li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#146c2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Cómo evolucionó el costo mes a mes</li></ul></div>
+    <figure class="frame"><img src="/img/pos/comparar-precios-v1.webp" width="1600" height="1138" loading="lazy" decoding="async" alt="Comparar precios: costo de un producto en tres proveedores, diferencia, margen y evolución del costo"></figure>
+  </div>
+  <div class="panel" role="tabpanel" id="p-cel" aria-labelledby="tab-cel">
+    <div class="panel-t"><h3>La misma caja, en tu celular</h3><p>Una app para Android para cobrar, mirar el día y marcar lo que separaste, sin estar en la compu.</p>
+      <ul class="ck"><li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#146c2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Vender y cobrar con el vuelto ya calculado</li><li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#146c2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Separaciones y dashboard en el bolsillo</li><li><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#146c2e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l4 4 10-10"/></svg>Se conecta con la compu del local</li></ul></div>
+    <div class="phones">
+      <figure class="phone"><img src="/img/pos/m-vender-v1.webp" width="520" height="1125" loading="lazy" decoding="async" alt="Pantalla Vender en el celular"></figure>
+      <figure class="phone"><img src="/img/pos/m-cobro-v1.webp" width="520" height="1125" loading="lazy" decoding="async" alt="Cobro en efectivo con vuelto en el celular"></figure>
+      <figure class="phone"><img src="/img/pos/m-separaciones-v1.webp" width="520" height="1125" loading="lazy" decoding="async" alt="Separaciones por proveedor en el celular"></figure>
+    </div>
+  </div>
+  <p class="fine" style="text-align:center">Datos de ejemplo.</p>
 </section>
 
 <section id="bot" class="sec px bot" aria-labelledby="t-bot">
@@ -426,6 +442,6 @@
 <footer class="px foot"><div class="col" style="gap:10px"><a href="/" class="logo" aria-label="Nodo Sur, inicio"><svg class="mark" width="32" height="32" viewBox="0 0 40 40" aria-hidden="true"><rect width="40" height="40" rx="12" fill="#1f1f1f"/><text x="6.5" y="25.9" font-family="Figtree,Arial,sans-serif" font-size="16.5" font-weight="800" letter-spacing="-.4" fill="#fff">NS</text><circle cx="32" cy="23.6" r="2.3" fill="#34a853"/></svg><span class="wm">Nodo Sur</span></a><p>Bariloche, Río Negro · <a href="https://instagram.com/nodosur.brc" rel="me noopener">@nodosur.brc</a></p></div><nav aria-label="Secciones del sitio"><ul><li><a href="/sistema-pos/">Sistema POS</a></li><li><a href="/bot-whatsapp/">Bot de WhatsApp</a></li><li><a href="/diferencias-sistema-pos-y-bot-whatsapp/">Diferencias</a></li><li><a href="/como-elegir-sistema-pos-kiosco-almacen/">Guía para elegir</a></li><li><a href="/sistema-de-ventas-para-kioscos/">Ventas para kioscos</a></li><li><a href="/sistema-para-almacen-control-de-stock/">Sistema para almacén</a></li><li><a href="/sistema-pos-bariloche/">POS en Bariloche</a></li><li><a href="/paginas-web/">Páginas web</a></li><li><a href="/#precios">Precios</a></li><li><a href="/pagar/">Pagar</a></li><li><a href="/#contacto">Contacto</a></li></ul></nav></footer>
 
 </div>
-<script src="/main.js?v=20260929g" defer></script>
+<script src="/main.js?v=20260930d" defer></script>
 </body>
 </html>
