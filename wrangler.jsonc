@@ -14,7 +14,9 @@
   "keep_vars": true,
   "observability": { "enabled": true },
   // Limpieza diaria, 12:00 UTC (09:00 Argentina). Solo actúa si D1 y Mercado Pago están configurados.
-  "triggers": { "crons": ["0 12 * * *"] }
-  // ETAPA 2 — descomentar cuando exista la base D1 y pegar su ID:
-  // ,"d1_databases": [{ "binding": "DB", "database_name": "nodosur", "database_id": "PEGAR_ID_AQUI" }]
+  "triggers": { "crons": ["0 12 * * *"] },
+  // Base D1 (usuarios y uso). El ID no es secreto.
+  "d1_databases": [
+    { "binding": "DB", "database_name": "nodosur", "database_id": "285a2863-0227-4056-98f8-9156fc84455e" }
+  ]
 }

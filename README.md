@@ -38,7 +38,7 @@ Google Cloud → Google Auth Platform → Clientes (Aplicación web):
 ### Uso, administración y limpieza automática (etapa 2: D1)
 
 1. Crear la base D1 `nodosur` y ejecutar `migrations/0001_users.sql` en su Console.
-2. En `wrangler.jsonc` descomentar `d1_databases` y pegar el `database_id`. Push.
+2. En `wrangler.jsonc`, `d1_databases` ya apunta a la base `nodosur` (ID 285a2863-…).
 3. El cron diario (`triggers.crons`) corre `functions/_lib/sweep.js`: una cuenta se avisa y, a los 3 días, se elimina si NO está eximida, NO es admin, NO tiene suscripción vigente (`authorized`/`pending`/`paused`), tiene más de 14 días de antigüedad y 30 sin uso.
    - **Solo se elimina si el aviso se envió de verdad.** Sin `RESEND_API_KEY` + `MAIL_FROM` no se avisa y **no se borra nada** (queda "pendiente de aviso" en el panel).
    - **El borrado real está apagado** hasta `AUTO_DELETE = on`; antes solo simula (botón "Simular limpieza" del panel).
