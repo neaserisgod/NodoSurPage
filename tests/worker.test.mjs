@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import worker from '../worker.js';
 
 let pass = 0; const t = async (n, f) => { await f(); pass++; console.log('ok  ', n); };
-const env = { SESSION_SECRET: 'x'.repeat(48), GOOGLE_CLIENT_ID: 'cid', ASSETS: { fetch: async (r) => new Response('ESTATICO ' + new URL(r.url).pathname) } };
+const env = { SESSION_SECRET: 'x'.repeat(48), GOOGLE_CLIENT_ID: 'cid', GOOGLE_CLIENT_SECRET: 'gs', ASSETS: { fetch: async (r) => new Response('ESTATICO ' + new URL(r.url).pathname) } };
 const call = (path, method = 'GET') => worker.fetch(new Request('https://horsepos.com' + path, { method }), env, { waitUntil() {} });
 
 await t('rutas que no son /api/ salen de los archivos estáticos', async () => {
