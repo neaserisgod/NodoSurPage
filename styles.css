@@ -673,3 +673,7 @@ h1{font-size:clamp(38px,3.1vw + 23px,68px);line-height:1.06}
 .sticky-cta:hover{color:#fff}
 @media (max-width:719px){.sticky-cta{display:flex}body.has-sticky{padding-bottom:84px}}
 @media (prefers-reduced-motion:reduce){.sticky-cta{transition:none}}
+
+/* chips de confianza dentro del encabezado de las páginas internas */
+.ph .trust-in{margin-top:6px;gap:8px}
+.ph .trust-in li{font-size:14px}
