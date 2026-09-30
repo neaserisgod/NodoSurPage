@@ -177,6 +177,25 @@ await t('/api/downloads: lo que ve /descargar/ (sin claves internas) y el motivo
   assert.equal(ok.canDownload, true); assert.equal(ok.releases.length, 1); assert.deepEqual(Object.keys(ok.releases[0]).sort(), ['notes', 'platform', 'publishedAt', 'sha256', 'size', 'version']);
   assert.deepEqual(await (await ask(await sess(env, 'luis@x.com', 's3'))).json(), { canDownload: false, reason: 'no_subscription', releases: [] });
 });
+await t('/api/downloads: la beta la ve solo un administrador o una cuenta eximida; un cliente nunca', async () => {
+  const env = mkEnv(); addUser(env, 'admin@x.com', 'a'); addUser(env, 'demo@x.com', 's2', 1); addUser(env, 'ana@x.com', 's1');
+  await publish(env, '1.0.0+2098', {}, 'ESTABLE'); await publish(env, '1.0.0+2099', { channel: 'beta' }, 'BETA'); SUBS = [sub('ana@x.com', 'authorized')]; mockMP();
+  const ask = async (cookie) => (await downloads.onRequestGet({ request: req('/api/downloads', { cookie }), env })).json();
+  for (const [email, sb] of [['admin@x.com', 'a'], ['demo@x.com', 's2']]) {
+    const d = await ask(await sess(env, email, sb));
+    assert.equal(d.privileged, true); assert.equal(d.releases.length, 1); assert.equal(d.releases[0].version, '1.0.0+2098');
+    assert.equal(d.beta.length, 1); assert.equal(d.beta[0].version, '1.0.0+2099');
+    assert.deepEqual(Object.keys(d.beta[0]).sort(), ['notes', 'platform', 'publishedAt', 'sha256', 'size', 'version']); // sin claves internas
+  }
+  const c = await ask(await sess(env, 'ana@x.com', 's1'));
+  assert.equal(c.privileged, false); assert.equal('beta' in c, false); assert.equal(c.releases.length, 1);
+  // Solo beta publicada (todavía no hay estable): el administrador la ve y puede bajarla.
+  const solo = mkEnv(); addUser(solo, 'admin@x.com', 'a'); await publish(solo, '1.0.0+1', { channel: 'beta' }, 'BETA');
+  const d2 = await (await downloads.onRequestGet({ request: req('/api/downloads', { cookie: await sess(solo, 'admin@x.com', 'a') }), env: solo })).json();
+  assert.deepEqual([d2.releases.length, d2.beta.length], [0, 1]);
+  const r = await download.onRequestGet({ request: req('/api/download?platform=windows&channel=beta', { cookie: await sess(solo, 'admin@x.com', 'a') }), env: solo });
+  assert.equal(await r.text(), 'BETA');
+});
 await t('sin ninguna versión publicada ni tablas: todo responde vacío sin fallar', async () => {
   const env = mkEnv(); addUser(env, 'admin@x.com', 'a');
   assert.deepEqual(await (await latest.onRequestGet({ request: req('/api/update/latest.json?platform=windows'), env })).json(), { update: false });
