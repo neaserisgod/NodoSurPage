@@ -21,7 +21,7 @@ const dry = flag('dry-run');
 if (!file || !platform || !version) fail('faltan --file, --platform o --version');
 if (!['windows', 'macos', 'linux', 'android'].includes(platform)) fail('--platform: windows | macos | linux | android');
 if (!['stable', 'beta'].includes(channel)) fail('--channel: stable | beta');
-if (!/^\d+\.\d+\.\d+(?:\+\d{1,9}|-[0-9A-Za-z.-]{1,32})?$/.test(version)) fail('--version debe verse como 1.0.0+2099 o 1.0.0');
+if (!/^\d+\.\d+\.\d+(?:\.\d{1,9}|\+\d{1,9}|-[0-9A-Za-z.-]{1,32})?$/.test(version)) fail('--version debe verse como 1.0.0.2099, 1.0.0+2099 o 1.0.0');
 if (arg('signature-type') && !['ed', 'dsa'].includes(arg('signature-type'))) fail('--signature-type: ed | dsa');
 if (!Number.isInteger(rollout) || rollout < 0 || rollout > 100) fail('--rollout: entero de 0 a 100');
 if (!dry && !process.env.RELEASE_TOKEN) fail('falta la variable de entorno RELEASE_TOKEN');

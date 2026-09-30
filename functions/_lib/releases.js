@@ -4,8 +4,9 @@ export const PLATFORMS = ['windows', 'macos', 'linux', 'android'];
 export const CHANNELS = ['stable', 'beta'];
 export const hasR2 = (env) => Boolean(env.RELEASES);
 
-// Formato de Flutter: 1.0.0+2098 (nombre + número de build). También se acepta 1.0.0 y 1.0.0-beta.1.
-const VERSION_RE = /^\d+\.\d+\.\d+(?:\+\d{1,9}|-[0-9A-Za-z.-]{1,32})?$/;
+// Formato de Flutter: 1.0.0+2098 (nombre + número de build). También 1.0.0.2098 (el que usa Windows y el feed),
+// 1.0.0 y 1.0.0-beta.1. Para comparar, "1.0.0+2098" y "1.0.0.2098" son la misma versión.
+const VERSION_RE = /^\d+\.\d+\.\d+(?:\.\d{1,9}|\+\d{1,9}|-[0-9A-Za-z.-]{1,32})?$/;
 const KEY_RE = /^(stable|beta)\/[0-9A-Za-z.+-]{1,40}\/[A-Za-z0-9._+-]{1,120}$/;
 export const validVersion = (v) => typeof v === 'string' && VERSION_RE.test(v);
 export const validKey = (k) => typeof k === 'string' && KEY_RE.test(k) && !k.includes('..');
