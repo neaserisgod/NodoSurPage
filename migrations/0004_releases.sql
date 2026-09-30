@@ -7,6 +7,7 @@ CREATE TABLE IF NOT EXISTS releases (
   version TEXT NOT NULL,            -- 1.4.0
   file_key TEXT NOT NULL,           -- clave en R2: stable/1.4.0/NodoSur-Setup-1.4.0.exe
   size INTEGER NOT NULL, sha256 TEXT NOT NULL, signature TEXT, notes TEXT,
+  sig_type TEXT NOT NULL DEFAULT 'ed',    -- ed = EdDSA (WinSparkle 0.9+) | dsa = DSA (WinSparkle 0.8, el de auto_updater 1.0)
   mandatory INTEGER NOT NULL DEFAULT 0,
   rollout INTEGER NOT NULL DEFAULT 100,   -- % de instalaciones a las que se ofrece la actualización
   blocked INTEGER NOT NULL DEFAULT 0,     -- 1 = no se entrega más

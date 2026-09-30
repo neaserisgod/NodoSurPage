@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Publica una versión del sistema POS: sube el archivo a R2 y la registra en el sitio.
 //   RELEASE_TOKEN=... node scripts/publicar-release.mjs --file build/LaPlazoleta-Setup.exe --platform windows \
-//     --version 1.0.0+2099 [--channel stable|beta] [--notes "Qué cambió"] [--signature <EdDSA>] [--rollout 10] [--mandatory] [--dry-run]
+//     --version 1.0.0+2099 [--channel stable|beta] [--notes "Qué cambió"] [--signature <firma> --signature-type dsa|ed] [--rollout 10] [--mandatory] [--dry-run]
 // Requiere: Node, `npx wrangler` con sesión iniciada (wrangler login) y el secreto RELEASE_TOKEN (el mismo que en Cloudflare).
 import { createReadStream, readFileSync, statSync } from 'node:fs';
 import { createHash } from 'node:crypto';
@@ -22,13 +22,14 @@ if (!file || !platform || !version) fail('faltan --file, --platform o --version'
 if (!['windows', 'macos', 'linux', 'android'].includes(platform)) fail('--platform: windows | macos | linux | android');
 if (!['stable', 'beta'].includes(channel)) fail('--channel: stable | beta');
 if (!/^\d+\.\d+\.\d+(?:\+\d{1,9}|-[0-9A-Za-z.-]{1,32})?$/.test(version)) fail('--version debe verse como 1.0.0+2099 o 1.0.0');
+if (arg('signature-type') && !['ed', 'dsa'].includes(arg('signature-type'))) fail('--signature-type: ed | dsa');
 if (!Number.isInteger(rollout) || rollout < 0 || rollout > 100) fail('--rollout: entero de 0 a 100');
 if (!dry && !process.env.RELEASE_TOKEN) fail('falta la variable de entorno RELEASE_TOKEN');
 
 const size = statSync(file).size;
 const sha256 = await new Promise((res, rej) => { const h = createHash('sha256'); createReadStream(file).on('data', (d) => h.update(d)).on('end', () => res(h.digest('hex'))).on('error', rej); });
 const key = `${channel}/${version}/${basename(file).replace(/[^A-Za-z0-9._+-]/g, '-')}`;
-const body = { action: 'create', platform, channel, version, key, sha256, rollout, mandatory: flag('mandatory'), notes: notes || undefined, signature: arg('signature') };
+const body = { action: 'create', platform, channel, version, key, sha256, rollout, mandatory: flag('mandatory'), notes: notes || undefined, signature: arg('signature'), signatureType: arg('signature-type') };
 
 console.log(`Archivo:  ${file} (${(size / 1048576).toFixed(1)} MB)\nSHA-256:  ${sha256}\nClave R2: ${bucket}/${key}\nSitio:    ${site}\nLiberada: ${rollout} %${flag('mandatory') ? ' · obligatoria' : ''}`);
 if (dry) { console.log('\n(--dry-run: no se subió ni registró nada)'); process.exit(0); }

@@ -14,6 +14,6 @@ export async function onRequestGet({ request, env }) {
   if (!r) return json({ update: false });
   return json({
     update: true, version: r.version, mandatory: Boolean(r.mandatory), url: `${siteUrl(env)}/api/update/file?id=${r.id}`,
-    sha256: r.sha256, size: r.size, signature: r.signature, notes: r.notes, publishedAt: r.published_at,
+    sha256: r.sha256, size: r.size, signature: r.signature, signatureType: r.sig_type || 'ed', notes: r.notes, publishedAt: r.published_at,
   });
 }
