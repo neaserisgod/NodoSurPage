@@ -63,7 +63,7 @@
     }
 
     var s1 = el('section', 'acc'); s1.appendChild(el('h2', null, 'Clientes'));
-    var wrap = el('div', 'tbl'); var t = el('table');
+    var wrap = el('div', 'tbl adm-tbl'); var t = el('table');
     var thead = el('thead'), hr = el('tr');
     ['Cliente', 'Alta', 'Último uso', 'Ingresos', 'Suscripción', 'Estado', ''].forEach(function (h) { hr.appendChild(el('th', null, h)); });
     thead.appendChild(hr); t.appendChild(thead);

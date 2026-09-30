@@ -756,3 +756,31 @@ h1{font-size:clamp(38px,3.1vw + 23px,68px);line-height:1.06}
   .co-r{gap:8px}.co .pg-sum{padding:0 14px}
 }
 @media (max-height:700px) and (max-width:719px){.co .pg-promo small{display:none}.co-c{padding:10px 12px}.co .pg-opt{padding:7px 12px}}
+
+/* ---- normalización ---- */
+/* títulos de contenido y de "Seguí leyendo": misma escala en todas las páginas */
+.body-sec h3,.prose h3{font-weight:700}
+/* chips: mismo aspecto sobre fondo gris o blanco */
+.chips li{border:1px solid var(--outline-v)}
+.white .chips li,.sys .chips li{background:var(--bg);border-color:transparent}
+.sys .chips{justify-content:center;margin-top:8px}
+/* paneles: nunca ensanchan la página */
+.acc-wrap,.adm,.adm>*,.acc,.acc>*{min-width:0;max-width:100%}
+.adm{overflow-x:clip}
+/* tabla comparativa: en celular se apila como tarjetas */
+@media (max-width:719px){
+  .tbl table:not(.adm-t){min-width:0}
+  .tbl:not(.adm-tbl) thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .tbl:not(.adm-tbl) table,.tbl:not(.adm-tbl) tbody,.tbl:not(.adm-tbl) tr,.tbl:not(.adm-tbl) th,.tbl:not(.adm-tbl) td{display:block;width:100%}
+  .tbl:not(.adm-tbl) tr{padding:6px 0;border-bottom:1px solid var(--outline-v)}
+  .tbl:not(.adm-tbl) tr:last-child{border-bottom:0}
+  .tbl:not(.adm-tbl) tbody th{background:none;padding:10px 16px 2px;border:0;font-size:15px}
+  .tbl:not(.adm-tbl) td{padding:4px 16px 8px;border:0}
+  .tbl:not(.adm-tbl) td[data-l]::before{content:attr(data-l);display:block;font-size:12px;font-weight:700;letter-spacing:.02em;color:var(--blue);text-transform:uppercase;margin-bottom:1px}
+  .kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+.prow{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.adm .tbl td{white-space:nowrap}
+.adm .tbl td:first-child{white-space:normal}
+.trust .chips li,.ph .chips li,.sys .chips li{font-size:14px;padding:8px 13px;line-height:1.3}
+@media (max-width:719px){.trust .chips li,.ph .chips li,.sys .chips li{font-size:13.5px;padding:7px 12px}.trust .chips,.sys .chips{gap:6px 8px}}
