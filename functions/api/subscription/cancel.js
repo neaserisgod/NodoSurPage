@@ -1,6 +1,6 @@
 import { json, sameOriginPost } from '../../_lib/util.js';
 import { currentUser } from '../../_lib/auth.js';
-import { listSubscriptions, cancelSubscription } from '../../_lib/mp.js';
+import { listSubscriptions, cancelSubscription, clearMpCache } from '../../_lib/mp.js';
 
 export async function onRequestPost({ request, env }) {
   if (!sameOriginPost(request, env) || request.headers.get('X-Requested-With') !== 'fetch') {
@@ -22,5 +22,6 @@ export async function onRequestPost({ request, env }) {
   if (sub.status === 'cancelled') return json({ ok: true, already: true });
 
   const r = await cancelSubscription(env, id);
+  clearMpCache();
   return r.ok ? json({ ok: true }) : json({ error: 'mp_error' }, 502);
 }

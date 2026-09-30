@@ -31,7 +31,7 @@ export async function onRequestGet({ request, env }) {
       id: u.id, name: u.name, email: u.email, createdAt: u.created_at, lastSeen: u.last_seen, logins: u.login_count,
       exempt: Boolean(u.exempt), isAdmin: isAdminEmail(env, u.email), deleteAfter: u.delete_after, noticeSentAt: u.notice_sent_at,
       plan: u.plan_interest || null, promo: Boolean(u.promo_interest), chosenAt: u.plan_chosen_at || null,
-      subscription: sub && { plan: sub.plan, status: sub.status, amount: sub.amount, nextPayment: sub.nextPayment },
+      subscription: sub && { id: sub.id, plan: sub.plan, status: sub.status, amount: sub.amount, nextPayment: sub.nextPayment },
     };
   });
   const emails = new Set(users.map((u) => u.email));
@@ -48,7 +48,7 @@ export async function onRequestGet({ request, env }) {
       unpaid: mpError ? null : rows.filter((r) => !r.subscription && !r.isAdmin).length,
     },
     users: rows,
-    subscribersWithoutAccount: subs.filter((s) => !emails.has(s.payerEmail)).map((s) => ({ email: s.payerEmail, plan: s.plan, status: s.status, amount: s.amount })),
+    subscribersWithoutAccount: subs.filter((s) => !emails.has(s.payerEmail)).map((s) => ({ id: s.id, email: s.payerEmail, plan: s.plan, status: s.status, amount: s.amount })),
     config: { db: true, mp: !mpError, autoDelete: env.AUTO_DELETE === 'on', notifier: notifierReady(env) },
     mpError,
     mpStale,

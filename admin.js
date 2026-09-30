@@ -8,7 +8,8 @@
   var ST = { authorized: ['Activa', 'ok'], pending: ['Pendiente', 'wait'], paused: ['Pausada', 'wait'], cancelled: ['Cancelada', 'bad'], canceled: ['Cancelada', 'bad'] };
   var HDR = { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' };
   var PLAN_NAMES = { pos: 'Sistema POS', 'pos-bot': 'Sistema + Bot', bot: 'Solo el bot' };
-  var target = null;
+  var ACTIVE = { authorized: 1, paused: 1, pending: 1 };
+  var target = null, bajaTarget = null;
 
   function post(url, body) {
     return fetch(url, { method: 'POST', credentials: 'same-origin', headers: HDR, body: JSON.stringify(body) })
@@ -99,6 +100,7 @@
       else if (u.deleteAfter) ce.appendChild(chip('Se borra el ' + dt(u.deleteAfter), 'bad'));
       tr.appendChild(ce);
       var ca = el('td', 'acts');
+      if (u.subscription && ACTIVE[u.subscription.status]) ca.appendChild(bajaBtn(u.subscription, u.email));
       if (!u.isAdmin) {
         var b1 = el('button', 'lnk', u.exempt ? 'Quitar exención' : 'Eximir'); b1.type = 'button';
         b1.addEventListener('click', function () { post('/api/admin/user', { id: u.id, action: u.exempt ? 'unexempt' : 'exempt' }).then(refresh); });
@@ -117,7 +119,7 @@
       var s2 = el('section', 'acc'); s2.appendChild(el('h2', null, 'Suscriptores sin cuenta en el sitio'));
       s2.appendChild(el('p', 'acc-note', 'Pagaron en Mercado Pago pero todavía no ingresaron con Google (o usaron otro mail).'));
       var ul = el('ul', 'pays');
-      d.subscribersWithoutAccount.forEach(function (x) { var li = el('li'); li.appendChild(el('span', null, x.email)); li.appendChild(el('span', null, x.plan + ' · ' + (x.status || ''))); li.appendChild(el('strong', null, money(x.amount))); ul.appendChild(li); });
+      d.subscribersWithoutAccount.forEach(function (x) { var li = el('li'); li.appendChild(el('span', null, x.email)); li.appendChild(el('span', null, x.plan + ' · ' + (x.status || ''))); li.appendChild(el('strong', null, money(x.amount))); if (ACTIVE[x.status]) li.appendChild(bajaBtn(x, x.email)); ul.appendChild(li); });
       s2.appendChild(ul); root.appendChild(s2);
     }
 
@@ -141,6 +143,19 @@
     root.appendChild(s3);
   }
 
+  // Baja de una suscripción (corta los cobros en Mercado Pago). Pide confirmación.
+  function bajaBtn(sub, who) {
+    var b = el('button', 'lnk danger', 'Dar de baja'); b.type = 'button';
+    b.addEventListener('click', function () {
+      bajaTarget = sub;
+      document.getElementById('baja-who').textContent = who;
+      document.getElementById('baja-plan').textContent = sub.plan;
+      document.getElementById('baja-err').textContent = '';
+      var bd = document.getElementById('baja'); bd.showModal ? bd.showModal() : bd.setAttribute('open', '');
+    });
+    return b;
+  }
+
   function refresh() { return load().then(function (d) { if (d) render(d); }); }
 
   var dlg = document.getElementById('borrar');
@@ -151,6 +166,17 @@
       if (!x.ok) { document.getElementById('del-err').textContent = 'No se pudo eliminar.'; return; }
       dlg.close ? dlg.close() : dlg.removeAttribute('open'); refresh();
     });
+  });
+  var bd = document.getElementById('baja');
+  document.getElementById('baja-no').addEventListener('click', function () { bd.close ? bd.close() : bd.removeAttribute('open'); });
+  document.getElementById('baja-si').addEventListener('click', function () {
+    if (!bajaTarget) return;
+    var btn = this; btn.disabled = true; btn.textContent = 'Dando de baja…';
+    post('/api/admin/subscription', { id: bajaTarget.id }).then(function (x) {
+      btn.disabled = false; btn.textContent = 'Sí, dar de baja';
+      if (!x.ok) { document.getElementById('baja-err').textContent = x.j && x.j.error === 'not_found' ? 'No encontramos esa suscripción.' : 'No se pudo dar de baja (Mercado Pago no respondió). Probá de nuevo.'; return; }
+      bd.close ? bd.close() : bd.removeAttribute('open'); refresh();
+    }).catch(function () { btn.disabled = false; btn.textContent = 'Sí, dar de baja'; document.getElementById('baja-err').textContent = 'Error de conexión. Probá de nuevo.'; });
   });
   refresh();
 })();

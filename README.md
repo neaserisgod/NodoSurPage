@@ -28,6 +28,12 @@ Los links de pago de Mercado Pago **no están en el sitio**: viven en `functions
 
 Las columnas nuevas de `users` se crean solas la primera vez; `migrations/0003_plan_interest.sql` es opcional. Sin D1 el flujo igual exige sesión, pero no recuerda el plan entre visitas.
 
+### Baja de suscripciones
+
+- **Cliente**: `/cuenta/` → "Cancelar suscripción" (con confirmación) → `POST /api/subscription/cancel`. Solo puede cancelar la suya: se comprueba que el mail de pago de la suscripción sea su mail verificado de Google.
+- **Administrador**: `/admin/` → "Dar de baja" en la fila del cliente (o en "Suscriptores sin cuenta") → `POST /api/admin/subscription`. Solo suscripciones de los 3 planes propios.
+- Las dos cortan los cobros siguientes en Mercado Pago (`PUT /preapproval/{id}` con `status: cancelled`). No borran la cuenta del sitio ni devuelven plata; la devolución (30 días) se resuelve a mano. Requieren `MP_ACCESS_TOKEN`.
+
 ### Variables (Cloudflare → Workers & Pages → broad-frog-1e4b → Settings → Variables and secrets → tipo **Secret**)
 
 | Nombre | Valor |
@@ -58,7 +64,7 @@ Google Cloud → Google Auth Platform → Clientes (Aplicación web):
 
 ### Pruebas
 
-`node --experimental-sqlite tests/auth.test.mjs && node --experimental-sqlite tests/admin.test.mjs && node --experimental-sqlite tests/checkout.test.mjs && node tests/worker.test.mjs`
+`node --experimental-sqlite tests/auth.test.mjs && node --experimental-sqlite tests/admin.test.mjs && node --experimental-sqlite tests/checkout.test.mjs && node --experimental-sqlite tests/baja.test.mjs && node tests/worker.test.mjs`
 
 ## Precio de fundador (interruptor)
 
