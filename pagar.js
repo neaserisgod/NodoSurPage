@@ -34,7 +34,7 @@
       old.hidden=true;$('r-price').textContent=fmt(p.precio);$('r-note').hidden=true;
     }
     $('r-alta-row').hidden=!p.alta;
-    var alta=$('alta');alta.hidden=!p.alta;alta.href=ALTA;
+    var alta=$('alta');alta.hidden=!p.alta;alta.href=ALTA;alta.textContent='Pagar el alta de $ 70.000';
     var b=$('pagar');
     if(on&&!p.promoHref){
       b.href=WA+encodeURIComponent('Hola, quiero el precio de fundador con el plan '+p.nombre+' ('+fmt(p.promo)+' por mes durante '+MESES+' meses).');
