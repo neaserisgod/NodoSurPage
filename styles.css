@@ -784,3 +784,33 @@ h1{font-size:clamp(38px,3.1vw + 23px,68px);line-height:1.06}
 .adm .tbl td:first-child{white-space:normal}
 .trust .chips li,.ph .chips li,.sys .chips li{font-size:14px;padding:8px 13px;line-height:1.3}
 @media (max-width:719px){.trust .chips li,.ph .chips li,.sys .chips li{font-size:13.5px;padding:7px 12px}.trust .chips,.sys .chips{gap:6px 8px}}
+
+/* Transición suave entre páginas (View Transitions entre documentos). Los navegadores sin soporte navegan como siempre. */
+@media (prefers-reduced-motion:no-preference){
+  @view-transition{navigation:auto}
+  header.px{view-transition-name:site-header}
+  ::view-transition-group(site-header){animation-duration:0s}
+  ::view-transition-old(root){animation:vt-out .16s var(--ease) both}
+  ::view-transition-new(root){animation:vt-in .34s var(--ease) both}
+}
+@keyframes vt-out{to{opacity:0}}
+@keyframes vt-in{from{opacity:0;transform:translateY(10px)}}
+
+/* Skeletons: se ven mientras cargan los datos de Mi cuenta y de Administración */
+.sk{position:relative;overflow:hidden;background:var(--surf-3);border-radius:10px}
+.sk::after{content:"";position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(255,255,255,.7),transparent);animation:sk-shimmer 1.4s ease-in-out infinite}
+@keyframes sk-shimmer{to{transform:translateX(100%)}}
+.sk-line{height:14px}.sk-w40{width:40%}.sk-w60{width:60%}.sk-w80{width:80%}
+.sk-title{height:24px;width:38%}
+.sk-circle{width:56px;height:56px;border-radius:50%;flex-shrink:0}
+.sk-btn{height:44px;width:min(180px,100%);border-radius:999px}
+.sk-kpi{height:82px;border-radius:20px}
+.sk-block{height:110px;border-radius:20px}
+.acc-in>*{animation:acc-in .42s var(--ease) both}
+.acc-in>:nth-child(2){animation-delay:.05s}.acc-in>:nth-child(3){animation-delay:.1s}.acc-in>:nth-child(n+4){animation-delay:.15s}
+@keyframes acc-in{from{opacity:0;transform:translateY(10px)}}
+.dlg[open]{animation:dlg-in .25s var(--ease)}
+.dlg[open]::backdrop{animation:dlg-fade .25s var(--ease)}
+@keyframes dlg-in{from{opacity:0;transform:translateY(12px) scale(.97)}}
+@keyframes dlg-fade{from{opacity:0}}
+@media (prefers-reduced-motion:reduce){.sk::after{animation:none}.acc-in>*,.dlg[open],.dlg[open]::backdrop{animation:none}}
