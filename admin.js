@@ -16,15 +16,25 @@
   function load() {
     return fetch('/api/admin/overview', { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } }).then(function (r) {
       if (r.status === 401) { location.replace('/ingresar/'); return null; }
-      if (r.status === 403) { root.textContent = ''; root.appendChild(el('p', 'acc-note', 'Esta sección es solo para el administrador.')); return null; }
-      if (r.status === 503) { root.textContent = ''; root.appendChild(el('p', 'acc-note', 'Falta conectar la base de datos (D1). Mirá el README.')); return null; }
+      if (r.status === 403) { root.removeAttribute('aria-busy'); root.textContent = ''; root.appendChild(el('p', 'acc-note', 'Esta sección es solo para el administrador.')); return null; }
+      if (r.status === 503) { root.removeAttribute('aria-busy'); root.textContent = ''; root.appendChild(el('p', 'acc-note', 'Falta conectar la base de datos (D1). Mirá el README.')); return null; }
       return r.json();
     });
   }
   function chip(text, cls) { return el('span', 'chip ' + cls, text); }
 
+  var first = true;
+  function done() {
+    root.removeAttribute('aria-busy');
+    if (!first) return;
+    first = false;
+    root.classList.add('acc-in');
+    setTimeout(function () { root.classList.remove('acc-in'); }, 800);
+  }
+
   function render(d) {
     root.textContent = '';
+    done();
     var k = d.kpis, cfg = d.config;
 
     var kp = el('div', 'kpis');

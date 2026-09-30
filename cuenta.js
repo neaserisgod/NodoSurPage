@@ -18,8 +18,18 @@
 
   function card(title) { var c = el('section', 'acc'); c.appendChild(el('h2', null, title)); return c; }
 
+  var first = true;
+  function done() {
+    root.removeAttribute('aria-busy');
+    if (!first) return;
+    first = false;
+    root.classList.add('acc-in');
+    setTimeout(function () { root.classList.remove('acc-in'); }, 800);
+  }
+
   function render(d) {
     root.textContent = '';
+    done();
     var u = d.user;
     var p = card('Tu cuenta');
     var row = el('div', 'acc-user');
@@ -119,6 +129,6 @@
   });
 
   load().then(function (d) { if (d) render(d); }).catch(function () {
-    root.textContent = ''; root.appendChild(el('p', 'acc-note', 'No pudimos cargar tu cuenta. Recargá la página.'));
+    root.removeAttribute('aria-busy'); root.textContent = ''; root.appendChild(el('p', 'acc-note', 'No pudimos cargar tu cuenta. Recargá la página.'));
   });
 })();
