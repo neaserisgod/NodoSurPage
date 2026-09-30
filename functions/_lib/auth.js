@@ -13,7 +13,7 @@ export async function currentUser(request, env) {
 export const clearedSession = () => {
   const h = new Headers({ 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' });
   h.append('Set-Cookie', cookie('ns_session', '', { maxAge: 0 }));
-  h.append('Set-Cookie', cookie('ns_hint', '', { maxAge: 0, httpOnly: false }));
+  for (const n of ['ns_hint', 'ns_sub', 'ns_plan']) h.append('Set-Cookie', cookie(n, '', { maxAge: 0, httpOnly: false }));
   return new Response(JSON.stringify({ error: 'no_session' }), { status: 401, headers: h });
 };
 

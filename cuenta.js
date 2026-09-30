@@ -59,15 +59,52 @@
       s.appendChild(el('p', 'acc-note', 'No pudimos consultar Mercado Pago en este momento. Probá de nuevo en unos minutos.'));
     } else if (!d.subscriptions || !d.subscriptions.length) {
       s.appendChild(el('p', 'acc-note', 'No encontramos una suscripción asociada a ' + u.email + '.'));
-      s.appendChild(el('p', 'acc-note', 'Si pagaste con otro mail de Mercado Pago, escribime y la vinculamos a mano. Si todavía no te suscribiste, podés hacerlo desde la página de pago.'));
+      s.appendChild(el('p', 'acc-note', 'Si ya pagaste con otro mail de Mercado Pago, escribime y la vinculamos a mano. Si todavía no te suscribiste, elegí tu sistema acá abajo.'));
       var acts = el('div', 'acc-actions');
-      var a1 = el('a', 'btn', 'Ir a pagar'); a1.href = '/pagar/'; acts.appendChild(a1);
       var a2 = el('a', 'btn btn-w', 'Escribime por WhatsApp'); a2.rel = 'noopener'; a2.href = WA + encodeURIComponent('Hola, ingresé con ' + u.email + ' y no veo mi suscripción'); acts.appendChild(a2);
       s.appendChild(acts);
     } else {
       d.subscriptions.forEach(function (sub) { s.appendChild(subCard(sub)); });
     }
     root.appendChild(s);
+    // Registrado sin suscripción: se le ofrecen los sistemas (o se sabe que no hay error de Mercado Pago).
+    if (!d.mpError && (!d.mpConfigured || !d.subscriptions || !d.subscriptions.length) && !d.isAdmin) root.appendChild(offerCard(d));
+  }
+
+  function offerCard(d) {
+    var P = window.NS_PLANES || {};
+    var c = card('Elegí tu sistema');
+    var chosen = d.intent && P[d.intent.plan] ? d.intent.plan : null;
+    var promo = Boolean(d.promoActive);
+    c.appendChild(el('p', 'acc-note', chosen
+      ? 'Elegiste ' + P[chosen].nombre + '. Seguí con el pago cuando quieras: los primeros 7 días son de prueba, sin costo.'
+      : 'Todavía no tenés un sistema. Elegí uno y probalo 7 días sin costo; después seguís por Mercado Pago y cancelás cuando quieras.'));
+    var grid = el('div', 'offer');
+    Object.keys(P).forEach(function (k) {
+      var p = P[k], on = k === chosen;
+      var it = el('div', 'offer-i' + (on ? ' sel' : ''));
+      if (on) it.appendChild(el('span', 'chip ok', 'Tu elección'));
+      it.appendChild(el('strong', null, p.nombre));
+      var pr = el('span', 'of-p');
+      var fund = on && promo && d.intent && d.intent.promo; // solo el plan que pidió el precio de fundador
+      if (fund) { pr.appendChild(el('s', null, money(p.precio))); pr.appendChild(document.createTextNode(money(p.promo))); }
+      else pr.appendChild(document.createTextNode(money(p.precio)));
+      pr.appendChild(document.createTextNode(' /mes'));
+      it.appendChild(pr);
+      it.appendChild(el('small', null, p.desc));
+      var a = el('a', 'btn' + (on ? '' : ' btn-w'), on ? 'Continuar al pago' : 'Probar 7 días gratis');
+      a.href = '/api/checkout?plan=' + k + (fund ? '&promo=1' : '');
+      it.appendChild(a);
+      grid.appendChild(it);
+    });
+    c.appendChild(grid);
+    if (promo && !(d.intent && d.intent.promo)) {
+      var f = el('p', 'acc-note', 'Precio de fundador: 30 % menos durante 6 meses para los primeros 5 comercios. Podés pedirlo al elegir el plan en ');
+      var l = el('a', null, 'la página de pago'); l.href = '/pagar/'; f.appendChild(l); f.appendChild(document.createTextNode('.'));
+      c.appendChild(f);
+    }
+    c.appendChild(el('p', 'acc-note', 'En Mercado Pago usá el mismo mail de tu cuenta de Google (' + d.user.email + ') para ver tu suscripción acá.'));
+    return c;
   }
 
   function subCard(sub) {

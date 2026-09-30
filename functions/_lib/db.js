@@ -40,3 +40,18 @@ export async function setPromo(env, on, t) {
     "INSERT INTO settings (key, value, updated_at) VALUES ('promo_fundador', ?1, ?2) ON CONFLICT(key) DO UPDATE SET value = ?1, updated_at = ?2"
   ).bind(on ? 'on' : 'off', t).run();
 }
+
+// Plan que el usuario eligió (para recordarlo entre el registro y el pago, y para el seguimiento en el panel).
+// Las columnas se agregan solas la primera vez si todavía no se corrió migrations/0003_plan_interest.sql.
+export async function setIntent(env, userId, plan, promo, t) {
+  const run = () => env.DB.prepare('UPDATE users SET plan_interest = ?2, promo_interest = ?3, plan_chosen_at = ?4 WHERE id = ?1')
+    .bind(userId, plan, promo ? 1 : 0, t).run();
+  try { return await run(); }
+  catch (e) {
+    if (!/no such column|has no column/i.test(String(e && e.message))) throw e;
+    for (const sql of ['ALTER TABLE users ADD COLUMN plan_interest TEXT', 'ALTER TABLE users ADD COLUMN promo_interest INTEGER NOT NULL DEFAULT 0', 'ALTER TABLE users ADD COLUMN plan_chosen_at INTEGER']) {
+      try { await env.DB.prepare(sql).run(); } catch (err) { if (!/duplicate column/i.test(String(err && err.message))) throw err; }
+    }
+    return run();
+  }
+}
