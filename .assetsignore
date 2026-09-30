@@ -5,6 +5,7 @@
 node_modules
 functions
 tests
+scripts
 migrations
 worker.js
 wrangler.jsonc
