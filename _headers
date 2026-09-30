@@ -30,6 +30,9 @@
 /planes.js
   Cache-Control: public, max-age=0, must-revalidate
 
+/descargar.js
+  Cache-Control: public, max-age=0, must-revalidate
+
 /pagar.js
   Cache-Control: public, max-age=0, must-revalidate
 

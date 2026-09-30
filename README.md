@@ -34,6 +34,22 @@ Las columnas nuevas de `users` se crean solas la primera vez; `migrations/0003_p
 - **Administrador**: `/admin/` → "Dar de baja" en la fila del cliente (o en "Suscriptores sin cuenta") → `POST /api/admin/subscription`. Solo suscripciones de los 3 planes propios.
 - Las dos cortan los cobros siguientes en Mercado Pago (`PUT /preapproval/{id}` con `status: cancelled`). No borran la cuenta del sitio ni devuelven plata; la devolución (30 días) se resuelve a mano. Requieren `MP_ACCESS_TOKEN`.
 
+### Descargas y actualizaciones del sistema POS (Flutter)
+
+Los instaladores viven en **R2** (bucket privado `nodosur-releases`, binding `RELEASES`); los datos de cada versión, en **D1** (`releases` y `downloads`, se crean solas al publicar la primera). El bucket hay que crearlo antes en el panel de Cloudflare → R2, si no el deploy falla.
+
+- **Instalador** (`/descargar/`, `GET /api/download?platform=windows|macos|linux|android`): exige sesión y suscripción `authorized` en Mercado Pago; administradores y cuentas eximidas entran siempre y son las únicas que ven el canal `beta`. Si Mercado Pago no responde, no habilita. Solo entrega la versión más nueva **liberada al 100 %**. Se cuenta cada descarga (no las continuaciones).
+- **Actualizaciones** (públicas; los archivos van firmados, la app verifica la firma):
+  - `GET /api/update/appcast.xml?platform=windows|macos|linux&channel=stable&cid=<id de instalación>`: feed Sparkle/WinSparkle para el paquete `auto_updater` de Flutter. `sparkle:version` sale como `nombre.build` (`1.0.0+2098` → `1.0.0.2098`), que es como Flutter versiona el `.exe` en Windows.
+  - `GET /api/update/latest.json?platform=android&version=1.0.0%2B2097&cid=…`: JSON para cualquier otro actualizador (`{update:false}` o `{update:true, version, url, sha256, size, signature, notes, mandatory}`).
+  - `cid` es un id aleatorio guardado por la instalación: reparte el despliegue gradual de forma estable. Sin `cid` solo se ofrece lo liberado al 100 %.
+- **Versiones**: `1.0.0+2098` (nombre + build de `pubspec.yaml`); dentro del mismo nombre gana el build más alto.
+- **Publicar** (desde la compu donde se compila): `RELEASE_TOKEN=… node scripts/publicar-release.mjs --file LaPlazoleta-Setup.exe --platform windows --version 1.0.0+2099 --notes "…" --signature <EdDSA> --rollout 10`. Sube a R2 con `wrangler` y registra la versión; `--dry-run` muestra qué haría sin tocar nada. Conviene publicar al 10 % y subir el porcentaje desde `/admin/` → *Versiones*.
+- **Volver atrás**: en `/admin/` → *Versiones*, **Retirar** la versión mala (pasa a ser la vigente la anterior) o **Bloquear** (deja de entregarse por completo).
+- Secreto nuevo: `RELEASE_TOKEN` (Secret, 24+ caracteres) para publicar desde scripts o CI sin sesión de Google.
+- Los archivos no se suben a través del sitio (un Worker acepta hasta 100 MB por pedido en el plan gratis): se suben con `wrangler` (hasta 5 GB por archivo).
+- Cosas que no resuelve el sitio: firmar el `.exe` (sin firma, Windows SmartScreen avisa), generar la firma EdDSA de cada actualización, y firmar el APK con una llave de publicación propia.
+
 ### Variables (Cloudflare → Workers & Pages → broad-frog-1e4b → Settings → Variables and secrets → tipo **Secret**)
 
 | Nombre | Valor |
@@ -42,6 +58,7 @@ Las columnas nuevas de `users` se crean solas la primera vez; `migrations/0003_p
 | `GOOGLE_CLIENT_SECRET` | Client secret del mismo cliente |
 | `SESSION_SECRET` | Texto aleatorio de 48+ caracteres |
 | `MP_ACCESS_TOKEN` | Access token de producción de la app de Mercado Pago |
+| `RELEASE_TOKEN` | (para publicar versiones del POS desde scripts/CI) texto aleatorio de 24+ caracteres |
 | `ADMIN_EMAILS` | (opcional) mails admin separados por coma; por defecto `gtalovergamer@gmail.com` |
 | `AUTO_DELETE` | (opcional) `on` habilita el borrado real; por defecto apagado |
 | `RESEND_API_KEY`, `MAIL_FROM` | (opcionales) para enviar el aviso previo al borrado |
@@ -64,7 +81,7 @@ Google Cloud → Google Auth Platform → Clientes (Aplicación web):
 
 ### Pruebas
 
-`node --experimental-sqlite tests/auth.test.mjs && node --experimental-sqlite tests/admin.test.mjs && node --experimental-sqlite tests/checkout.test.mjs && node --experimental-sqlite tests/baja.test.mjs && node tests/worker.test.mjs`
+`node --experimental-sqlite tests/auth.test.mjs && node --experimental-sqlite tests/admin.test.mjs && node --experimental-sqlite tests/checkout.test.mjs && node --experimental-sqlite tests/baja.test.mjs && node --experimental-sqlite tests/releases.test.mjs && node tests/worker.test.mjs`
 
 ## Precio de fundador (interruptor)
 

@@ -67,6 +67,12 @@
       d.subscriptions.forEach(function (sub) { s.appendChild(subCard(sub)); });
     }
     root.appendChild(s);
+    if (d.subscriptions && d.subscriptions.some(function (x) { return x.status === 'authorized'; })) {
+      var dl = card('Descargá el sistema');
+      dl.appendChild(el('p', 'acc-note', 'Instalador para tu compu y la app del celular, siempre en su última versión.'));
+      var da = el('a', 'btn', 'Ir a las descargas'); da.href = '/descargar/'; da.style.alignSelf = 'flex-start'; dl.appendChild(da);
+      root.appendChild(dl);
+    }
     // Registrado sin suscripción: se le ofrecen los sistemas (o se sabe que no hay error de Mercado Pago).
     if (!d.mpError && (!d.mpConfigured || !d.subscriptions || !d.subscriptions.length) && !d.isAdmin) root.appendChild(offerCard(d));
   }

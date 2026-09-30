@@ -10,6 +10,12 @@ import * as adminUser from './functions/api/admin/user.js';
 import * as adminSubscription from './functions/api/admin/subscription.js';
 import * as adminSweep from './functions/api/admin/sweep.js';
 import * as checkout from './functions/api/checkout.js';
+import * as download from './functions/api/download.js';
+import * as downloads from './functions/api/downloads.js';
+import * as updLatest from './functions/api/update/latest.js';
+import * as updAppcast from './functions/api/update/appcast.js';
+import * as updFile from './functions/api/update/file.js';
+import * as adminReleases from './functions/api/admin/releases.js';
 import * as promo from './functions/api/promo.js';
 import * as adminPromo from './functions/api/admin/promo.js';
 import { sweep } from './functions/_lib/sweep.js';
@@ -26,6 +32,14 @@ const ROUTES = {
   'POST /api/admin/sweep': adminSweep.onRequestPost,
   'POST /api/admin/subscription': adminSubscription.onRequestPost,
   'GET /api/checkout': checkout.onRequestGet,
+  'GET /api/download': download.onRequestGet,
+  'GET /api/downloads': downloads.onRequestGet,
+  'GET /api/update/latest.json': updLatest.onRequestGet,
+  'GET /api/update/appcast.xml': updAppcast.onRequestGet,
+  'GET /api/update/file': updFile.onRequest,
+  'HEAD /api/update/file': updFile.onRequest,
+  'GET /api/admin/releases': adminReleases.onRequestGet,
+  'POST /api/admin/releases': adminReleases.onRequestPost,
   'GET /api/promo': promo.onRequestGet,
   'POST /api/admin/promo': adminPromo.onRequestPost,
 };

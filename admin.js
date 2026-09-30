@@ -123,6 +123,8 @@
       s2.appendChild(ul); root.appendChild(s2);
     }
 
+    versiones(root);
+
     var s3 = el('section', 'acc'); s3.appendChild(el('h2', null, 'Limpieza automática'));
     var r = d.rules;
     s3.appendChild(el('p', 'acc-note', 'Se avisa y, a los ' + r.noticeDays + ' días, se elimina la cuenta que no tenga suscripción vigente, lleve ' + r.inactiveDays + ' días sin uso y tenga más de ' + r.graceDays + ' días de antigüedad. Nunca se elimina al administrador ni a los eximidos. Si el aviso no se pudo enviar, no se elimina.'));
@@ -141,6 +143,46 @@
       });
     });
     root.appendChild(s3);
+  }
+
+  // Versiones del sistema POS: estado, despliegue gradual, bloqueo y retiro (rollback). Se publican con scripts/publicar-release.mjs.
+  var PLAT = { windows: 'Windows', macos: 'macOS', linux: 'Linux', android: 'Android' };
+  function versiones(host) {
+    var sec = el('section', 'acc'); sec.appendChild(el('h2', null, 'Versiones del sistema'));
+    var body = el('div'); body.appendChild(el('div', 'sk sk-block')); sec.appendChild(body); host.appendChild(sec);
+    fetch('/api/admin/releases', { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (d) {
+      body.textContent = '';
+      if (!d) { body.appendChild(el('p', 'acc-note', 'No se pudieron cargar las versiones.')); return; }
+      if (!d.r2) body.appendChild(el('p', 'login-err', 'Falta el bucket de R2 «nodosur-releases» (ver README, «Descargas y actualizaciones»).'));
+      if (!d.releases.length) { body.appendChild(el('p', 'acc-note', 'Todavía no se publicó ninguna versión. Publicá la primera con scripts/publicar-release.mjs (ver README).')); return; }
+      var wrap = el('div', 'tbl adm-tbl'), t = el('table'), hr = el('tr');
+      ['Versión', 'Canal', 'Plataforma', 'Peso', 'Estado', 'Liberada a', 'Descargas', ''].forEach(function (h) { hr.appendChild(el('th', null, h)); });
+      var th = el('thead'); th.appendChild(hr); t.appendChild(th);
+      var tb = el('tbody');
+      d.releases.forEach(function (r) {
+        var tr = el('tr');
+        tr.appendChild(el('td', null, r.version));
+        tr.appendChild(el('td', null, r.channel === 'beta' ? 'Beta' : 'Estable'));
+        tr.appendChild(el('td', null, PLAT[r.platform] || r.platform));
+        tr.appendChild(el('td', null, (r.size / 1048576).toFixed(1).replace('.', ',') + ' MB'));
+        var ce = el('td');
+        if (r.blocked) ce.appendChild(chip('Bloqueada', 'bad')); else if (!r.active) ce.appendChild(chip('Retirada', 'wait')); else ce.appendChild(chip('Publicada', 'ok'));
+        if (r.mandatory) ce.appendChild(document.createTextNode(' Obligatoria'));
+        tr.appendChild(ce);
+        var cr = el('td'), inp = el('input'); inp.type = 'number'; inp.min = 0; inp.max = 100; inp.value = r.rollout; inp.style.width = '64px'; inp.setAttribute('aria-label', 'Porcentaje liberado');
+        var sv = el('button', 'lnk', '% Guardar'); sv.type = 'button';
+        sv.addEventListener('click', function () { post('/api/admin/releases', { action: 'rollout', id: r.id, rollout: parseInt(inp.value, 10) }).then(refresh); });
+        cr.appendChild(inp); cr.appendChild(document.createTextNode(' ')); cr.appendChild(sv); tr.appendChild(cr);
+        tr.appendChild(el('td', null, String(r.downloads)));
+        var ca = el('td', 'acts');
+        var act = function (label, action, cls) { var b = el('button', 'lnk' + (cls ? ' ' + cls : ''), label); b.type = 'button'; b.addEventListener('click', function () { post('/api/admin/releases', { action: action, id: r.id }).then(refresh); }); ca.appendChild(b); };
+        if (r.blocked) act('Desbloquear', 'unblock'); else act('Bloquear', 'block', 'danger');
+        if (r.active) act('Retirar', 'retire'); else act('Restaurar', 'restore');
+        tr.appendChild(ca); tb.appendChild(tr);
+      });
+      t.appendChild(tb); wrap.appendChild(t); body.appendChild(wrap);
+      body.appendChild(el('p', 'acc-note', 'Retirar una versión es volver atrás: pasa a ser la vigente la anterior. Bloquear la deja de entregar por completo.'));
+    }).catch(function () { body.textContent = ''; body.appendChild(el('p', 'acc-note', 'No se pudieron cargar las versiones.')); });
   }
 
   // Baja de una suscripción (corta los cobros en Mercado Pago). Pide confirmación.

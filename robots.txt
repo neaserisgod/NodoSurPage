@@ -5,5 +5,6 @@ Disallow: /api/
 Disallow: /cuenta/
 Disallow: /admin/
 Disallow: /ingresar/
+Disallow: /descargar/
 
 Sitemap: https://horsepos.com/sitemap.xml
