@@ -10,4 +10,5 @@
 - [Sistema de ventas para kioscos](https://horsepos.com/sistema-de-ventas-para-kioscos/): cobrar rápido, efectivo y Mercado Pago, cierre de caja.
 - [Sistema para almacén y control de stock](https://horsepos.com/sistema-para-almacen-control-de-stock/): stock, proveedores y cambios de precio.
 - [Sistema POS en Bariloche](https://horsepos.com/sistema-pos-bariloche/): demo en tu local o por videollamada, instalación y soporte a distancia.
+- Guías: [cierre de caja](https://horsepos.com/como-hacer-cierre-de-caja-kiosco/), [margen de ganancia](https://horsepos.com/como-calcular-margen-de-ganancia-almacen/) y [control de stock](https://horsepos.com/como-controlar-el-stock-de-un-kiosco/) para kioscos y almacenes.
 - Paquete Sistema + Bot: $ 60.000/mes + alta $ 70.000 (por el bot). Se paga por Mercado Pago. Prueba de 7 días. Factura electrónica en desarrollo.
