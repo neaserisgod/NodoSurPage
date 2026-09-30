@@ -24,3 +24,19 @@ export const clearNotice = (env, id) => env.DB.prepare('UPDATE users SET notice_
 export const markNotice = (env, id, sentAt, deleteAfter) =>
   env.DB.prepare('UPDATE users SET notice_sent_at = ?2, delete_after = ?3 WHERE id = ?1').bind(id, sentAt, deleteAfter).run();
 export const deleteUser = (env, id) => env.DB.prepare('DELETE FROM users WHERE id = ?1').bind(id).run();
+
+// Ajustes del sitio (clave/valor). La tabla se crea sola la primera vez que el administrador cambia algo.
+// Promo de fundador: activa por defecto; si no hay base o falla la lectura, se considera activa.
+export async function getPromo(env) {
+  if (!hasDB(env)) return true;
+  try {
+    const r = await env.DB.prepare("SELECT value FROM settings WHERE key = 'promo_fundador'").first();
+    return r ? r.value !== 'off' : true;
+  } catch { return true; }
+}
+export async function setPromo(env, on, t) {
+  await env.DB.prepare('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at INTEGER NOT NULL)').run();
+  await env.DB.prepare(
+    "INSERT INTO settings (key, value, updated_at) VALUES ('promo_fundador', ?1, ?2) ON CONFLICT(key) DO UPDATE SET value = ?1, updated_at = ?2"
+  ).bind(on ? 'on' : 'off', t).run();
+}

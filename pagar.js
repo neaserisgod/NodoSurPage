@@ -1,8 +1,8 @@
 /* Pasos de pago: plan → precio de fundador → resumen con el precio final. */
 (function(){
   'use strict';
-  /* Para pausar la promo poné CUPOS en 0; para cambiar los lugares, el número. */
-  var CUPOS=5,MESES=6,ALTA='https://mpago.la/2UnGAqA';
+  /* La promo se activa o desactiva desde el panel de administración (/api/promo). */
+  var MESES=6,ALTA='https://mpago.la/2UnGAqA';
   var WA='https://wa.me/5492944796044?text=';
   /* promoHref: link de la suscripción con el precio de fundador (vacío = se pide por WhatsApp). */
   var PLANES={
@@ -19,18 +19,17 @@
   var radios=[].slice.call(d.querySelectorAll('input[name=plan]'));
   var q=new URLSearchParams(location.search);
 
-  if(CUPOS<=0){promo.disabled=true;promo.checked=false;$('cupos').textContent='Los lugares de fundador ya se completaron.'}
-  else $('cupos').textContent='Quedan '+CUPOS+' lugares.';
+  var activa=true;
 
   function render(){
-    var k=(radios.filter(function(r){return r.checked})[0]||{}).value||'pos',p=PLANES[k],on=promo.checked&&CUPOS>0;
+    var k=(radios.filter(function(r){return r.checked})[0]||{}).value||'pos',p=PLANES[k],on=promo.checked&&activa;
     $('r-plan').textContent=p.nombre;
     var old=$('r-old');
     if(on){
       old.hidden=false;old.textContent=fmt(p.precio);
       $('r-price').textContent=fmt(p.promo);
       var n=$('r-note');n.hidden=false;
-      n.textContent='Precio de fundador: '+fmt(p.promo)+' por mes durante '+MESES+' meses. Después, '+fmt(p.precio)+' por mes.';
+      n.textContent='Precio de fundador: '+fmt(p.promo)+' por mes durante '+MESES+' meses. Antes de que termine te aviso y pasás al plan normal de '+fmt(p.precio)+' por mes.';
     }else{
       old.hidden=true;$('r-price').textContent=fmt(p.precio);$('r-note').hidden=true;
     }
@@ -50,6 +49,12 @@
   radios.forEach(function(r){r.addEventListener('change',render)});
   promo.addEventListener('change',render);
   var pre=q.get('plan');if(pre&&PLANES[pre]){radios.forEach(function(r){r.checked=r.value===pre})}
-  if(q.get('promo')==='1'&&CUPOS>0)promo.checked=true;
+  if(q.get('promo')==='1')promo.checked=true;
   render();
+  fetch('/api/promo',{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(j){
+    if(!j||j.activa!==false)return;
+    activa=false;promo.checked=false;promo.disabled=true;
+    $('cupos').textContent='Por ahora el precio de fundador no está disponible.';
+    render();
+  }).catch(function(){});
 })();

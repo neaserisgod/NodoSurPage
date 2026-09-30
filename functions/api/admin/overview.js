@@ -1,6 +1,6 @@
 import { json, now, isAdminEmail } from '../../_lib/util.js';
 import { requireAdmin } from '../../_lib/auth.js';
-import { hasDB, listUsers } from '../../_lib/db.js';
+import { hasDB, listUsers, getPromo } from '../../_lib/db.js';
 import { listAllSubscribers } from '../../_lib/mp.js';
 import { notifierReady } from '../../_lib/notify.js';
 import { RULES } from '../../_lib/sweep.js';
@@ -51,5 +51,6 @@ export async function onRequestGet({ request, env }) {
     mpStale,
     mpDetail,
     rules: RULES,
+    promo: { activa: await getPromo(env) },
   });
 }

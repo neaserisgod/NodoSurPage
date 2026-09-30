@@ -8,6 +8,8 @@ import * as cancel from './functions/api/subscription/cancel.js';
 import * as adminOverview from './functions/api/admin/overview.js';
 import * as adminUser from './functions/api/admin/user.js';
 import * as adminSweep from './functions/api/admin/sweep.js';
+import * as promo from './functions/api/promo.js';
+import * as adminPromo from './functions/api/admin/promo.js';
 import { sweep } from './functions/_lib/sweep.js';
 import { hasDB } from './functions/_lib/db.js';
 
@@ -20,6 +22,8 @@ const ROUTES = {
   'GET /api/admin/overview': adminOverview.onRequestGet,
   'POST /api/admin/user': adminUser.onRequestPost,
   'POST /api/admin/sweep': adminSweep.onRequestPost,
+  'GET /api/promo': promo.onRequestGet,
+  'POST /api/admin/promo': adminPromo.onRequestPost,
 };
 const NO_STORE = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' };
 

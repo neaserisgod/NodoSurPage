@@ -8,6 +8,8 @@ import * as me from '../functions/api/me.js';
 import * as overview from '../functions/api/admin/overview.js';
 import * as adminUser from '../functions/api/admin/user.js';
 import * as adminSweep from '../functions/api/admin/sweep.js';
+import * as promoPub from '../functions/api/promo.js';
+import * as adminPromo from '../functions/api/admin/promo.js';
 import { sweep } from '../functions/_lib/sweep.js';
 import { clearMpCache } from '../functions/_lib/mp.js';
 
@@ -183,5 +185,22 @@ await t('admin/sweep: solo simula, nunca aplica', async () => {
   const r = await adminSweep.onRequestPost({ request: req(await sess(env, 'gtalovergamer@gmail.com', 'a'), 'POST', '{}'), env }); const d = await r.json();
   assert.equal(d.actions[0].action, 'delete'); assert.equal(d.actions[0].applied, false); assert.ok(row(env, 'x@x.com')); assert.equal(resendCalls.length, 0);
   assert.equal((await adminSweep.onRequestPost({ request: req(await sess(env, 'x@x.com', 'x'), 'POST', '{}'), env })).status, 403);
+});
+await t('promo de fundador: activa por defecto; solo el admin la apaga y se refleja en la API pública', async () => {
+  const env = setup(); const t0 = nowS();
+  addUser(env, { sub: 'a', email: 'gtalovergamer@gmail.com', created: t0, lastSeen: t0 });
+  addUser(env, { sub: 'c', email: 'cli@x.com', created: t0, lastSeen: t0 });
+  assert.equal((await (await promoPub.onRequestGet({ env })).json()).activa, true);
+  const off = (c, b = '{"activa":false}', extra) => adminPromo.onRequestPost({ request: req(c, 'POST', b, extra), env });
+  assert.equal((await off(await sess(env, 'cli@x.com', 'c'))).status, 403);            // un cliente no puede
+  assert.equal((await off(await sess(env, 'gtalovergamer@gmail.com', 'a'), '{"activa":"no"}')).status, 400);
+  assert.equal((await off(await sess(env, 'gtalovergamer@gmail.com', 'a'), '{"activa":false}', { 'X-Requested-With': '' })).status, 403); // sin cabecera anti-CSRF
+  assert.equal((await off(await sess(env, 'gtalovergamer@gmail.com', 'a'))).status, 200);
+  assert.equal((await (await promoPub.onRequestGet({ env })).json()).activa, false);
+  const ov = await (await overview.onRequestGet({ request: req(await sess(env, 'gtalovergamer@gmail.com', 'a')), env })).json();
+  assert.equal(ov.promo.activa, false);
+  await off(await sess(env, 'gtalovergamer@gmail.com', 'a'), '{"activa":true}');
+  assert.equal((await (await promoPub.onRequestGet({ env })).json()).activa, true);
+  assert.equal((await (await promoPub.onRequestGet({ env: { ...env, DB: undefined } })).json()).activa, true); // sin base: activa
 });
 console.log(`\n${pass} pruebas OK (limpieza y admin)`);
