@@ -183,4 +183,17 @@ await t('sin ninguna versión publicada ni tablas: todo responde vacío sin fall
   assert.equal((await file.onRequest({ request: req('/api/update/file?id=1'), env })).status, 404);
 });
 
+await t('tipo de firma: dsa (WinSparkle 0.8 / auto_updater 1.0) o ed, en el appcast y en el JSON', async () => {
+  const env = mkEnv();
+  env.RELEASES.put('stable/1.0.0+1/Setup-1.0.0+1.exe', 'a'); env.RELEASES.put('stable/1.0.0+2/Setup-1.0.0+2.exe', 'b');
+  assert.equal((await ciPost(env, { ...rel('1.0.0+1'), signature: 'DSA==', signatureType: 'rsa' })).status, 400);
+  assert.equal((await ciPost(env, { ...rel('1.0.0+1'), signature: 'DSA==', signatureType: 'dsa' })).status, 200);
+  const feed = async () => (await (await appcast.onRequestGet({ request: req('/api/update/appcast.xml?platform=windows'), env })).text());
+  let x = await feed(); assert.match(x, /sparkle:dsaSignature="DSA=="/); assert.ok(!x.includes('edSignature'));
+  assert.equal((await (await latest.onRequestGet({ request: req('/api/update/latest.json?platform=windows'), env })).json()).signatureType, 'dsa');
+  assert.equal((await ciPost(env, { ...rel('1.0.0+2'), signature: 'ED==' })).status, 200); // sin tipo: EdDSA
+  x = await feed(); assert.match(x, /sparkle:edSignature="ED=="/); assert.ok(!x.includes('dsaSignature'));
+  assert.equal((await (await ciGet(env)).json()).releases.map((r) => r.signatureType).sort().join(), 'dsa,ed');
+});
+
 console.log(`\n${pass} pruebas OK (versiones y descargas)`);

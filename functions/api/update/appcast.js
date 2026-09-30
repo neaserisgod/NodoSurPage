@@ -22,6 +22,6 @@ export async function onRequestGet({ request, env }) {
     + `<sparkle:version>${esc(sparkleVersion(r.version))}</sparkle:version><sparkle:shortVersionString>${esc(String(r.version).split('+')[0])}</sparkle:shortVersionString>`
     + (r.mandatory ? '<sparkle:criticalUpdate></sparkle:criticalUpdate>' : '')
     + (r.notes ? `<description><![CDATA[${String(r.notes).replace(/]]>/g, ']]]]><![CDATA[>')}]]></description>` : '')
-    + `<enclosure url="${esc(`${siteUrl(env)}/api/update/file?id=${r.id}`)}" length="${r.size}" type="application/octet-stream" sparkle:os="${os}"${r.signature ? ` sparkle:edSignature="${esc(r.signature)}"` : ''}/></item>`;
+    + `<enclosure url="${esc(`${siteUrl(env)}/api/update/file?id=${r.id}`)}" length="${r.size}" type="application/octet-stream" sparkle:os="${os}"${r.signature ? ` sparkle:${r.sig_type === 'dsa' ? 'dsaSignature' : 'edSignature'}="${esc(r.signature)}"` : ''}/></item>`;
   return xml(head + item + '</channel></rss>');
 }

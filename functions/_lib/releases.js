@@ -41,7 +41,13 @@ const DDL = [
   `CREATE TABLE IF NOT EXISTS downloads (id INTEGER PRIMARY KEY AUTOINCREMENT, user_id INTEGER NOT NULL, release_id INTEGER NOT NULL, at INTEGER NOT NULL)`,
   `CREATE INDEX IF NOT EXISTS idx_downloads_release ON downloads(release_id)`,
 ];
-export async function ensureTables(env) { for (const sql of DDL) await env.DB.prepare(sql).run(); }
+export async function ensureTables(env) {
+  for (const sql of DDL) await env.DB.prepare(sql).run();
+  // Tipo de firma de la actualización: 'ed' (EdDSA, WinSparkle 0.9+/Sparkle) o 'dsa' (WinSparkle 0.8, el que trae auto_updater 1.0).
+  try { await env.DB.prepare("ALTER TABLE releases ADD COLUMN sig_type TEXT NOT NULL DEFAULT 'ed'").run(); }
+  catch (e) { if (!/duplicate column/i.test(String(e && e.message))) throw e; }
+}
+export const SIG_TYPES = ['ed', 'dsa'];
 
 // Lecturas: si todavía no existe la tabla (no se publicó nada), devuelven vacío en lugar de fallar.
 const safe = async (fn, fallback) => { try { return await fn(); } catch (e) { if (/no such table/i.test(String(e && e.message))) return fallback; throw e; } };
@@ -77,9 +83,9 @@ export async function latestForUpdate(env, platform, channel, current, cid) {
 export async function addRelease(env, r, t) {
   await ensureTables(env);
   return env.DB.prepare(
-    `INSERT INTO releases (channel, platform, version, file_key, size, sha256, signature, notes, mandatory, rollout, published_at)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11)`
-  ).bind(r.channel, r.platform, r.version, r.file_key, r.size, r.sha256, r.signature || null, r.notes || null, r.mandatory ? 1 : 0, r.rollout, t).run();
+    `INSERT INTO releases (channel, platform, version, file_key, size, sha256, signature, notes, mandatory, rollout, published_at, sig_type)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`
+  ).bind(r.channel, r.platform, r.version, r.file_key, r.size, r.sha256, r.signature || null, r.notes || null, r.mandatory ? 1 : 0, r.rollout, t, r.sigType || 'ed').run();
 }
 export const setRollout = (env, id, v) => env.DB.prepare('UPDATE releases SET rollout = ?2 WHERE id = ?1').bind(id, v).run();
 export const setBlocked = (env, id, v) => env.DB.prepare('UPDATE releases SET blocked = ?2 WHERE id = ?1').bind(id, v ? 1 : 0).run();

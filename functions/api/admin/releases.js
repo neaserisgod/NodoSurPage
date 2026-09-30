@@ -1,7 +1,7 @@
 import { json, now, sameOriginPost } from '../../_lib/util.js';
 import { requireAdmin } from '../../_lib/auth.js';
 import { hasDB } from '../../_lib/db.js';
-import { PLATFORMS, CHANNELS, hasR2, validVersion, validKey, listReleases, getRelease, addRelease, setRollout, setBlocked, setActive } from '../../_lib/releases.js';
+import { PLATFORMS, CHANNELS, SIG_TYPES, hasR2, validVersion, validKey, listReleases, getRelease, addRelease, setRollout, setBlocked, setActive } from '../../_lib/releases.js';
 
 // Comparación en tiempo constante del token de publicación (para el flujo automático de CI).
 function tokenOk(request, env) {
@@ -22,7 +22,7 @@ export async function onRequestGet({ request, env }) {
   if (!hasDB(env)) return json({ error: 'no_db' }, 503);
   return json({ r2: hasR2(env), releases: (await listReleases(env)).map(pub) });
 }
-const pub = (r) => ({ id: r.id, channel: r.channel, platform: r.platform, version: r.version, size: r.size, sha256: r.sha256, signed: Boolean(r.signature),
+const pub = (r) => ({ id: r.id, channel: r.channel, platform: r.platform, version: r.version, size: r.size, sha256: r.sha256, signed: Boolean(r.signature), signatureType: r.sig_type || 'ed',
   notes: r.notes, mandatory: Boolean(r.mandatory), rollout: r.rollout, blocked: Boolean(r.blocked), active: Boolean(r.active), publishedAt: r.published_at, downloads: r.downloads || 0 });
 
 // Publicar una versión (ya subida a R2) o cambiar su estado. Sesión de administrador o RELEASE_TOKEN (CI).
@@ -44,12 +44,13 @@ export async function onRequestPost({ request, env }) {
         || !b.key.startsWith(`${b.channel}/${b.version}/`) || !/^[a-f0-9]{64}$/.test(String(b.sha256 || ''))
         || !Number.isInteger(rollout) || rollout < 0 || rollout > 100
         || (b.signature != null && (typeof b.signature !== 'string' || b.signature.length > 400))
+        || (b.signatureType != null && !SIG_TYPES.includes(b.signatureType))
         || (b.notes != null && (typeof b.notes !== 'string' || b.notes.length > 4000))) return json({ error: 'bad_request' }, 400);
     const head = await env.RELEASES.head(b.key); // el archivo tiene que estar realmente en R2
     if (!head) return json({ error: 'file_missing' }, 422);
     try {
       await addRelease(env, { channel: b.channel, platform: b.platform, version: b.version, file_key: b.key, size: head.size, sha256: b.sha256,
-        signature: b.signature, notes: b.notes, mandatory: b.mandatory === true, rollout }, now());
+        signature: b.signature, sigType: b.signatureType, notes: b.notes, mandatory: b.mandatory === true, rollout }, now());
     } catch (e) { if (/UNIQUE/i.test(String(e && e.message))) return json({ error: 'exists' }, 409); throw e; }
     return json({ ok: true, size: head.size });
   }
