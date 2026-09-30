@@ -141,4 +141,20 @@
       if(j&&j.activa===false)fs.forEach(function(f){f.hidden=true});
     }).catch(function(){});
   })();
+
+  /* compartir: botón nativo del celular (si existe) y copiar el link */
+  (function(){
+    var box=$('.share');if(!box)return;
+    var live=$('[role=status]',box),nat=$('.sh-native',box),cp=$('.sh-copy',box);
+    var say=function(t){if(live)live.textContent=t};
+    if(nat&&navigator.share){nat.hidden=false;nat.addEventListener('click',function(){
+      navigator.share({title:nat.dataset.title,url:nat.dataset.url}).catch(function(){});
+    })}
+    if(cp)cp.addEventListener('click',function(){
+      var u=cp.dataset.url,old=cp.textContent;
+      var ok=function(){cp.textContent='¡Link copiado!';say('Link copiado');setTimeout(function(){cp.textContent=old},2000)};
+      if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(u).then(ok).catch(function(){prompt('Copiá el link:',u)})}
+      else prompt('Copiá el link:',u);
+    });
+  })();
 })();
