@@ -1,12 +1,17 @@
+import { isPlan } from '../../_lib/plans.js';
 import { randomHex, sha256b64u, sign, cookie, now, siteUrl, json, missingConfig } from '../../_lib/util.js';
 
 // Inicia el login: guarda state/nonce/PKCE en una cookie firmada y redirige a Google.
-export async function onRequestGet({ env }) {
+export async function onRequestGet({ request, env }) {
   const missing = missingConfig(env, ['GOOGLE_CLIENT_ID', 'GOOGLE_CLIENT_SECRET', 'SESSION_SECRET']);
   if (missing.length) return json({ error: 'login_no_configurado', faltan: missing }, 500);
   const site = siteUrl(env);
   const state = randomHex(16), nonce = randomHex(16), verifier = randomHex(32);
-  const flow = await sign({ state, nonce, verifier, exp: now() + 600 }, env.SESSION_SECRET);
+  // Plan elegido antes de ingresar (viaja firmado dentro del flujo; después se guarda en la base).
+  const q0 = request ? new URL(request.url).searchParams : new URLSearchParams();
+  const plan = isPlan(q0.get('plan')) ? q0.get('plan') : null;
+  const promo = Boolean(plan) && q0.get('promo') === '1';
+  const flow = await sign({ state, nonce, verifier, plan, promo, exp: now() + 600 }, env.SESSION_SECRET);
   const q = new URLSearchParams({
     client_id: env.GOOGLE_CLIENT_ID,
     redirect_uri: `${site}/api/auth/callback`,

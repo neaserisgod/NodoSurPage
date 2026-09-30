@@ -18,6 +18,21 @@
     var ml=$('.mp-login');if(ml){ml.href='/cuenta/';ml.textContent='Mi cuenta'}
   }
 
+  /* aviso "elegí tu sistema": logueado y sin suscripción (cookies de solo lectura que pone /api/me) */
+  (function(){
+    var c=function(n){var m=d.cookie.match(new RegExp('(?:^|; )'+n+'=([^;]*)'));return m?m[1]:''};
+    if(!c('ns_hint')||c('ns_sub')!=='0'||!hdr)return;
+    if(/^\/(pagar|cuenta|ingresar|admin)(\/|$)/.test(location.pathname))return;
+    try{if(sessionStorage.getItem('ns_offer_x'))return}catch(e){}
+    var nm='';try{nm=decodeURIComponent(c('ns_hint'))}catch(e){}
+    var pl=c('ns_plan'),bar=d.createElement('div');bar.className='offer-bar';bar.setAttribute('role','region');bar.setAttribute('aria-label','Elegí tu sistema');
+    var t=d.createElement('span');t.textContent=(nm?'Hola '+nm+', ':'')+(pl?'tu plan quedó elegido. ':'elegí tu sistema y probalo 7 días sin costo. ');bar.appendChild(t);
+    var a=d.createElement('a');a.href='/pagar/'+(/^[a-z-]+$/.test(pl)?'?plan='+pl:'');a.textContent=pl?'Seguir con el pago':'Elegir mi plan';bar.appendChild(a);
+    var x=d.createElement('button');x.type='button';x.setAttribute('aria-label','Cerrar aviso');x.textContent='×';
+    x.addEventListener('click',function(){bar.remove();try{sessionStorage.setItem('ns_offer_x','1')}catch(e){}});bar.appendChild(x);
+    hdr.insertAdjacentElement('afterend',bar);
+  })();
+
   /* recorrido por pantallas: pestañas accesibles (funciona también con movimiento reducido) */
   var tl=$('.tabs[role=tablist]');
   if(tl){

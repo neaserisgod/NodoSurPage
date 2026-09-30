@@ -7,6 +7,7 @@
   var ago = function (s) { var d = Math.floor((Date.now() / 1000 - s) / 86400); return d <= 0 ? 'hoy' : d === 1 ? 'ayer' : 'hace ' + d + ' días'; };
   var ST = { authorized: ['Activa', 'ok'], pending: ['Pendiente', 'wait'], paused: ['Pausada', 'wait'], cancelled: ['Cancelada', 'bad'], canceled: ['Cancelada', 'bad'] };
   var HDR = { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' };
+  var PLAN_NAMES = { pos: 'Sistema POS', 'pos-bot': 'Sistema + Bot', bot: 'Solo el bot' };
   var target = null;
 
   function post(url, body) {
@@ -38,7 +39,7 @@
     var k = d.kpis, cfg = d.config;
 
     var kp = el('div', 'kpis');
-    [['Usuarios', k.users], ['Nuevos (7 días)', k.new7d], ['Activos (7 días)', k.active7d], ['Suscripciones activas', k.activeSubs], ['Ingreso mensual', money(k.mrr)], ['En aviso de borrado', k.inNotice]].forEach(function (x) {
+    [['Usuarios', k.users], ['Nuevos (7 días)', k.new7d], ['Activos (7 días)', k.active7d], ['Suscripciones activas', k.activeSubs], ['Ingreso mensual', money(k.mrr)], ['Registrados sin pagar', k.unpaid == null ? '—' : k.unpaid], ['En aviso de borrado', k.inNotice]].forEach(function (x) {
       var c = el('div', 'kpi'); c.appendChild(el('span', null, x[0])); c.appendChild(el('strong', null, String(x[1]))); kp.appendChild(c);
     });
     root.appendChild(kp);
@@ -75,7 +76,7 @@
     var s1 = el('section', 'acc'); s1.appendChild(el('h2', null, 'Clientes'));
     var wrap = el('div', 'tbl adm-tbl'); var t = el('table');
     var thead = el('thead'), hr = el('tr');
-    ['Cliente', 'Alta', 'Último uso', 'Ingresos', 'Suscripción', 'Estado', ''].forEach(function (h) { hr.appendChild(el('th', null, h)); });
+    ['Cliente', 'Alta', 'Último uso', 'Ingresos', 'Plan elegido', 'Suscripción', 'Estado', ''].forEach(function (h) { hr.appendChild(el('th', null, h)); });
     thead.appendChild(hr); t.appendChild(thead);
     var tb = el('tbody');
     d.users.forEach(function (u) {
@@ -84,6 +85,10 @@
       tr.appendChild(el('td', null, dt(u.createdAt)));
       tr.appendChild(el('td', null, ago(u.lastSeen)));
       tr.appendChild(el('td', null, String(u.logins)));
+      var cp = el('td');
+      if (u.plan) { cp.appendChild(document.createTextNode((PLAN_NAMES[u.plan] || u.plan) + (u.promo ? ' · fundador' : ''))); if (u.chosenAt) { cp.appendChild(document.createElement('br')); cp.appendChild(el('small', null, ago(u.chosenAt))); } }
+      else cp.appendChild(el('small', null, '—'));
+      tr.appendChild(cp);
       var cs = el('td');
       if (u.subscription) { var st = ST[u.subscription.status] || [u.subscription.status, 'wait']; cs.appendChild(chip(st[0], st[1])); cs.appendChild(document.createTextNode(' ' + u.subscription.plan)); }
       else cs.appendChild(el('small', null, 'Sin suscripción'));
@@ -105,7 +110,7 @@
       }
       tr.appendChild(ca); tb.appendChild(tr);
     });
-    if (!d.users.length) { var er = el('tr'); var ec = el('td', null, 'Todavía no hay clientes registrados.'); ec.colSpan = 7; er.appendChild(ec); tb.appendChild(er); }
+    if (!d.users.length) { var er = el('tr'); var ec = el('td', null, 'Todavía no hay clientes registrados.'); ec.colSpan = 8; er.appendChild(ec); tb.appendChild(er); }
     t.appendChild(tb); wrap.appendChild(t); s1.appendChild(wrap); root.appendChild(s1);
 
     if (d.subscribersWithoutAccount.length) {
