@@ -7,6 +7,7 @@ import * as me from './functions/api/me.js';
 import * as cancel from './functions/api/subscription/cancel.js';
 import * as adminOverview from './functions/api/admin/overview.js';
 import * as adminUser from './functions/api/admin/user.js';
+import * as adminSubscription from './functions/api/admin/subscription.js';
 import * as adminSweep from './functions/api/admin/sweep.js';
 import * as checkout from './functions/api/checkout.js';
 import * as promo from './functions/api/promo.js';
@@ -23,6 +24,7 @@ const ROUTES = {
   'GET /api/admin/overview': adminOverview.onRequestGet,
   'POST /api/admin/user': adminUser.onRequestPost,
   'POST /api/admin/sweep': adminSweep.onRequestPost,
+  'POST /api/admin/subscription': adminSubscription.onRequestPost,
   'GET /api/checkout': checkout.onRequestGet,
   'GET /api/promo': promo.onRequestGet,
   'POST /api/admin/promo': adminPromo.onRequestPost,
