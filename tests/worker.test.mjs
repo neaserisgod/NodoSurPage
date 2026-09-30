@@ -30,6 +30,17 @@ await t('un error interno devuelve 500 sin filtrar detalles', async () => {
   const r = await worker.fetch(new Request('https://horsepos.com/api/me', { headers: { Cookie: `ns_session=${tok}` } }), bad, { waitUntil() {} });
   assert.equal(r.status, 500); assert.ok(!(await r.text()).includes('secreto'));
 });
+await t('rutas de dispositivos y copias: existen, exigen identidad y no aceptan otros métodos', async () => {
+  assert.equal((await call('/api/device/ping', 'POST')).status, 401);
+  assert.equal((await call('/api/backups')).status, 401);
+  assert.equal((await call('/api/backup')).status, 401);
+  assert.equal((await call('/api/backup', 'PUT')).status, 401);
+  assert.equal((await call('/api/devices')).status, 401);
+  assert.equal((await call('/api/device/whoami')).status, 401);
+  assert.equal((await call('/api/device/token', 'GET')).status, 405);
+  assert.equal((await call('/api/backup', 'POST')).status, 405);
+  assert.equal((await call('/api/device/authorize', 'POST')).status, 403); // sin mismo origen
+});
 await t('cron: sin D1 o sin token no hace nada (no falla)', async () => {
   await worker.scheduled({}, { ...env }, { waitUntil() { throw new Error('no debería'); } });
 });

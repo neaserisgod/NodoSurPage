@@ -16,10 +16,19 @@ import * as updLatest from './functions/api/update/latest.js';
 import * as updAppcast from './functions/api/update/appcast.js';
 import * as updFile from './functions/api/update/file.js';
 import * as adminReleases from './functions/api/admin/releases.js';
+import * as deviceWhoami from './functions/api/device/whoami.js';
+import * as deviceAuthorize from './functions/api/device/authorize.js';
+import * as deviceToken from './functions/api/device/token.js';
+import * as devicePing from './functions/api/device/ping.js';
+import * as devices from './functions/api/devices.js';
+import * as backup from './functions/api/backup.js';
+import * as backups from './functions/api/backups.js';
 import * as promo from './functions/api/promo.js';
 import * as adminPromo from './functions/api/admin/promo.js';
 import { sweep } from './functions/_lib/sweep.js';
 import { hasDB } from './functions/_lib/db.js';
+import { purgeBackups, backupsReady } from './functions/_lib/backups.js';
+import { listAllSubscribers } from './functions/_lib/mp.js';
 
 const ROUTES = {
   'GET /api/auth/google': google.onRequestGet,
@@ -32,6 +41,16 @@ const ROUTES = {
   'POST /api/admin/sweep': adminSweep.onRequestPost,
   'POST /api/admin/subscription': adminSubscription.onRequestPost,
   'GET /api/checkout': checkout.onRequestGet,
+  'GET /api/device/whoami': deviceWhoami.onRequestGet,
+  'POST /api/device/authorize': deviceAuthorize.onRequestPost,
+  'POST /api/device/token': deviceToken.onRequestPost,
+  'POST /api/device/ping': devicePing.onRequestPost,
+  'POST /api/device/revoke': devices.onRequestRevoke,
+  'GET /api/devices': devices.onRequestGet,
+  'PUT /api/backup': backup.onRequestPut,
+  'GET /api/backup': backup.onRequestGet,
+  'DELETE /api/backup': backup.onRequestDelete,
+  'GET /api/backups': backups.onRequestGet,
   'GET /api/download': download.onRequestGet,
   'GET /api/downloads': downloads.onRequestGet,
   'GET /api/update/latest.json': updLatest.onRequestGet,
@@ -66,6 +85,7 @@ export default {
   // Cron diario: avisa y limpia cuentas inactivas sin suscripción (apagado por defecto, ver README).
   async scheduled(_event, env, ctx) {
     if (!hasDB(env) || !env.MP_ACCESS_TOKEN) return;
+    if (backupsReady(env)) ctx.waitUntil(listAllSubscribers(env, { fresh: true }).then((subs) => purgeBackups(env, subs)).then((ids) => ids.length && console.log(`backups_purgadas:${ids.length}`)).catch(() => { /* sin Mercado Pago no se borra nada */ }));
     ctx.waitUntil(sweep(env, { apply: true }).then((r) =>
       console.log(JSON.stringify({ ok: r.ok, autoDelete: r.autoDelete, notifier: r.notifier, actions: (r.actions || []).map((a) => `${a.action}:${a.email}:${a.applied ?? ''}`) }))));
   },

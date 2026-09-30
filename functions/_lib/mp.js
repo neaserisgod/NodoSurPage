@@ -33,6 +33,7 @@ const mapSub = (r) => ({
   frequencyType: r.auto_recurring && r.auto_recurring.frequency_type,
   nextPayment: r.next_payment_date || null,
   since: r.date_created || null,
+  modified: r.last_modified || r.date_created || null,
 });
 
 // Suscripciones cuyo mail de pago == mail verificado de Google, de nuestros planes.

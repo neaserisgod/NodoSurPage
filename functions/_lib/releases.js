@@ -4,8 +4,9 @@ export const PLATFORMS = ['windows', 'macos', 'linux', 'android'];
 export const CHANNELS = ['stable', 'beta'];
 export const hasR2 = (env) => Boolean(env.RELEASES);
 
-// Formato de Flutter: 1.0.0+2098 (nombre + número de build). También se acepta 1.0.0 y 1.0.0-beta.1.
-const VERSION_RE = /^\d+\.\d+\.\d+(?:\+\d{1,9}|-[0-9A-Za-z.-]{1,32})?$/;
+// Formato de Flutter: 1.0.0+2098 (nombre + número de build). También 1.0.0.2098 (el que usa Windows y el feed),
+// 1.0.0 y 1.0.0-beta.1. Para comparar, "1.0.0+2098" y "1.0.0.2098" son la misma versión.
+const VERSION_RE = /^\d+\.\d+\.\d+(?:\.\d{1,9}|\+\d{1,9}|-[0-9A-Za-z.-]{1,32})?$/;
 const KEY_RE = /^(stable|beta)\/[0-9A-Za-z.+-]{1,40}\/[A-Za-z0-9._+-]{1,120}$/;
 export const validVersion = (v) => typeof v === 'string' && VERSION_RE.test(v);
 export const validKey = (k) => typeof k === 'string' && KEY_RE.test(k) && !k.includes('..');
@@ -73,9 +74,11 @@ export async function eligible(release, cid) {
   return ((h[0] << 8) | h[1]) % 100 < release.rollout;
 }
 // Actualización para una instalación: la más nueva que le toque y que sea mayor a la que ya tiene.
-export async function latestForUpdate(env, platform, channel, current, cid) {
+// `conBeta`: la instalación es de una cuenta de pruebas (administrador o eximida) y ve primero las betas.
+export async function latestForUpdate(env, platform, channel, current, cid, { conBeta = false } = {}) {
   const ok = [];
-  for (const r of await candidates(env, platform, channel)) if (await eligible(r, cid)) ok.push(r);
+  const canales = conBeta && channel === 'stable' ? ['stable', 'beta'] : [channel];
+  for (const canal of canales) for (const r of await candidates(env, platform, canal)) if (await eligible(r, cid)) ok.push(r);
   const best = newest(ok);
   return best && (!current || cmpVersion(best.version, current) > 0) ? best : null;
 }

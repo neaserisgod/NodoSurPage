@@ -52,8 +52,10 @@ await t('versiones: orden con número de build, prerelease y validación de form
   assert.equal(cmpVersion('1.0.0+2098', '1.0.0+2097'), 1); assert.equal(cmpVersion('1.0.0+2097', '1.0.0+2098'), -1); assert.equal(cmpVersion('1.0.0+5', '1.0.0+5'), 0);
   assert.equal(cmpVersion('1.0.10+1', '1.0.9+999'), 1); assert.equal(cmpVersion('1.0.0', '1.0.0-beta.1'), 1);
   assert.equal(cmpVersion('1.0.0-beta.2', '1.0.0-beta.10'), -1);
-  assert.ok(validVersion('1.0.0+2098') && validVersion('2.1.0') && validVersion('1.0.0-rc.1'));
-  for (const v of ['1.0', '1.0.0+x', 'a.b.c', '1.0.0+', '../1.0.0', 5, null]) assert.ok(!validVersion(v), String(v));
+  assert.ok(validVersion('1.0.0+2098') && validVersion('2.1.0') && validVersion('1.0.0-rc.1') && validVersion('1.0.0.2098'));
+  // nombre.build con puntos (lo que publica tool/publicar_release.ps1) equivale a nombre+build
+  assert.equal(cmpVersion('1.0.0.2098', '1.0.0+2098'), 0); assert.equal(cmpVersion('1.0.0.2099', '1.0.0+2098'), 1); assert.equal(cmpVersion('1.0.0.2097', '1.0.0+2098'), -1); assert.equal(cmpVersion('1.0.0.10000', '1.0.0.9999'), 1);
+  for (const v of ['1.0', '1.0.0.', '1.0.0.x', '1.0.0.2098.1', '1.0.0+x', 'a.b.c', '1.0.0+', '../1.0.0', 5, null]) assert.ok(!validVersion(v), String(v));
   assert.ok(validKey('stable/1.0.0+2098/Setup.exe')); for (const k of ['x/1.0.0/a.exe', 'stable/../a/b.exe', 'stable/1.0.0/a b.exe', 'stable/1.0.0/../../x']) assert.ok(!validKey(k), k);
 });
 
@@ -194,6 +196,15 @@ await t('tipo de firma: dsa (WinSparkle 0.8 / auto_updater 1.0) o ed, en el appc
   assert.equal((await ciPost(env, { ...rel('1.0.0+2'), signature: 'ED==' })).status, 200); // sin tipo: EdDSA
   x = await feed(); assert.match(x, /sparkle:edSignature="ED=="/); assert.ok(!x.includes('dsaSignature'));
   assert.equal((await (await ciGet(env)).json()).releases.map((r) => r.signatureType).sort().join(), 'dsa,ed');
+});
+
+await t('flujo de Windows: se publica 1.0.0.2099 y una app 1.0.0.2098 la ve (mismo build: al día)', async () => {
+  const env = mkEnv(); env.RELEASES.put('stable/1.0.0.2099/LaPlazoleta-Setup-1.0.0.2099.exe', 'exe'); env.RELEASES.put('stable/1.0.0.2098/LaPlazoleta-Setup-1.0.0.2098.exe', 'exe');
+  for (const v of ['1.0.0.2098', '1.0.0.2099']) assert.equal((await ciPost(env, { ...rel(v), key: `stable/${v}/LaPlazoleta-Setup-${v}.exe`, signature: 'DSA==', signatureType: 'dsa' })).status, 200, v);
+  const feed = async () => (await (await appcast.onRequestGet({ request: req('/api/update/appcast.xml?platform=windows'), env })).text());
+  assert.match(await feed(), /<sparkle:version>1\.0\.0\.2099<\/sparkle:version>/);
+  const ask = async (v) => (await (await latest.onRequestGet({ request: req('/api/update/latest.json?platform=windows&version=' + v), env })).json()).update;
+  assert.equal(await ask('1.0.0.2098'), true); assert.equal(await ask('1.0.0.2099'), false); assert.equal(await ask('1.0.0.2100'), false);
 });
 
 console.log(`\n${pass} pruebas OK (versiones y descargas)`);

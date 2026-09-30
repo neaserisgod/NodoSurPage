@@ -1,5 +1,5 @@
 import { isPlan } from '../../_lib/plans.js';
-import { randomHex, sha256b64u, sign, cookie, now, siteUrl, json, missingConfig } from '../../_lib/util.js';
+import { randomHex, sha256b64u, sign, cookie, now, siteUrl, json, missingConfig, safeNext } from '../../_lib/util.js';
 
 // Inicia el login: guarda state/nonce/PKCE en una cookie firmada y redirige a Google.
 export async function onRequestGet({ request, env }) {
@@ -11,7 +11,8 @@ export async function onRequestGet({ request, env }) {
   const q0 = request ? new URL(request.url).searchParams : new URLSearchParams();
   const plan = isPlan(q0.get('plan')) ? q0.get('plan') : null;
   const promo = Boolean(plan) && q0.get('promo') === '1';
-  const flow = await sign({ state, nonce, verifier, plan, promo, exp: now() + 600 }, env.SESSION_SECRET);
+  const next = safeNext(q0.get('next'));
+  const flow = await sign({ state, nonce, verifier, plan, promo, next, exp: now() + 600 }, env.SESSION_SECRET);
   const q = new URLSearchParams({
     client_id: env.GOOGLE_CLIENT_ID,
     redirect_uri: `${site}/api/auth/callback`,

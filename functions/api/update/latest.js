@@ -1,6 +1,7 @@
 import { json, siteUrl } from '../../_lib/util.js';
 import { PLATFORMS, CHANNELS, hasR2, validVersion, latestForUpdate } from '../../_lib/releases.js';
 import { hasDB } from '../../_lib/db.js';
+import { cidIsPrivileged } from '../../_lib/devices.js';
 
 // Público: ¿hay una versión nueva para esta instalación? Las actualizaciones no piden sesión (el archivo va firmado).
 //   /api/update/latest.json?platform=android&channel=stable&version=1.2.3&cid=<id de instalación>
@@ -10,7 +11,7 @@ export async function onRequestGet({ request, env }) {
   const cid = (q.get('cid') || '').slice(0, 64);
   if (!PLATFORMS.includes(platform) || !CHANNELS.includes(channel) || (current && !validVersion(current))) return json({ error: 'bad_request' }, 400);
   if (!hasDB(env) || !hasR2(env)) return json({ update: false });
-  const r = await latestForUpdate(env, platform, channel, current, cid);
+  const r = await latestForUpdate(env, platform, channel, current, cid, { conBeta: await cidIsPrivileged(env, cid) });
   if (!r) return json({ update: false });
   return json({
     update: true, version: r.version, mandatory: Boolean(r.mandatory), url: `${siteUrl(env)}/api/update/file?id=${r.id}`,

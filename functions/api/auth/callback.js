@@ -1,4 +1,4 @@
-import { verify, sign, parseCookies, cookie, now, siteUrl, unb64u } from '../../_lib/util.js';
+import { verify, sign, parseCookies, cookie, now, siteUrl, unb64u, safeNext } from '../../_lib/util.js';
 import { hasDB, upsertLogin, setIntent } from '../../_lib/db.js';
 import { isPlan } from '../../_lib/plans.js';
 
@@ -58,7 +58,8 @@ export async function onRequestGet({ request, env }) {
   }, env.SESSION_SECRET);
   const first = encodeURIComponent(String(claims.given_name || claims.name || claims.email).split(' ')[0]);
   // Con plan elegido se vuelve al pago con ese plan ya seleccionado; si no, a Mi cuenta.
-  const next = plan ? `${site}/pagar/?plan=${plan}${flow.promo ? '&promo=1' : ''}` : `${site}/cuenta/`;
+  const volver = safeNext(flow.next); // p. ej. la vinculación de la app: se vuelve ahí
+  const next = plan ? `${site}/pagar/?plan=${plan}${flow.promo ? '&promo=1' : ''}` : volver ? `${site}${volver}` : `${site}/cuenta/`;
   const h = new Headers({ Location: next, 'Cache-Control': 'no-store' });
   h.append('Set-Cookie', cookie('ns_oauth', '', { maxAge: 0, path: '/api/auth' }));
   h.append('Set-Cookie', cookie('ns_session', session, { maxAge: 30 * 24 * 3600 }));

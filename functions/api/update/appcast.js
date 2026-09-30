@@ -1,6 +1,7 @@
 import { siteUrl } from '../../_lib/util.js';
 import { PLATFORMS, CHANNELS, hasR2, latestForUpdate } from '../../_lib/releases.js';
 import { hasDB } from '../../_lib/db.js';
+import { cidIsPrivileged } from '../../_lib/devices.js';
 
 const esc = (s) => String(s ?? '').replace(/[<>&"']/g, (c) => ({ '<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;', "'": '&apos;' }[c]));
 const xml = (body, status = 200) => new Response(body, { status, headers: { 'Content-Type': 'application/xml; charset=utf-8', 'Cache-Control': 'no-store' } });
@@ -15,7 +16,7 @@ export async function onRequestGet({ request, env }) {
   const cid = (q.get('cid') || '').slice(0, 64);
   if (!PLATFORMS.includes(platform) || !CHANNELS.includes(channel)) return xml('<error>bad_request</error>', 400);
   if (!hasDB(env) || !hasR2(env)) return xml(head + '</channel></rss>');
-  const r = await latestForUpdate(env, platform, channel, null, cid);
+  const r = await latestForUpdate(env, platform, channel, null, cid, { conBeta: await cidIsPrivileged(env, cid) });
   if (!r) return xml(head + '</channel></rss>');
   const os = platform === 'macos' ? 'macos' : platform;
   const item = `<item><title>Versión ${esc(r.version)}</title><pubDate>${new Date(r.published_at * 1000).toUTCString()}</pubDate>`
