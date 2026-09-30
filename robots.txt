@@ -6,5 +6,6 @@ Disallow: /cuenta/
 Disallow: /admin/
 Disallow: /ingresar/
 Disallow: /descargar/
+Disallow: /vincular/
 
 Sitemap: https://horsepos.com/sitemap.xml

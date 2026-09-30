@@ -33,6 +33,9 @@
 /descargar.js
   Cache-Control: public, max-age=0, must-revalidate
 
+/vincular.js
+  Cache-Control: public, max-age=0, must-revalidate
+
 /pagar.js
   Cache-Control: public, max-age=0, must-revalidate
 

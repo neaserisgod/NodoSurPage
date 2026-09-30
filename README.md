@@ -51,6 +51,17 @@ Los instaladores viven en **R2** (bucket privado `nodosur-releases`, binding `RE
 - Los archivos no se suben a través del sitio (un Worker acepta hasta 100 MB por pedido en el plan gratis): se suben con `wrangler` (hasta 5 GB por archivo).
 - Cosas que no resuelve el sitio: firmar el `.exe` (sin firma, Windows SmartScreen avisa), generar la firma EdDSA de cada actualización, y firmar el APK con una llave de publicación propia.
 
+### Cuenta, copias de seguridad y versiones de prueba del POS
+
+La PC con el POS se **vincula a la cuenta de Google** del dueño y sube copias de su base al servidor. Si se borra el sistema y la base, se reinstala, se entra con la misma cuenta y se recupera todo. Todo va atado al `sub` de Google (no a la fila de `users`): el barrido automático puede borrar y recrear esa fila sin perder dispositivos ni copias.
+
+- **Vincular** (como "iniciar sesión en el navegador"): la app abre `/vincular/?port&state&challenge&device&name`, la persona entra con Google y confirma, el sitio devuelve un código de un solo uso a `http://127.0.0.1:<port>/callback` y la app lo canjea en `POST /api/device/token` (PKCE: el verificador tiene que dar el `challenge`). Devuelve un **token de dispositivo** de 1 año (se renueva solo desde `ping` cuando quedan menos de 60 días). Se firma con un secreto derivado distinto del de la sesión web: un token de dispositivo no vale como sesión ni al revés. Después de ingresar solo se vuelve a `/vincular/` (lista blanca), nunca a una URL libre.
+- **Dispositivos**: `POST /api/device/ping` (versión, sistema y `cid` de instalación), `GET /api/devices`, `POST /api/device/revoke` (desde la sesión web, cualquiera propio; desde la app, el propio).
+- **Versiones de prueba**: si la PC pertenece a un administrador o a una cuenta eximida, el feed de actualizaciones (por su `cid`) le ofrece también las versiones **beta**, antes que a los clientes. Desvincularla le quita eso.
+- **Copias** (`PUT/GET/DELETE /api/backup`, `GET /api/backups`): el cuerpo es la base ya comprimida (máx. 25 MB); la app manda `X-Sha256`, `X-Schema-Version` y `X-App-Version`. Se guardan **cifradas en el servidor** (AES-256-GCM, secreto `BACKUP_KEY`) en `cuentas/<hash del sub>/…` del mismo bucket que las versiones (o de `BACKUPS` si algún día se separa). Solo quedan las **últimas 5** por cuenta. Permisos: suben quienes tienen suscripción vigente (administradores y eximidas siempre); quien cancela conserva **90 días para restaurar**; si Mercado Pago no responde, no se habilita nada. Una copia que no descifra o cuyo hash no coincide nunca se entrega como buena.
+- **Limpieza**: el cron diario borra las copias de cuentas sin suscripción y fuera de la ventana de 90 días. Si no se puede consultar Mercado Pago, no borra nada.
+- **Secreto nuevo**: `BACKUP_KEY` (Secret): 32 bytes aleatorios en base64. Sin él (o mal puesto) las rutas de copias responden 503 y nada se sube. Generarlo: `node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"`. **Si se pierde, las copias guardadas no se pueden recuperar**: respaldarlo aparte.
+
 ### Variables (Cloudflare → Workers & Pages → broad-frog-1e4b → Settings → Variables and secrets → tipo **Secret**)
 
 | Nombre | Valor |
@@ -59,6 +70,7 @@ Los instaladores viven en **R2** (bucket privado `nodosur-releases`, binding `RE
 | `GOOGLE_CLIENT_SECRET` | Client secret del mismo cliente |
 | `SESSION_SECRET` | Texto aleatorio de 48+ caracteres |
 | `MP_ACCESS_TOKEN` | Access token de producción de la app de Mercado Pago |
+| `BACKUP_KEY` | (copias de seguridad) 32 bytes aleatorios en base64; ver «Cuenta, copias de seguridad…» |
 | `RELEASE_TOKEN` | (para publicar versiones del POS desde scripts/CI) texto aleatorio de 24+ caracteres |
 | `ADMIN_EMAILS` | (opcional) mails admin separados por coma; por defecto `gtalovergamer@gmail.com` |
 | `AUTO_DELETE` | (opcional) `on` habilita el borrado real; por defecto apagado |
@@ -82,7 +94,7 @@ Google Cloud → Google Auth Platform → Clientes (Aplicación web):
 
 ### Pruebas
 
-`node --experimental-sqlite tests/auth.test.mjs && node --experimental-sqlite tests/admin.test.mjs && node --experimental-sqlite tests/checkout.test.mjs && node --experimental-sqlite tests/baja.test.mjs && node --experimental-sqlite tests/releases.test.mjs && node tests/worker.test.mjs`
+`node --experimental-sqlite tests/auth.test.mjs && node --experimental-sqlite tests/admin.test.mjs && node --experimental-sqlite tests/checkout.test.mjs && node --experimental-sqlite tests/baja.test.mjs && node --experimental-sqlite tests/releases.test.mjs && node --experimental-sqlite tests/devices.test.mjs && node --experimental-sqlite tests/backups.test.mjs && node tests/worker.test.mjs`
 
 ## Precio de fundador (interruptor)
 

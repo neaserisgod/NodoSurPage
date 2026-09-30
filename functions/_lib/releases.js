@@ -74,9 +74,11 @@ export async function eligible(release, cid) {
   return ((h[0] << 8) | h[1]) % 100 < release.rollout;
 }
 // Actualización para una instalación: la más nueva que le toque y que sea mayor a la que ya tiene.
-export async function latestForUpdate(env, platform, channel, current, cid) {
+// `conBeta`: la instalación es de una cuenta de pruebas (administrador o eximida) y ve primero las betas.
+export async function latestForUpdate(env, platform, channel, current, cid, { conBeta = false } = {}) {
   const ok = [];
-  for (const r of await candidates(env, platform, channel)) if (await eligible(r, cid)) ok.push(r);
+  const canales = conBeta && channel === 'stable' ? ['stable', 'beta'] : [channel];
+  for (const canal of canales) for (const r of await candidates(env, platform, canal)) if (await eligible(r, cid)) ok.push(r);
   const best = newest(ok);
   return best && (!current || cmpVersion(best.version, current) > 0) ? best : null;
 }
