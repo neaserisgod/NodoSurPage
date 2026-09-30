@@ -116,4 +116,22 @@
       })();
     },{threshold:.5}).observe(chat);
   }
+  /* botón fijo de WhatsApp en celulares (solo en las páginas comerciales) */
+  (function(){
+    var path=location.pathname.replace(/\/+$/,'')||'/';
+    var skip=['/pagar','/ingresar','/cuenta','/admin','/privacidad'];
+    if(skip.indexOf(path)>-1||!matchMedia('(max-width:719px)').matches)return;
+    var a=d.createElement('a');a.className='sticky-cta';
+    a.href='https://wa.me/5492944796044?text='+encodeURIComponent('Hola, quiero probar el sistema');
+    a.rel='noopener';a.textContent='Probalo 7 días gratis · WhatsApp';
+    d.body.appendChild(a);d.body.classList.add('has-sticky');
+    var on=false,t=$('#contacto');
+    function upd(){
+      var y=scrollY>520,near=false;
+      if(t){var r=t.getBoundingClientRect();near=r.top<innerHeight&&r.bottom>0}
+      var want=y&&!near;
+      if(want!==on){on=want;a.classList.toggle('on',on)}
+    }
+    addEventListener('scroll',upd,{passive:true});upd();
+  })();
 })();

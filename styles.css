@@ -661,3 +661,15 @@ h1{font-size:clamp(38px,3.1vw + 23px,68px);line-height:1.06}
 .nota-img svg{margin-top:1px}
 .gal .nota-img{margin:0}
 .tour .nota-img,.sys .nota-img{align-self:center}
+
+/* franja de confianza bajo el hero */
+.trust{padding-top:0;padding-bottom:clamp(24px,3vw,48px)}
+.trust .chips{justify-content:center;gap:8px 10px}
+.trust .chips li{font-size:14px}
+
+/* botón fijo en celulares: siempre a un toque del WhatsApp */
+.sticky-cta{position:fixed;left:16px;right:16px;bottom:max(12px,env(safe-area-inset-bottom));z-index:30;display:none;align-items:center;justify-content:center;gap:10px;padding:15px 20px;border-radius:999px;background:#1f1f1f;color:#fff;font-size:16px;font-weight:700;box-shadow:0 8px 24px rgba(31,31,31,.28);transform:translateY(140%);transition:transform .25s var(--ease)}
+.sticky-cta.on{transform:none}
+.sticky-cta:hover{color:#fff}
+@media (max-width:719px){.sticky-cta{display:flex}body.has-sticky{padding-bottom:84px}}
+@media (prefers-reduced-motion:reduce){.sticky-cta{transition:none}}
