@@ -103,5 +103,4 @@ El precio de fundador se activa o desactiva desde **/admin/** (sección "Precio 
 ## Rediseño del index (estilo "antigravity")
 
 El index usa `home.css` + `home.js` (el resto de las páginas siguen con `styles.css`).
-Para volver al diseño anterior: `git revert <commit del rediseño>` o
-`git checkout index-pre-antigravity -- index.html` (tag con el index original).
+Para volver a una versión anterior: `git checkout index-pre-antigravity -- index.html` (original) o `index-antigravity-v1` (primera versión del rediseño). Hay que acompañar con `home.css`/`home.js` de ese tag si se usa v1.
