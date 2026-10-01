@@ -3,20 +3,39 @@ import { requireAdmin } from '../../_lib/auth.js';
 import { hasDB } from '../../_lib/db.js';
 import { PLATFORMS, CHANNELS, SIG_TYPES, hasR2, validVersion, validKey, listReleases, getRelease, addRelease, setRollout, setBlocked, setActive } from '../../_lib/releases.js';
 
-// Comparación en tiempo constante del token de publicación (para el flujo automático de CI).
-function tokenOk(request, env) {
-  const t = String(env.RELEASE_TOKEN || '');
-  const m = /^Bearer (.+)$/.exec(request.headers.get('Authorization') || '');
-  if (t.length < 24 || !m) return false;
-  const a = new TextEncoder().encode(m[1]), b = new TextEncoder().encode(t);
+function constantTimeEqual(aStr, bStr) {
+  if (!aStr || !bStr) return false;
+  const a = new TextEncoder().encode(String(aStr)), b = new TextEncoder().encode(String(bStr));
   let d = a.length ^ b.length;
   for (let i = 0; i < Math.max(a.length, b.length); i++) d |= (a[i] || 0) ^ (b[i] || 0);
   return d === 0;
 }
 
+// Comparación en tiempo constante del token de publicación (para el flujo automático de CI).
+function tokenOk(request, env, bodyToken) {
+  const t = String(env.RELEASE_TOKEN || '');
+  if (t.length < 24) return false;
+
+  const m = /^Bearer (.+)$/.exec(request.headers.get('Authorization') || '');
+  if (m && constantTimeEqual(m[1], t)) return true;
+
+  const custom = request.headers.get('X-Release-Token');
+  if (custom && constantTimeEqual(custom, t)) return true;
+
+  const urlToken = new URL(request.url).searchParams.get('token');
+  if (urlToken && constantTimeEqual(urlToken, t)) return true;
+
+  if (bodyToken && constantTimeEqual(bodyToken, t)) return true;
+
+  return false;
+}
+
 export async function onRequestGet({ request, env }) {
-  if (!tokenOk(request, env)) {
-    if (request.headers.get('Authorization')) return json({ error: 'unauthorized' }, 401);
+  const token = tokenOk(request, env);
+  if (!token) {
+    if (request.headers.get('Authorization') || request.headers.get('X-Release-Token') || new URL(request.url).searchParams.get('token')) {
+      return json({ error: 'unauthorized' }, 401);
+    }
     const g = await requireAdmin(request, env); if (g.error) return g.error;
   }
   if (!hasDB(env)) return json({ error: 'no_db' }, 503);
@@ -27,14 +46,17 @@ const pub = (r) => ({ id: r.id, channel: r.channel, platform: r.platform, versio
 
 // Publicar una versión (ya subida a R2) o cambiar su estado. Sesión de administrador o RELEASE_TOKEN (CI).
 export async function onRequestPost({ request, env }) {
-  const bearer = tokenOk(request, env);
-  if (!bearer && request.headers.get('Authorization')) return json({ error: 'unauthorized' }, 401); // token equivocado: no se cae a la sesión
+  let b; try { b = await request.json(); } catch { b = null; }
+  const bodyToken = b && (b.releaseToken || b.token);
+  const bearer = tokenOk(request, env, bodyToken);
+  const hadAuth = Boolean(request.headers.get('Authorization') || request.headers.get('X-Release-Token') || new URL(request.url).searchParams.get('token') || bodyToken);
+  if (!bearer && hadAuth) return json({ error: 'unauthorized' }, 401); // token equivocado: no se cae a la sesión
   if (!bearer) {
     if (!sameOriginPost(request, env) || request.headers.get('X-Requested-With') !== 'fetch') return json({ error: 'forbidden' }, 403);
     const g = await requireAdmin(request, env); if (g.error) return g.error;
   }
   if (!hasDB(env)) return json({ error: 'no_db' }, 503);
-  let b; try { b = await request.json(); } catch { return json({ error: 'bad_request' }, 400); }
+  if (!b) return json({ error: 'bad_request' }, 400);
   const action = b.action || 'create';
 
   if (action === 'create') {

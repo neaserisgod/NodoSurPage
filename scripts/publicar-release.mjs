@@ -29,7 +29,7 @@ if (!dry && !process.env.RELEASE_TOKEN) fail('falta la variable de entorno RELEA
 const size = statSync(file).size;
 const sha256 = await new Promise((res, rej) => { const h = createHash('sha256'); createReadStream(file).on('data', (d) => h.update(d)).on('end', () => res(h.digest('hex'))).on('error', rej); });
 const key = `${channel}/${version}/${basename(file).replace(/[^A-Za-z0-9._+-]/g, '-')}`;
-const body = { action: 'create', platform, channel, version, key, sha256, rollout, mandatory: flag('mandatory'), notes: notes || undefined, signature: arg('signature'), signatureType: arg('signature-type') };
+const body = { action: 'create', platform, channel, version, key, sha256, rollout, mandatory: flag('mandatory'), notes: notes || undefined, signature: arg('signature'), signatureType: arg('signature-type'), releaseToken: process.env.RELEASE_TOKEN };
 
 console.log(`Archivo:  ${file} (${(size / 1048576).toFixed(1)} MB)\nSHA-256:  ${sha256}\nClave R2: ${bucket}/${key}\nSitio:    ${site}\nLiberada: ${rollout} %${flag('mandatory') ? ' · obligatoria' : ''}`);
 if (dry) { console.log('\n(--dry-run: no se subió ni registró nada)'); process.exit(0); }
@@ -51,7 +51,21 @@ const up = spawnSync(comando, argumentos, {
 
 if (up.status !== 0) fail('no se pudo subir el archivo a R2');
 
-const res = await fetch(`${site}/api/admin/releases`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.RELEASE_TOKEN}` }, body: JSON.stringify(body) });
-const out = await res.json().catch(() => ({}));
-if (!res.ok) fail(`el sitio rechazó la versión (${res.status}: ${out.error || 'error'})${out.error === 'exists' ? ' — esa versión ya está publicada' : ''}`);
+const res = await fetch(`${site}/api/admin/releases`, {
+  method: 'POST',
+  headers: {
+    'Content-Type': 'application/json',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+    'X-Release-Token': process.env.RELEASE_TOKEN,
+    Authorization: `Bearer ${process.env.RELEASE_TOKEN}`,
+  },
+  body: JSON.stringify(body),
+});
+const text = await res.text().catch(() => '');
+let out = {};
+try { out = JSON.parse(text); } catch {}
+if (!res.ok) {
+  const detail = out.error || (text ? text.slice(0, 140).replace(/\s+/g, ' ').trim() : 'error');
+  fail(`el sitio rechazó la versión (${res.status}: ${detail})${out.error === 'exists' ? ' — esa versión ya está publicada' : ''}`);
+}
 console.log(`\nListo: ${platform} ${version} publicada en ${channel}${rollout < 100 ? ` al ${rollout} %` : ''}. Subí el porcentaje desde el panel de administración cuando veas que anda bien.`);
