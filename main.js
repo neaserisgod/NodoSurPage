@@ -58,7 +58,7 @@
   root.classList.add('js');
 
   /* scroll reveal with stagger inside grids */
-  var sel='.head,.prod,.feat,.chips,.chat,.fl li,.ck li,.tog,.q,.step,.plan,.found,.cta-b,.rel a,.prose>*,.ph>*,.tbl';
+  var sel='.blk-h,.blk-r,.cards,.steps2,.halos,.chat-box,.q2,.head,.prod,.feat,.chips,.chat,.fl li,.ck li,.tog,.q,.step,.plan,.found,.cta-b,.rel a,.prose>*,.ph>*,.tbl';
   var els=$$(sel);
   els.forEach(function(e){
     e.classList.add('rv');
