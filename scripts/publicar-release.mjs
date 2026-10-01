@@ -51,17 +51,32 @@ const up = spawnSync(comando, argumentos, {
 
 if (up.status !== 0) fail('no se pudo subir el archivo a R2');
 
-const res = await fetch(`${site}/api/admin/releases`, {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
-    'X-Release-Token': process.env.RELEASE_TOKEN,
-    Authorization: `Bearer ${process.env.RELEASE_TOKEN}`,
-  },
-  body: JSON.stringify(body),
-});
-const text = await res.text().catch(() => '');
+async function sendRelease(target) {
+  return await fetch(`${target}/api/admin/releases`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36',
+      'X-Release-Token': process.env.RELEASE_TOKEN,
+      Authorization: `Bearer ${process.env.RELEASE_TOKEN}`,
+    },
+    body: JSON.stringify(body),
+  });
+}
+
+let res = await sendRelease(site);
+let text = await res.text().catch(() => '');
+
+// Si Cloudflare Zone desafía o bloquea con HTML anti-bot en CI, recurrir al endpoint directo del Worker
+if (!res.ok && (text.includes('Just a moment') || text.includes('<!DOCTYPE html>') || text.includes('Cloudflare') || res.status === 403)) {
+  const directWorker = 'https://broad-frog-1e4b.gtalovergamer.workers.dev';
+  if (site !== directWorker) {
+    console.log(`\nAviso: ${site} respondió con desafío anti-bot de Cloudflare. Reintentando por endpoint directo del Worker (${directWorker})...`);
+    res = await sendRelease(directWorker);
+    text = await res.text().catch(() => '');
+  }
+}
+
 let out = {};
 try { out = JSON.parse(text); } catch {}
 if (!res.ok) {
