@@ -30,7 +30,13 @@ const DDL = [
   `CREATE INDEX IF NOT EXISTS idx_sync_owner ON sync_lotes(owner_sub, seq)`,
   `CREATE TABLE IF NOT EXISTS sync_cuentas (owner_sub TEXT PRIMARY KEY, purgado_hasta INTEGER NOT NULL DEFAULT 0)`,
 ];
-export async function ensureSyncTables(env) { for (const sql of DDL) await env.DB.prepare(sql).run(); }
+// Las tablas se aseguran una sola vez por instancia del Worker: antes eran 4 consultas en CADA pedido.
+const aseguradas = new WeakSet();
+export async function ensureSyncTables(env) {
+  if (aseguradas.has(env.DB)) return;
+  for (const sql of DDL) await env.DB.prepare(sql).run();
+  aseguradas.add(env.DB);
+}
 
 export const validLoteId = (s) => typeof s === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(s);
 
@@ -44,20 +50,29 @@ export async function syncAccess(env, actor) {
   return a.error ? a : { subir: Boolean(a.upload), bajar: Boolean(a.upload || a.restore) };
 }
 
+// Cada cuántos lotes se revisa si hay viejos para borrar: no hace falta en cada subida, y cada revisión es una
+// consulta más a D1.
+export const PURGA_CADA = 25;
+
 export async function guardarLote(env, { sub, deviceId, loteId, bytes }, t = now()) {
   await ensureSyncTables(env);
-  const ya = await env.DB.prepare('SELECT seq FROM sync_lotes WHERE owner_sub = ?1 AND lote_id = ?2').bind(sub, loteId).first();
-  if (ya) return { seq: ya.seq, repetido: true };
   const datos = b64(await cifrar(env, bytes));
-  await env.DB.prepare(
-    'INSERT INTO sync_lotes (owner_sub, device_id, lote_id, datos, size, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)'
+  // Una sola consulta en el caso común: si el lote ya estaba (reintento), no inserta y se busca su `seq`.
+  const r = await env.DB.prepare(
+    `INSERT INTO sync_lotes (owner_sub, device_id, lote_id, datos, size, created_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+     ON CONFLICT(owner_sub, lote_id) DO NOTHING`
   ).bind(sub, deviceId, loteId, datos, bytes.length, t).run();
-  const fila = await env.DB.prepare('SELECT seq FROM sync_lotes WHERE owner_sub = ?1 AND lote_id = ?2').bind(sub, loteId).first();
-  await purgarViejos(env, sub, t);
-  return { seq: fila.seq, repetido: false };
+  if (!r.meta.changes) {
+    const ya = await env.DB.prepare('SELECT seq FROM sync_lotes WHERE owner_sub = ?1 AND lote_id = ?2').bind(sub, loteId).first();
+    return { seq: ya.seq, repetido: true };
+  }
+  const seq = Number(r.meta.last_row_id);
+  if (seq % PURGA_CADA === 0) await purgarViejos(env, sub, t);
+  return { seq, repetido: false };
 }
 
-async function purgarViejos(env, sub, t) {
+export async function purgarViejos(env, sub, t = now()) {
+  await ensureSyncTables(env);
   const limite = t - RETENCION_DIAS * DAY;
   const tope = await env.DB.prepare('SELECT MAX(seq) AS m FROM sync_lotes WHERE owner_sub = ?1 AND created_at < ?2').bind(sub, limite).first();
   if (!tope || !tope.m) return;
@@ -66,6 +81,21 @@ async function purgarViejos(env, sub, t) {
     `INSERT INTO sync_cuentas (owner_sub, purgado_hasta) VALUES (?1, ?2)
      ON CONFLICT(owner_sub) DO UPDATE SET purgado_hasta = MAX(purgado_hasta, excluded.purgado_hasta)`
   ).bind(sub, tope.m).run();
+}
+
+// --- aviso en vivo a los otros dispositivos (Durable Object con WebSockets que hibernan: un socket quieto no
+// consume tiempo de cómputo, los avisos salientes y los pings no se cobran). Sin el binding SYNC_HUB todo sigue
+// andando: los dispositivos caen a consultar de vez en cuando.
+export const hubReady = (env) => Boolean(env.SYNC_HUB);
+const nombreHub = async (sub) => `cuenta:${(await sha256Hex(new TextEncoder().encode(sub))).slice(0, 32)}`;
+export async function hubDeCuenta(env, sub) { return env.SYNC_HUB.get(env.SYNC_HUB.idFromName(await nombreHub(sub))); }
+// Nunca tira: un aviso perdido solo hace que el otro dispositivo se entere en su próxima consulta.
+export async function avisarCambio(env, { sub, deviceId, seq }) {
+  if (!hubReady(env)) return;
+  try {
+    const hub = await hubDeCuenta(env, sub);
+    await hub.fetch('https://hub/avisar', { method: 'POST', body: JSON.stringify({ seq, de: deviceId }) });
+  } catch (e) { console.error('sync_aviso', e && e.message); }
 }
 
 // Lotes de OTROS dispositivos con seq > desde. `hasta` es el cursor que la app guarda para el próximo pedido

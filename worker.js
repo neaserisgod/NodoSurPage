@@ -31,6 +31,8 @@ import { hasDB } from './functions/_lib/db.js';
 import { purgeBackups, backupsReady } from './functions/_lib/backups.js';
 import { listAllSubscribers } from './functions/_lib/mp.js';
 
+export { SyncHub } from './functions/_lib/sync_hub.js';
+
 const ROUTES = {
   'GET /api/auth/google': google.onRequestGet,
   'GET /api/auth/callback': callback.onRequestGet,
@@ -54,6 +56,7 @@ const ROUTES = {
   'GET /api/backups': backups.onRequestGet,
   'POST /api/sync': sync.onRequestPost,
   'GET /api/sync': sync.onRequestGet,
+  'GET /api/sync/escuchar': sync.onRequestEscuchar,
   'GET /api/download': download.onRequestGet,
   'GET /api/downloads': downloads.onRequestGet,
   'GET /api/update/latest.json': updLatest.onRequestGet,

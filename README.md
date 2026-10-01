@@ -102,9 +102,10 @@ El precio de fundador se activa o desactiva desde **/admin/** (sección "Precio 
 
 ### Sincronización entre dispositivos (PC y celulares)
 
-`POST /api/sync` sube un lote de cambios y `GET /api/sync?desde=<seq>` baja los de los **otros** dispositivos de la cuenta. La nube es un buzón ordenado, no una copia maestra: quién gana un conflicto lo decide el motor de la app (fila más reciente por `actualizado_en`; stock y caja se suman como movimientos).
+`POST /api/sync` sube un lote de cambios y `GET /api/sync?desde=<seq>` baja los de los **otros** dispositivos de la cuenta. La nube es un buzón ordenado, no una copia maestra: quien aplica los lotes en el orden en que llegaron (`seq`) deja que el último pise a los anteriores; el reloj de los dispositivos no decide nada. Stock y caja se suman como movimientos.
 
 - Solo con token de dispositivo. Mismo permiso que las copias (`backupAccess`): suscripción vigente, cuenta eximida o administrador; quien canceló puede bajar durante la ventana de restauración, no subir.
-- Lotes cifrados con AES-256-GCM (`BACKUP_KEY`); la app no incluye en ellos los tokens de Mercado Pago ni del celular. Tope de 1 MB por lote.
-- Subir es idempotente por `X-Lote-Id`. Se conservan 60 días; quien estuvo más tiempo apagado recibe `expirado: true` y se pone al día desde una copia.
-- Toda respuesta trae `ahora` (hora del servidor, ms) para que la app corrija la diferencia de su reloj. Tablas D1 `sync_lotes` y `sync_cuentas` (se crean solas).
+- Lotes cifrados con AES-256-GCM (`BACKUP_KEY`); las tablas que sincroniza la app no llevan tokens. Tope de 1 MB por lote.
+- Subir es idempotente por `X-Lote-Id`. Se conservan 60 días (la purga corre cada 25 lotes); quien estuvo más tiempo apagado recibe `expirado: true` y se pone al día desde una copia. Tablas D1 `sync_lotes` y `sync_cuentas` (se crean solas, una vez por instancia).
+
+**Aviso en vivo, para no consultar de más.** `GET /api/sync/escuchar` (WebSocket) conecta al dispositivo con el Durable Object `SyncHub` de su cuenta (binding `SYNC_HUB`, clase con SQLite: está en el plan gratis). Cuando alguien sube un lote, el hub manda `{"seq":N}` a los demás dispositivos y recién ahí bajan; sin cambios no hay ningún pedido. Costo (WebSocket Hibernation): conectar es 1 pedido; un socket quieto no consume cómputo; los mensajes salientes y los pings no se cobran. El cliente no manda nada por el socket. Sin el binding todo anda igual, solo que los dispositivos tienen que consultar de vez en cuando. Cada subida hace ~3 consultas a D1 y 1 pedido al hub; cada bajada, 2 consultas.
