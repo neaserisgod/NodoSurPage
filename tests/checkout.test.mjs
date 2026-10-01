@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { DatabaseSync } from 'node:sqlite';
 import { sign, verify } from '../functions/_lib/util.js';
 import * as checkout from '../functions/api/checkout.js';
@@ -168,7 +169,7 @@ await t('admin: muestra el plan elegido y cuántos se registraron sin pagar', as
 
 // ---------- los links de pago ya no están en el sitio público
 await t('ningún archivo público expone los links de pago de Mercado Pago', async () => {
-  const root = new URL('..', import.meta.url).pathname;
+  const root = fileURLToPath(new URL('..', import.meta.url));
   const skip = new Set(['node_modules', '.git', 'functions', 'tests', 'migrations', 'img', 'fonts']);
   const bad = [];
   (function walk(d) {
