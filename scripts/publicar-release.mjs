@@ -14,14 +14,14 @@ const fail = (m) => { console.error(`Error: ${m}`); process.exit(1); };
 
 const file = arg('file'), platform = arg('platform'), version = arg('version'), channel = arg('channel', 'stable');
 const rollout = Number(arg('rollout', '100')), bucket = arg('bucket', 'nodosur-releases');
-const site = (process.env.SITE_URL || 'https://horsepos.com').replace(/\/$/, '');
+const site = (process.env.SITE_URL || 'https://horsepos.com').replace(/\/\$/, '');
 const notes = arg('notes-file') ? readFileSync(arg('notes-file'), 'utf8').trim() : arg('notes');
 const dry = flag('dry-run');
 
 if (!file || !platform || !version) fail('faltan --file, --platform o --version');
 if (!['windows', 'macos', 'linux', 'android'].includes(platform)) fail('--platform: windows | macos | linux | android');
 if (!['stable', 'beta'].includes(channel)) fail('--channel: stable | beta');
-if (!/^\d+\.\d+\.\d+(?:\.\d{1,9}|\+\d{1,9}|-[0-9A-Za-z.-]{1,32})?$/.test(version)) fail('--version debe verse como 1.0.0.2099, 1.0.0+2099 o 1.0.0');
+if (!/^\d+\.\d+\.\d+(?:\.\d{1,9}|\+\d{1,9}|-[0-9A-Za-z.-]{1,32})?\$/.test(version)) fail('--version debe verse como 1.0.0.2099, 1.0.0+2099 o 1.0.0');
 if (arg('signature-type') && !['ed', 'dsa'].includes(arg('signature-type'))) fail('--signature-type: ed | dsa');
 if (!Number.isInteger(rollout) || rollout < 0 || rollout > 100) fail('--rollout: entero de 0 a 100');
 if (!dry && !process.env.RELEASE_TOKEN) fail('falta la variable de entorno RELEASE_TOKEN');
@@ -34,10 +34,20 @@ const body = { action: 'create', platform, channel, version, key, sha256, rollou
 console.log(`Archivo:  ${file} (${(size / 1048576).toFixed(1)} MB)\nSHA-256:  ${sha256}\nClave R2: ${bucket}/${key}\nSitio:    ${site}\nLiberada: ${rollout} %${flag('mandatory') ? ' · obligatoria' : ''}`);
 if (dry) { console.log('\n(--dry-run: no se subió ni registró nada)'); process.exit(0); }
 
-const up = spawnSync(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['wrangler', 'r2', 'object', 'put', `${bucket}/${key}`, '--file', file, '--content-type', 'application/octet-stream', '--remote'], { stdio: 'inherit' });
+// CORRECCIÓN: En Windows llamamos a wrangler global directo (sin duplicar argumentos), evitando npx.cmd
+const comando = process.platform === 'win32' ? 'wrangler' : 'npx';
+const argumentos = process.platform === 'win32' 
+  ? ['r2', 'object', 'put', `${bucket}/${key}`, '--file', file, '--content-type', 'application/octet-stream', '--remote']
+  : ['wrangler', 'r2', 'object', 'put', `${bucket}/${key}`, '--file', file, '--content-type', 'application/octet-stream', '--remote'];
+
+const up = spawnSync(comando, argumentos, { 
+  stdio: 'inherit',
+  shell: process.platform === 'win32' ? true : false 
+});
+
 if (up.status !== 0) fail('no se pudo subir el archivo a R2');
 
 const res = await fetch(`${site}/api/admin/releases`, { method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${process.env.RELEASE_TOKEN}` }, body: JSON.stringify(body) });
 const out = await res.json().catch(() => ({}));
 if (!res.ok) fail(`el sitio rechazó la versión (${res.status}: ${out.error || 'error'})${out.error === 'exists' ? ' — esa versión ya está publicada' : ''}`);
-console.log(`\nListo: ${platform} ${version} publicada en ${channel}${rollout < 100 ? ` al ${rollout} %` : ''}. Subí el porcentaje desde el panel de administración cuando veas que anda bien.`);
+console.log(`\nListo: ${platform} ${version} publicada en ${channel}${rollout < 100 ? ` al \${rollout} %` : ''}. Subí el porcentaje desde el panel de administración cuando veas que anda bien.`);
