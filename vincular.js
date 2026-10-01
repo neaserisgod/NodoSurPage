@@ -18,9 +18,9 @@
   }).then(function (u) {
     if (!u) return;
     done();
-    var c = card('¿Vincular esta PC a tu cuenta?');
+    var c = card('¿Vincular este dispositivo a tu cuenta?');
     c.appendChild(el('p', 'acc-note', 'Vas a vincular «' + name + '» con la cuenta ' + u.email + '. Desde ahí la app puede guardar copias de tu base y, si reinstalás, recuperarlas entrando con esta cuenta.'));
-    c.appendChild(el('p', 'acc-note', 'Si no abriste esto desde la app de Nodo Sur POS en tu PC, cerrá esta página.'));
+    c.appendChild(el('p', 'acc-note', 'Si no abriste esto desde la app de Nodo Sur POS (en tu PC o en tu celular), cerrá esta página.'));
     var msg = el('p', 'login-err'); msg.setAttribute('role', 'alert');
     var acts = el('div', 'acc-actions');
     var ok = el('button', 'btn', 'Vincular'); ok.type = 'button';
