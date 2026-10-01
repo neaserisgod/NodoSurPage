@@ -23,6 +23,7 @@ import * as devicePing from './functions/api/device/ping.js';
 import * as devices from './functions/api/devices.js';
 import * as backup from './functions/api/backup.js';
 import * as backups from './functions/api/backups.js';
+import * as sync from './functions/api/sync.js';
 import * as promo from './functions/api/promo.js';
 import * as adminPromo from './functions/api/admin/promo.js';
 import { sweep } from './functions/_lib/sweep.js';
@@ -51,6 +52,8 @@ const ROUTES = {
   'GET /api/backup': backup.onRequestGet,
   'DELETE /api/backup': backup.onRequestDelete,
   'GET /api/backups': backups.onRequestGet,
+  'POST /api/sync': sync.onRequestPost,
+  'GET /api/sync': sync.onRequestGet,
   'GET /api/download': download.onRequestGet,
   'GET /api/downloads': downloads.onRequestGet,
   'GET /api/update/latest.json': updLatest.onRequestGet,

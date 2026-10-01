@@ -99,3 +99,12 @@ Google Cloud → Google Auth Platform → Clientes (Aplicación web):
 ## Precio de fundador (interruptor)
 
 El precio de fundador se activa o desactiva desde **/admin/** (sección "Precio de fundador"). El estado se guarda en la tabla `settings` de D1 (se crea sola al usarlo; `migrations/0002_settings.sql` es opcional). Por defecto está **activo**. Al desactivarlo desaparece de `/pagar/`, del bloque de la home y de las páginas del sistema, sin volver a publicar el sitio. `GET /api/promo` devuelve `{"activa": true|false}` (público). Los enlaces de pago con el precio de fundador se cargan en `pagar.js` (`promoHref` de cada plan).
+
+### Sincronización entre dispositivos (PC y celulares)
+
+`POST /api/sync` sube un lote de cambios y `GET /api/sync?desde=<seq>` baja los de los **otros** dispositivos de la cuenta. La nube es un buzón ordenado, no una copia maestra: quién gana un conflicto lo decide el motor de la app (fila más reciente por `actualizado_en`; stock y caja se suman como movimientos).
+
+- Solo con token de dispositivo. Mismo permiso que las copias (`backupAccess`): suscripción vigente, cuenta eximida o administrador; quien canceló puede bajar durante la ventana de restauración, no subir.
+- Lotes cifrados con AES-256-GCM (`BACKUP_KEY`); la app no incluye en ellos los tokens de Mercado Pago ni del celular. Tope de 1 MB por lote.
+- Subir es idempotente por `X-Lote-Id`. Se conservan 60 días; quien estuvo más tiempo apagado recibe `expirado: true` y se pone al día desde una copia.
+- Toda respuesta trae `ahora` (hora del servidor, ms) para que la app corrija la diferencia de su reloj. Tablas D1 `sync_lotes` y `sync_cuentas` (se crean solas).
