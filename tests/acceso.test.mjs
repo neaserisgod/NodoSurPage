@@ -277,4 +277,12 @@ await t('barrido: si el negocio NO paga, sus miembros inactivos califican como c
   mp.subs = [mpSub('otra@x.com', 'authorized')]; mockMP();
   const r = await sweep(env, { apply: false }); assert.deepEqual(r.actions.map((a) => a.email).sort(), ['duena@x.com', 'emp@x.com']);
 });
+await t('copias: a un empleado el negocio al día no le dice "sin suscripción": le dice que no administra copias', async () => {
+  const env = mkEnv(); const n = await negocio(env); paga('duena@x.com'); miembro(env, n, 'emp@x.com', 'sm', 'employee', { branches: [n.a] });
+  const tok = await pc(env, n, n.a, 'sm', 'emp@x.com', ID('emp2'));
+  const r = await listarDev(env, tok);
+  assert.equal(r.noPermission, true); assert.equal(r.upload, false); assert.deepEqual(r.backups, []);
+  const dueno = await listarDev(env, await pc(env, n, n.a, 'sd', 'duena@x.com', ID('due2')));
+  assert.equal(dueno.noPermission, undefined); assert.equal(dueno.upload, true);
+});
 console.log(`\n${pass} pruebas OK (acceso por negocio y sucursal)`);
