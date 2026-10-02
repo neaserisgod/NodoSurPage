@@ -9,7 +9,7 @@
   var HDR = { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' };
   var PLAN_NAMES = { pos: 'Sistema POS', 'pos-bot': 'Sistema + Bot', bot: 'Solo el bot' };
   var ACTIVE = { authorized: 1, paused: 1, pending: 1 };
-  var target = null, bajaTarget = null;
+  var target = null, bajaTarget = null, cobroTarget = null;
 
   function post(url, body) {
     return fetch(url, { method: 'POST', credentials: 'same-origin', headers: HDR, body: JSON.stringify(body) })
@@ -126,7 +126,7 @@
     var sn = el('section', 'acc'); sn.appendChild(el('h2', null, 'Negocios'));
     sn.appendChild(el('p', 'acc-note', 'Cada negocio es un cliente que paga una vez, con sus sucursales y su equipo. Esto es solo para mirar: el dueño administra el suyo desde Mi negocio.'));
     var nw = el('div', 'tbl adm-tbl'), nt = el('table'), nh = el('thead'), nr = el('tr');
-    ['Negocio', 'Dueño', 'Suscripción', 'Equipo', 'Sucursales', 'PC', 'Último uso'].forEach(function (h) { nr.appendChild(el('th', null, h)); });
+    ['Negocio', 'Dueño', 'Suscripción', 'Equipo', 'Sucursales', 'PC', 'Último uso', ''].forEach(function (h) { nr.appendChild(el('th', null, h)); });
     nh.appendChild(nr); nt.appendChild(nh);
     var nb = el('tbody');
     (d.orgs || []).forEach(function (o) {
@@ -140,9 +140,12 @@
       tr.appendChild(cs);
       var ce = el('td'); ce.appendChild(document.createTextNode(String(o.members))); if (o.overSoftCap) { ce.appendChild(document.createTextNode(' ')); ce.appendChild(chip('Pasó el tope', 'wait')); } tr.appendChild(ce);
       tr.appendChild(el('td', null, String(o.branches))); tr.appendChild(el('td', null, String(o.devices))); tr.appendChild(el('td', null, o.lastSeen ? ago(o.lastSeen) : '—'));
+      var oa = el('td', 'acts'), ob = el('button', 'lnk', 'Mail de cobro'); ob.type = 'button';
+      ob.addEventListener('click', function () { cobroTarget = o; document.getElementById('cobro-org').textContent = o.name; document.getElementById('cobro-mail').value = o.billingEmail || ''; document.getElementById('cobro-err').textContent = ''; var cd = document.getElementById('cobro'); cd.showModal ? cd.showModal() : cd.setAttribute('open', ''); });
+      oa.appendChild(ob); tr.appendChild(oa);
       nb.appendChild(tr);
     });
-    if (!(d.orgs || []).length) { var ne = el('tr'), nc = el('td', null, 'Todavía no hay negocios: se crean cuando un cliente vincula su primera PC.'); nc.colSpan = 7; ne.appendChild(nc); nb.appendChild(ne); }
+    if (!(d.orgs || []).length) { var ne = el('tr'), nc = el('td', null, 'Todavía no hay negocios: se crean cuando un cliente vincula su primera PC.'); nc.colSpan = 8; ne.appendChild(nc); nb.appendChild(ne); }
     nt.appendChild(nb); labelCells(nt); nw.appendChild(nt); sn.appendChild(nw); root.appendChild(sn);
 
     if (d.subscribersWithoutAccount.length) {
@@ -238,6 +241,18 @@
       if (!x.ok) { document.getElementById('del-err').textContent = 'No se pudo eliminar.'; return; }
       dlg.close ? dlg.close() : dlg.removeAttribute('open'); refresh();
     });
+  });
+  // Ajustar el mail con el que se cobra un negocio (soporte: pagó con otro mail, o una transferencia sin resolver).
+  var cd = document.getElementById('cobro');
+  document.getElementById('cobro-no').addEventListener('click', function () { cd.close ? cd.close() : cd.removeAttribute('open'); });
+  document.getElementById('cobro-si').addEventListener('click', function () {
+    if (!cobroTarget) return;
+    var btn = this; btn.disabled = true;
+    post('/api/admin/org', { orgId: cobroTarget.id, billingEmail: document.getElementById('cobro-mail').value }).then(function (x) {
+      btn.disabled = false;
+      if (!x.ok) { document.getElementById('cobro-err').textContent = x.j && x.j.error === 'bad_request' ? 'Revisá el mail: no parece válido.' : 'No se pudo guardar. Probá de nuevo.'; return; }
+      cd.close ? cd.close() : cd.removeAttribute('open'); refresh();
+    }).catch(function () { btn.disabled = false; document.getElementById('cobro-err').textContent = 'Error de conexión. Probá de nuevo.'; });
   });
   var bd = document.getElementById('baja');
   document.getElementById('baja-no').addEventListener('click', function () { bd.close ? bd.close() : bd.removeAttribute('open'); });

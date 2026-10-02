@@ -26,6 +26,9 @@ import * as backups from './functions/api/backups.js';
 import * as orgInvitations from './functions/api/org/invitations.js';
 import * as orgMembers from './functions/api/org/members.js';
 import * as orgBranches from './functions/api/org/branches.js';
+import * as orgTransfer from './functions/api/org/transfer.js';
+import * as orgBilling from './functions/api/org/billing.js';
+import * as adminOrg from './functions/api/admin/org.js';
 import * as promo from './functions/api/promo.js';
 import * as adminPromo from './functions/api/admin/promo.js';
 import { sweep } from './functions/_lib/sweep.js';
@@ -65,6 +68,14 @@ const ROUTES = {
   'GET /api/org/branches': orgBranches.onRequestGet,
   'POST /api/org/branch': orgBranches.onRequestPost,
   'POST /api/org/branch/update': orgBranches.onRequestUpdate,
+  'GET /api/org/transfer': orgTransfer.onRequestGet,
+  'POST /api/org/transfer': orgTransfer.onRequestPost,
+  'POST /api/org/transfer/accept': orgTransfer.onRequestAccept,
+  'POST /api/org/transfer/decline': orgTransfer.onRequestDecline,
+  'POST /api/org/transfer/cancel': orgTransfer.onRequestCancel,
+  'GET /api/org/billing': orgBilling.onRequestGet,
+  'POST /api/org/billing': orgBilling.onRequestPost,
+  'POST /api/admin/org': adminOrg.onRequestPost,
   'GET /api/download': download.onRequestGet,
   'GET /api/downloads': downloads.onRequestGet,
   'GET /api/update/latest.json': updLatest.onRequestGet,

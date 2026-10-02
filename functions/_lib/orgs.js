@@ -36,6 +36,13 @@ const DDL = [
      all_branches INTEGER NOT NULL DEFAULT 0, branch_ids TEXT, token_hash TEXT NOT NULL UNIQUE,
      exp INTEGER NOT NULL, created_at INTEGER NOT NULL, accepted_at INTEGER)`,
   `CREATE INDEX IF NOT EXISTS idx_invitations_email ON invitations(email)`,
+  // Transferencia de propiedad: como mucho UNA pendiente por negocio (índice parcial).
+  `CREATE TABLE IF NOT EXISTS org_transfers (
+     id INTEGER PRIMARY KEY AUTOINCREMENT, org_id INTEGER NOT NULL, from_sub TEXT NOT NULL, from_email TEXT NOT NULL,
+     to_sub TEXT NOT NULL, to_email TEXT NOT NULL, status TEXT NOT NULL DEFAULT 'pending',
+     created_at INTEGER NOT NULL, exp INTEGER NOT NULL, resolved_at INTEGER)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_transfers_pending ON org_transfers(org_id) WHERE status = 'pending'`,
+  `CREATE INDEX IF NOT EXISTS idx_transfers_to ON org_transfers(to_sub, status)`,
 ];
 // devices y backups traen solas sus columnas owner_org y branch_id (ver ensureDeviceTables / ensureBackupTables).
 export const ensureOrgTables = (env) => once(env, 'orgs', async () => {

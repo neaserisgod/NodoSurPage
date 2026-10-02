@@ -18,7 +18,7 @@ El sitio se publica como **Worker con archivos estáticos** (`wrangler.jsonc`, n
 
 ### Negocios, sucursales y miembros (en construcción)
 
-Hoy todo cuelga del `sub` de una persona. El modelo nuevo agrega el **negocio** (el que paga) entre la persona y todo lo demás. Se implementa por fases; ya están el modelo (fase 1), el acceso calculado por negocio (fase 2), la API de miembros, invitaciones y sucursales (fase 3) y las pantallas (fase 4). Falta la transferencia de propiedad (fase 5) y el POS (fase 6).
+Hoy todo cuelga del `sub` de una persona. El modelo nuevo agrega el **negocio** (el que paga) entre la persona y todo lo demás. Se implementa por fases; ya están el modelo (fase 1), el acceso calculado por negocio (fase 2), la API de miembros, invitaciones y sucursales (fase 3), las pantallas (fase 4) y la transferencia de propiedad con la facturación (fase 5). Falta el POS (fase 6).
 
 - **`orgs`** (negocio, con `billing_email`), **`branches`** (sucursales), **`memberships`** (persona + rol + sucursales), **`invitations`**. Definición en `functions/_lib/orgs.js` (se crean solas) y `migrations/0005_orgs.sql` (opcional).
 - Todo negocio nace con una **"Sucursal principal"**; `devices` y `backups` ganan `owner_org` y `branch_id` (nullable). `backfillOrgs` convierte lo que ya existe, es idempotente y solo toca filas sin negocio.
@@ -42,6 +42,12 @@ Hoy todo cuelga del `sub` de una persona. El modelo nuevo agrega el **negocio** 
   - `/cuenta/`: muestra "Tu negocio" y, a quien solo es encargado o empleado (`billing: false` en `/api/me`), no le consulta Mercado Pago ni le ofrece "elegí tu sistema". `/vincular/` deja elegir negocio y sucursal (solo el dueño vincula).
   - `/admin/`: tabla de **Negocios** (solo lectura: dueño, mail de cobro, suscripción, equipo, sucursales, PC, tope blando). Es distinta de `/negocio/`: la de admin es de Nodo Sur, la otra es de cada dueño.
   - Las páginas arman todo con `textContent` (nombres y mails vienen de la base; hay un test que prohíbe `innerHTML`).
+- **Transferencia de propiedad y facturación (fase 5)**
+  - En dos pasos: el dueño propone a un miembro (`POST /api/org/transfer`) y esa persona acepta (`/accept`) o rechaza (`/decline`); el dueño puede retirarla (`/cancel`). Una sola pendiente por negocio (índice parcial), vence a los 7 días, y quitar a la persona del equipo la retira. Hasta que acepte no cambia nada.
+  - Al aceptar: el nuevo es `owner` con todas las sucursales y el anterior queda de **encargado** con todas (sus PC siguen andando: el negocio no se queda sin caja ese día). Si el nuevo dueño lo quita después, las PC que vinculó dejan de valer (la pantalla lo avisa).
+  - **El mail de cobro (`billing_email`) no cambia solo** (Mercado Pago cobra a quien pagó). `GET/POST /api/org/billing` (solo el dueño): muestra quién paga (enmascarado si no es él) y deja **pasar el cobro a la suscripción propia**.
+  - Reglas de seguridad: (1) el mail sale **siempre de la sesión**, nunca del pedido, y debe tener una suscripción vigente: si no, cualquiera podría apuntar su negocio a la suscripción de otro cliente y usar el sistema sin pagar; (2) **nadie cancela la suscripción de otra persona** (puede cubrir otros negocios suyos): `cancel.js` no se tocó, cancela quien paga; (3) el administrador de la plataforma puede ajustar el mail de cobro (`POST /api/admin/org`, botón «Mail de cobro» en `/admin/`) para casos de soporte.
+  - `/api/me` suma `covered`: el dueño de un negocio cubierto por la suscripción de otra persona no recibe «elegí tu sistema». `/negocio/` muestra la propuesta recibida y la tarjeta de Facturación.
 - Las ventas y la caja siguen siendo **locales por PC**: no hay reportes consolidados entre sucursales (exigirían subir las ventas a la nube).
 
 ### Pagar exige ingresar (y se recuerda el plan)

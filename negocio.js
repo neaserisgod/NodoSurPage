@@ -9,6 +9,9 @@
     already_member: 'Esa persona ya es parte del negocio.', too_many_pending: 'Hay demasiadas invitaciones pendientes. Cancelá algunas.',
     owner_immutable: 'Al dueño no se lo puede cambiar ni quitar desde acá.', name_taken: 'Ya hay una sucursal con ese nombre.', bad_name: 'Poné un nombre para la sucursal.',
     last_branch: 'No se puede cerrar la última sucursal activa.', has_devices: 'Esa sucursal tiene PC vinculadas. Primero desvinculalas.', too_many: 'Llegaste al máximo de sucursales.',
+    self: 'No podés transferirte el negocio a vos mismo.', stale: 'La propuesta ya no es válida: el negocio cambió de dueño.', not_member: 'Esa persona ya no es parte del negocio.',
+    expired: 'La propuesta venció.', accepted: 'Esa propuesta ya se resolvió.', declined: 'Esa propuesta ya se resolvió.', cancelled: 'Esa propuesta ya se resolvió.',
+    no_subscription: 'Tu mail no tiene una suscripción vigente. Suscribite primero.', mp_error: 'No pudimos consultar Mercado Pago. Probá de nuevo en unos minutos.', not_configured: 'La facturación todavía no está disponible.',
     not_found: 'Ya no existe: recargá la página.', forbidden: 'No tenés permiso para hacer esto.', no_session: 'Tu sesión venció. Volvé a ingresar.'
   };
   var msgError = function (j) { return (j && ERR[j.error]) || 'No se pudo completar. Probá de nuevo.'; };
@@ -80,6 +83,7 @@
   function campo(label, ctrl) { var l = el('label', null, label); l.appendChild(ctrl); return l; }
   function selectRol() { var s = el('select'); [['employee', 'Empleado'], ['manager', 'Encargado']].forEach(function (r) { var o = el('option', null, r[1]); o.value = r[0]; s.appendChild(o); }); return s; }
 
+  var trans = { incoming: [], outgoing: [] };
   var me = null, orgId = null, datos = null, ultimo = null; // `ultimo`: el link de la última invitación, que sobrevive a recargar la lista
   var org = function () { return me.orgs.filter(function (o) { return o.id === orgId; })[0]; };
   function guardarOrg() { try { sessionStorage.setItem('ns_org', String(orgId)); } catch (e) { /* sin almacenamiento: no pasa nada */ } }
@@ -96,8 +100,40 @@
     try { guardado = parseInt(sessionStorage.getItem('ns_org'), 10); } catch (e) { /* idem */ }
     var ids = me.orgs.map(function (o) { return o.id; });
     orgId = ids.indexOf(pedido) >= 0 ? pedido : ids.indexOf(guardado) >= 0 ? guardado : ids[0];
-    render();
+    return cargarTraspasos().then(render);
   }).catch(function () { listo(); root.textContent = ''; root.appendChild(note('No pudimos cargar tu negocio. Recargá la página.')); });
+
+  // ---- transferencia de propiedad: lo que me propusieron y lo que propuse
+  function cargarTraspasos() { return api('GET', '/api/org/transfer').then(function (r) { trans = r.ok ? r.j : { incoming: [], outgoing: [] }; }); }
+  var pendienteDe = function (id) { return trans.outgoing.filter(function (x) { return x.orgId === id; })[0]; };
+  function avisos() {
+    trans.incoming.forEach(function (i) {
+      var quien = i.fromName || i.fromEmail, c = card('Te quieren transferir «' + i.orgName + '»'); c.classList.add('neg-aviso');
+      c.appendChild(note(quien + ' (' + i.fromEmail + ') quiere que seas quien administra este negocio. Si aceptás, pasás a ser dueño (equipo, sucursales y facturación quedan a tu cargo) y ' + quien + ' queda como encargado.'));
+      c.appendChild(note('La facturación sigue a nombre de ' + quien + ' hasta que pases el cobro a tu propia suscripción. La propuesta vence el ' + dt(i.exp) + '. Si no la esperabas, rechazala.'));
+      var a = el('div', 'acc-actions');
+      a.appendChild(button('Aceptar', 'btn', function () {
+        abrir({ titulo: '¿Aceptar «' + i.orgName + '»?', cuerpo: note('Vas a ser quien administra el negocio. Apenas entres, revisá la Facturación: el cobro sigue a nombre de ' + quien + ' hasta que lo pases a tu suscripción.'), boton: 'Sí, aceptar',
+          accion: function () { return api('POST', '/api/org/transfer/accept', { transferId: i.id }).then(function (r) { return r.ok ? {} : { error: msgError(r.j) }; }); },
+          despues: function () { location.href = '/negocio/?org=' + i.orgId; } });
+      }));
+      a.appendChild(button('Rechazar', 'btn btn-w', function () {
+        confirmar('¿Rechazar la propuesta?', quien + ' sigue siendo el dueño de «' + i.orgName + '» y no cambia nada.', 'Sí, rechazar',
+          function () { return api('POST', '/api/org/transfer/decline', { transferId: i.id }).then(function (r) { return r.ok ? {} : { error: msgError(r.j) }; }); }, function () { cargarTraspasos().then(render); });
+      }));
+      c.appendChild(a); root.appendChild(c);
+    });
+  }
+  function proponer(o, m) {
+    var quien = m.name || m.email, cuerpo = el('div', 'dlg-body');
+    ['Le mandamos una propuesta. Hasta que la acepte, seguís siendo el dueño y no cambia nada.',
+     'Si acepta, pasa a ser quien administra el negocio (equipo, sucursales y facturación) y vos quedás como encargado.',
+     'Tus PC siguen funcionando. El cobro sigue a tu nombre hasta que la persona pase el cobro a su propia suscripción: si cancelás la tuya antes, el negocio se queda sin cobertura.',
+     'La propuesta vence en 7 días y la podés retirar cuando quieras.'].forEach(function (x) { cuerpo.appendChild(note(x)); });
+    abrir({ titulo: '¿Transferir «' + o.name + '» a ' + quien + '?', cuerpo: cuerpo, boton: 'Sí, proponer la transferencia',
+      accion: function () { return api('POST', '/api/org/transfer', { orgId: o.id, memberId: m.id }).then(function (r) { return r.ok ? {} : { error: msgError(r.j) }; }); },
+      despues: function () { cargarTraspasos().then(render); } });
+  }
 
   function sinNegocio() {
     root.textContent = '';
@@ -108,6 +144,7 @@
 
   function render() {
     guardarOrg(); root.textContent = '';
+    avisos();
     var o = org(), c = card(o.name); c.classList.add('neg-head');
     var fila = el('div', 'prow'); fila.appendChild(chip(ROLE[o.role] || o.role, o.role === 'owner' ? 'ok' : 'wait'));
     if (me.orgs.length > 1) {
@@ -116,8 +153,17 @@
       s.addEventListener('change', function () { orgId = parseInt(s.value, 10); ultimo = null; render(); });
       var f = el('div', 'frm'); f.appendChild(s); fila.appendChild(f);
     }
-    c.appendChild(fila); root.appendChild(c);
+    c.appendChild(fila);
+    var saliente = pendienteDe(o.id);
+    if (saliente) {
+      c.appendChild(note('Transferencia pendiente: le propusiste el negocio a ' + saliente.toEmail + ' (vence el ' + dt(saliente.exp) + '). Hasta que acepte, seguís siendo el dueño.'));
+      c.appendChild(button('Retirar la propuesta', 'btn btn-w', function () {
+        api('POST', '/api/org/transfer/cancel', { orgId: o.id }).then(function () { cargarTraspasos().then(render); });
+      }));
+    }
+    root.appendChild(c);
 
+    if (o.can.facturacion) facturacion(o);
     if (o.can.miembros) { owner(o); }
     else {
       var t = card('Tu lugar de trabajo');
@@ -161,7 +207,11 @@
       tr.appendChild(el('td', null, ROLE[m.role] || m.role));
       tr.appendChild(el('td', null, m.allBranches ? 'Todas' : nombresRamas(m.branchIds) || '—'));
       var ac = el('td', 'acts');
-      if (m.role !== 'owner') { ac.appendChild(lnk('Editar', function () { editarMiembro(o, m, recargar); })); ac.appendChild(lnk('Quitar', function () { quitarMiembro(o, m, recargar); }, true)); }
+      if (m.role !== 'owner') {
+        ac.appendChild(lnk('Editar', function () { editarMiembro(o, m, recargar); }));
+        if (o.can.transferir && !pendienteDe(o.id)) ac.appendChild(lnk('Hacer dueño', function () { proponer(o, m); }));
+        ac.appendChild(lnk('Quitar', function () { quitarMiembro(o, m, recargar); }, true));
+      }
       tr.appendChild(ac); tb.body.appendChild(tr);
     });
     tb.done(); c.appendChild(tb.wrap);
@@ -277,6 +327,40 @@
       li.appendChild(ac); ul.appendChild(li);
     });
     c.appendChild(ul);
+  }
+
+  // ---- facturación (solo el dueño): quién paga y cómo pasar el cobro a la suscripción propia
+  function facturacion(o) {
+    var c = card('Facturación'); c.appendChild(note('Cargando…')); root.appendChild(c);
+    function cargar() {
+      api('GET', '/api/org/billing?org=' + o.id).then(function (r) {
+        c.textContent = ''; c.appendChild(el('h2', null, 'Facturación'));
+        if (!r.ok) { c.appendChild(note('No pudimos cargar la facturación.')); return; }
+        var d = r.j, ST = { authorized: ['Activa', 'ok'], inactive: ['Sin suscripción vigente', 'bad'], none: ['Sin suscripción', 'bad'], unknown: ['No se pudo verificar', 'wait'] }[d.status] || ['—', 'wait'];
+        var fila = el('div', 'prow'); fila.appendChild(chip(ST[0], ST[1])); c.appendChild(fila);
+        if (d.mpError) c.appendChild(note('No pudimos consultar Mercado Pago en este momento. Probá de nuevo en unos minutos.'));
+        c.appendChild(note(d.mine
+          ? 'El negocio se cobra con tu suscripción (' + d.billingEmail + '). Podés verla y cancelarla desde Mi cuenta.'
+          : 'El negocio se cobra con la suscripción de ' + d.billingEmail + '. Está a nombre de otra persona: solo ella puede cancelarla, y si lo hace el negocio se queda sin cobertura.'));
+        if (d.subscriptions && d.subscriptions.length) {
+          var ul = el('ul', 'pays');
+          d.subscriptions.forEach(function (x) { var li = el('li'); li.appendChild(el('span', null, x.plan)); li.appendChild(el('span', null, { authorized: 'Activa', paused: 'Pausada', cancelled: 'Cancelada', canceled: 'Cancelada', pending: 'Pendiente' }[x.status] || x.status)); li.appendChild(el('strong', null, x.amount != null ? '$ ' + Math.round(x.amount).toLocaleString('es-AR') : '')); ul.appendChild(li); });
+          c.appendChild(ul);
+        }
+        if (d.mine) { var l = el('a', 'btn btn-w', 'Ir a Mi cuenta'); l.href = '/cuenta/'; l.style.alignSelf = 'flex-start'; c.appendChild(l); return; }
+        if (d.ownHasSubscription) {
+          c.appendChild(note('Tenés una suscripción activa con tu mail. Podés usarla para este negocio: deja de depender de la de ' + d.billingEmail + ', que puede cancelar la suya sin que el negocio se corte.'));
+          c.appendChild(button('Usar mi suscripción para este negocio', 'btn', function () {
+            abrir({ titulo: '¿Cobrar el negocio con tu suscripción?', cuerpo: note('Desde ahora «' + o.name + '» se cubre con tu suscripción y deja de depender de la de ' + d.billingEmail + '.'), boton: 'Sí, usar la mía',
+              accion: function () { return api('POST', '/api/org/billing', { orgId: o.id, action: 'use_mine' }).then(function (x) { return x.ok ? {} : { error: msgError(x.j) }; }); }, despues: cargar });
+          }));
+        } else {
+          c.appendChild(note('Para que el cobro quede a tu cargo, suscribite con tu mail y después volvé acá a pasar el negocio a tu suscripción.'));
+          var p = el('a', 'btn', 'Suscribirme'); p.href = '/pagar/'; p.style.alignSelf = 'flex-start'; c.appendChild(p);
+        }
+      });
+    }
+    cargar();
   }
 
   // ---- copias de seguridad (dueño y encargado, de sus sucursales)

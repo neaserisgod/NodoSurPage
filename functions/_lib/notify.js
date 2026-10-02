@@ -38,3 +38,20 @@ export async function sendInvitation(env, { to, orgName, inviterName, link, role
   } catch { return false; }
 }
 
+// Aviso de que alguien quiere transferirte un negocio. Es solo un aviso: la decisión se toma dentro del sitio.
+export async function sendTransferNotice(env, { to, orgName, fromName, site }) {
+  if (!notifierReady(env)) return false;
+  const quien = String(fromName || '').trim() || 'El dueño';
+  const text = `Hola,\n\n${quien} quiere transferirte la propiedad de "${orgName}" en Nodo Sur.\n\n` +
+    `Si aceptás, pasás a ser quien administra el negocio (equipo, sucursales y facturación) y ${quien} queda como encargado. ` +
+    `Podés aceptar o rechazar entrando en ${site}/negocio/ con este mismo mail. La propuesta vence en 7 días.\n\n` +
+    `Si no la esperabas, no hagas nada: sin tu aceptación no cambia nada.\n\nNodo Sur`;
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: env.MAIL_FROM, to: [to], subject: `Te quieren transferir "${orgName}" en Nodo Sur`, text }),
+    });
+    return res.ok;
+  } catch { return false; }
+}

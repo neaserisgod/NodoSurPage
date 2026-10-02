@@ -70,6 +70,16 @@
       return;
     }
 
+    // Propuestas de transferencia de propiedad que le mandaron: se avisan acá porque es lo primero que ve al entrar.
+    if (d.orgs && d.orgs.length) {
+      fetch('/api/org/transfer', { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+        if (!j || !j.incoming || !j.incoming.length) return;
+        var tc = card('Te quieren transferir un negocio');
+        j.incoming.forEach(function (i) { tc.appendChild(el('p', 'acc-note', (i.fromName || i.fromEmail) + ' quiere transferirte «' + i.orgName + '». Podés aceptar o rechazar desde Mi negocio.')); var ta = el('a', 'btn', 'Ver la propuesta'); ta.href = '/negocio/?org=' + encodeURIComponent(i.orgId); ta.style.alignSelf = 'flex-start'; tc.appendChild(ta); });
+        root.insertBefore(tc, root.children[1] || null);
+      }).catch(function () { /* es solo un aviso */ });
+    }
+
     if (d.notice) {
       var nb = el('div', 'login-err'); nb.setAttribute('role', 'alert');
       nb.textContent = 'Tu cuenta figura sin suscripción ni uso reciente y se eliminaría el ' + date(d.notice.deleteAfter * 1000) + '. Al haber ingresado hoy, el aviso se canceló.';
@@ -83,6 +93,7 @@
       s.appendChild(el('p', 'acc-note', 'No pudimos consultar Mercado Pago en este momento. Probá de nuevo en unos minutos.'));
     } else if (!d.subscriptions || !d.subscriptions.length) {
       s.appendChild(el('p', 'acc-note', 'No encontramos una suscripción asociada a ' + u.email + '.'));
+      if (d.covered) s.appendChild(el('p', 'acc-note', 'Tu negocio está cubierto por la suscripción de otra persona. Revisá la facturación en Mi negocio.'));
       s.appendChild(el('p', 'acc-note', 'Si ya pagaste con otro mail de Mercado Pago, escribime y la vinculamos a mano. Si todavía no te suscribiste, elegí tu sistema acá abajo.'));
       var acts = el('div', 'acc-actions');
       var a2 = el('a', 'btn btn-w', 'Escribime por WhatsApp'); a2.rel = 'noopener'; a2.href = WA + encodeURIComponent('Hola, ingresé con ' + u.email + ' y no veo mi suscripción'); acts.appendChild(a2);
@@ -98,7 +109,7 @@
       root.appendChild(dl);
     }
     // Registrado sin suscripción: se le ofrecen los sistemas (o se sabe que no hay error de Mercado Pago).
-    if (!d.mpError && (!d.mpConfigured || !d.subscriptions || !d.subscriptions.length) && !d.isAdmin) root.appendChild(offerCard(d));
+    if (!d.mpError && (!d.mpConfigured || !d.subscriptions || !d.subscriptions.length) && !d.isAdmin && !d.covered) root.appendChild(offerCard(d));
   }
 
   function offerCard(d) {

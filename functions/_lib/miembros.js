@@ -13,6 +13,7 @@ export const MAX_PENDIENTES = 100;
 export const MAX_SUCURSALES = 200;
 export const ROLES_INVITABLES = ['manager', 'employee'];
 const EMAIL_RE = /^[^\s@]{1,64}@[^\s@]{1,190}\.[^\s@]{2,}$/;
+export const emailValido = (e) => typeof e === 'string' && e.length <= 254 && EMAIL_RE.test(e);
 const TOKEN_RE = /^[0-9a-f]{64}$/;
 export const softCap = (env) => Number(env.MAX_MIEMBROS_SIN_COSTO) || 50;
 
@@ -162,6 +163,8 @@ export async function quitarMiembro(env, org, memberId) {
   if (m.role === 'owner') return { status: 403, error: 'owner_immutable' };
   await env.DB.prepare("UPDATE memberships SET status = 'removed', pin_hash = NULL WHERE id = ?1").bind(m.id).run();
   await env.DB.prepare('DELETE FROM membership_branches WHERE membership_id = ?1').bind(m.id).run();
+  // Si le habían propuesto la propiedad, esa propuesta ya no puede aceptarse: se retira para que no quede colgada.
+  await env.DB.prepare("UPDATE org_transfers SET status = 'cancelled', resolved_at = ?3 WHERE org_id = ?1 AND to_sub = ?2 AND status = 'pending'").bind(org.id, m.user_sub, now()).run();
   return { ok: true };
 }
 

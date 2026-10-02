@@ -3,13 +3,13 @@
 // esta tabla y nada más.
 //
 // Dos clases de acción:
-//  * de negocio (facturación, miembros, sucursales, vincular PC): no dependen de la sucursal.
+//  * de negocio (facturación, miembros, sucursales, vincular PC, transferir la propiedad): no dependen de la sucursal.
 //  * de sucursal (operar, descargar, copias): hay que indicar en cuál, y la persona tiene que tener esa
 //    sucursal asignada (o `all_branches`). Un empleado solo ve lo de su sucursal.
 export const ROLES = ['owner', 'manager', 'employee'];
-export const ACCIONES = ['facturacion', 'miembros', 'sucursales', 'vincular_pc', 'descargar', 'copias', 'operar'];
+export const ACCIONES = ['facturacion', 'miembros', 'sucursales', 'vincular_pc', 'transferir', 'descargar', 'copias', 'operar'];
 
-const DE_NEGOCIO = new Set(['facturacion', 'miembros', 'sucursales', 'vincular_pc']);
+const DE_NEGOCIO = new Set(['facturacion', 'miembros', 'sucursales', 'vincular_pc', 'transferir']);
 
 // Qué acciones permite cada rol. El dueño tiene todas.
 const POR_ROL = {

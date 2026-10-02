@@ -27,11 +27,21 @@ export async function onRequestGet({ request, env }) {
       await Promise.all(subscriptions.map(async (sub) => { sub.payments = await listPayments(env, sub.id); }));
     } catch { mpError = true; subscriptions = null; }
   }
+  // ¿El negocio del que es dueño está cubierto por la suscripción de OTRA persona (típico tras una transferencia, mientras
+  // la dueña anterior siga pagando)? Entonces no se la molesta con "elegí tu sistema". Solo se mira si ella no paga por su cuenta.
+  let covered = false;
+  if (billing && env.MP_ACCESS_TOKEN && !mpError && !(subscriptions || []).some((x) => x.status === 'authorized')) {
+    const otros = [...new Set(membresias.filter((m) => m.role === 'owner' && m.org.billing_email !== s.email).map((m) => m.org.billing_email))];
+    for (const e of otros) {
+      try { if ((await listSubscriptions(env, e)).some((x) => x.status === 'authorized')) { covered = true; break; } } catch { /* ante la duda, no se asume cubierta */ }
+    }
+  }
   const intent = billing && user && isPlan(user.plan_interest) ? { plan: user.plan_interest, promo: Boolean(user.promo_interest) } : null;
   const res = json({
     user: { name: s.name, email: s.email, since: user ? user.created_at : s.iat, lastSeen: user ? user.last_seen : null },
     subscriptions,
     billing,
+    covered,
     orgs: await describirOrgs(env, membresias),
     mpConfigured: Boolean(env.MP_ACCESS_TOKEN),
     mpError,
@@ -45,7 +55,7 @@ export async function onRequestGet({ request, env }) {
   // "elegí tu sistema" en todo el sitio sin consultar a Mercado Pago en cada página.
   const has = (subscriptions || []).some((x) => ['authorized', 'pending', 'paused'].includes(x.status));
   const month = 30 * 24 * 3600;
-  if (isAdmin || has || !billing) res.headers.append('Set-Cookie', cookie('ns_sub', '1', { maxAge: month, httpOnly: false }));
+  if (isAdmin || has || covered || !billing) res.headers.append('Set-Cookie', cookie('ns_sub', '1', { maxAge: month, httpOnly: false }));
   else if (!mpError) res.headers.append('Set-Cookie', cookie('ns_sub', '0', { maxAge: month, httpOnly: false }));
   res.headers.append('Set-Cookie', cookie('ns_plan', intent ? intent.plan : '', { maxAge: intent ? month : 0, httpOnly: false }));
   return res;

@@ -41,8 +41,9 @@ await t('/api/me: trae los negocios de la persona con su rol, sus sucursales y l
   const enc = (await (await getMe(env, 'enc@x.com', 'se')).json()).orgs[0];
   assert.equal(enc.role, 'manager'); assert.deepEqual(enc.branches.map((b) => b.name), ['Centro'], 'solo la sucursal asignada');
   assert.deepEqual([enc.can.descargar, enc.can.copias, enc.can.operar, enc.can.miembros, enc.can.facturacion, enc.can.vincular_pc], [true, true, true, false, false, false]);
+  assert.equal(o.can.transferir, true, 'solo el dueño puede transferir la propiedad'); assert.equal(enc.can.transferir, false);
   const emp = (await (await getMe(env, 'emp@x.com', 'sm')).json()).orgs[0];
-  assert.deepEqual([emp.can.operar, emp.can.descargar, emp.can.copias], [true, false, false]);
+  assert.deepEqual([emp.can.operar, emp.can.descargar, emp.can.copias, emp.can.transferir], [true, false, false, false]);
   assert.ok(!JSON.stringify(dueña).includes('"sd"') && !JSON.stringify(dueña).includes('billing_email'), 'no se filtran subs de Google ni el mail de cobro');
 });
 await t('/api/me: un empleado no ve facturación: no se consulta Mercado Pago y no se le ofrece "elegí tu sistema"', async () => {
@@ -129,6 +130,12 @@ await t('en /negocio/ y /unirse/ no aparecen ni el botón flotante de WhatsApp n
   const main = leer('main.js');
   assert.match(main, /\^\\\/\(pagar\|cuenta\|ingresar\|admin\|negocio\|unirse\)/, 'barra "Elegí tu sistema"');
   assert.ok(main.includes("'/negocio','/unirse'"), 'botón flotante de WhatsApp');
+});
+await t('admin.js: los manejadores de los diálogos se registran al nivel principal (no adentro de otra función, donde nunca se enganchan)', async () => {
+  const src = leer('admin.js');
+  for (const id of ['cobro-si', 'cobro-no', 'baja-si', 'baja-no']) assert.match(src, new RegExp(`\\n  document\\.getElementById\\('${id}'\\)\\.addEventListener`), id);
+  const dentro = src.slice(src.indexOf('function bajaBtn'), src.indexOf('  var cd = document.getElementById'));
+  assert.ok(!dentro.includes('cobro-si'), 'el manejador de «mail de cobro» no puede quedar dentro de bajaBtn');
 });
 await t('las páginas internas no llevan las partículas del resto del sitio (theme.js) y /cuenta/, /vincular/, /admin/ cargan los scripts actualizados', async () => {
   assert.match(leer('theme.js'), /\(pagar\|cuenta\|ingresar\|vincular\|admin\|descargar\|negocio\|unirse\)/);
