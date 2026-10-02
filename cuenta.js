@@ -87,9 +87,13 @@
     }
 
     var s = card('Tu suscripción');
-    if ((d.isAdmin || d.exempt) && !(d.subscriptions || []).length) {
-      // Administración y cuentas eximidas no pagan: no se les dice que "no encontramos" una suscripción ni se les ofrece una.
-      s.appendChild(el('p', 'acc-note', d.isAdmin ? 'Tu cuenta es de administración: no necesita suscripción.' : 'Tu cuenta está eximida: no necesita suscripción.'));
+    var sinPago = (d.isAdmin || d.exempt) && !(d.subscriptions || []).length;
+    if (sinPago) {
+      // Administración y cuentas eximidas se tratan como suscripción activa y sin vencimiento: se ve como una más, sin cartel de excepción.
+      var ac = el('article', 'subc'), ah = el('div', 'subc-h');
+      ah.appendChild(el('h3', null, 'Nodo Sur POS')); ah.appendChild(el('span', 'chip ok', 'Activa')); ac.appendChild(ah);
+      var adl = el('dl', 'subc-dl'); adl.appendChild(el('dt', null, 'Vigencia')); adl.appendChild(el('dd', null, 'Sin vencimiento')); ac.appendChild(adl);
+      s.appendChild(ac);
     } else if (!d.mpConfigured) {
       s.appendChild(el('p', 'acc-note', 'Muy pronto vas a ver acá el estado de tu suscripción.'));
     } else if (d.mpError) {
@@ -105,7 +109,7 @@
       d.subscriptions.forEach(function (sub) { s.appendChild(subCard(sub)); });
     }
     root.appendChild(s);
-    if (d.subscriptions && d.subscriptions.some(function (x) { return x.status === 'authorized'; })) {
+    if (sinPago || (d.subscriptions && d.subscriptions.some(function (x) { return x.status === 'authorized'; }))) {
       var dl = card('Descargá el sistema'); dl.classList.add('acc-dl');
       dl.appendChild(el('p', 'acc-note', 'Instalador para tu compu y la app del celular, siempre en su última versión.'));
       var dv = window.NS_DEVICE, da = el('a', 'btn', dv && ['windows', 'android'].indexOf(dv.id) >= 0 ? 'Descargar para ' + dv.name : 'Ir a las descargas'); da.href = '/descargar/'; da.style.alignSelf = 'flex-start'; dl.appendChild(da);
