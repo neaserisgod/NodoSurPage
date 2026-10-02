@@ -16,6 +16,18 @@ El sitio se publica como **Worker con archivos estáticos** (`wrangler.jsonc`, n
 - `/admin/`: solo `gtalovergamer@gmail.com` (o `ADMIN_EMAILS`). Clientes, último uso, suscripciones, ingresos. Requiere D1.
 - Solo se ven/cancelan suscripciones de los 3 planes propios (`functions/_lib/mp.js`).
 
+### Negocios, sucursales y miembros (en construcción)
+
+Hoy todo cuelga del `sub` de una persona. El modelo nuevo agrega el **negocio** (el que paga) entre la persona y todo lo demás. Se implementa por fases; esta es la Fase 1 (solo el modelo, sin cambios visibles).
+
+- **`orgs`** (negocio, con `billing_email`), **`branches`** (sucursales), **`memberships`** (persona + rol + sucursales), **`invitations`**. Definición en `functions/_lib/orgs.js` (se crean solas) y `migrations/0005_orgs.sql` (opcional).
+- Todo negocio nace con una **"Sucursal principal"**; `devices` y `backups` ganan `owner_org` y `branch_id` (nullable). `backfillOrgs` convierte lo que ya existe, es idempotente y solo toca filas sin negocio.
+- **Roles**: `owner` (todo), `manager` (descarga, copias, opera) y `employee` (solo opera). Un empleado solo ve su sucursal. Los permisos viven en un único archivo, `functions/_lib/permisos.js`; nadie compara roles a mano.
+- **Paga el negocio entero**, una vez; las sucursales son ilimitadas. Los miembros son ilimitados (la idea es empezar a cobrar algo si algún negocio llega a ~50).
+- **`billing_email` queda aparte del dueño**: Mercado Pago cobra por el mail del pagador y la propiedad se puede transferir.
+- **El panel del negocio (`/negocio/`) es distinto de `/admin/`**: `/admin/` es de Nodo Sur (solo `ADMIN_EMAILS`); un cliente es dueño de su negocio y no admin de la plataforma.
+- Las ventas y la caja siguen siendo **locales por PC**: no hay reportes consolidados entre sucursales (exigirían subir las ventas a la nube).
+
 ### Pagar exige ingresar (y se recuerda el plan)
 
 Los links de pago de Mercado Pago **no están en el sitio**: viven en `functions/_lib/plans.js` y solo se llega a ellos por `GET /api/checkout`, que exige sesión.
