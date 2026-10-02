@@ -24,6 +24,13 @@
     });
   }
   function chip(text, cls) { return el('span', 'chip ' + cls, text); }
+  // Cada celda lleva el título de su columna (data-l): en el celular la tabla se muestra como tarjetas.
+  function labelCells(t) {
+    var hs = [].map.call(t.querySelectorAll('thead th'), function (h) { return h.textContent; });
+    [].forEach.call(t.querySelectorAll('tbody tr'), function (tr) {
+      [].forEach.call(tr.children, function (td, i) { if (hs[i]) td.setAttribute('data-l', hs[i]); });
+    });
+  }
 
   var first = true;
   function done() {
@@ -113,7 +120,7 @@
       tr.appendChild(ca); tb.appendChild(tr);
     });
     if (!d.users.length) { var er = el('tr'); var ec = el('td', null, 'Todavía no hay clientes registrados.'); ec.colSpan = 8; er.appendChild(ec); tb.appendChild(er); }
-    t.appendChild(tb); wrap.appendChild(t); s1.appendChild(wrap); root.appendChild(s1);
+    t.appendChild(tb); labelCells(t); wrap.appendChild(t); s1.appendChild(wrap); root.appendChild(s1);
 
     if (d.subscribersWithoutAccount.length) {
       var s2 = el('section', 'acc'); s2.appendChild(el('h2', null, 'Suscriptores sin cuenta en el sitio'));
@@ -180,7 +187,7 @@
         if (r.active) act('Retirar', 'retire'); else act('Restaurar', 'restore');
         tr.appendChild(ca); tb.appendChild(tr);
       });
-      t.appendChild(tb); wrap.appendChild(t); body.appendChild(wrap);
+      t.appendChild(tb); labelCells(t); wrap.appendChild(t); body.appendChild(wrap);
       body.appendChild(el('p', 'acc-note', 'Retirar una versión es volver atrás: pasa a ser la vigente la anterior. Bloquear la deja de entregar por completo.'));
     }).catch(function () { body.textContent = ''; body.appendChild(el('p', 'acc-note', 'No se pudieron cargar las versiones.')); });
   }

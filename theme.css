@@ -316,3 +316,41 @@ body{overflow-x:clip}
 @media (min-width:960px){
   #cuenta:has(.acc-dl)>.acc:nth-of-type(2){grid-column:2;grid-row:1/span 2}
 }
+
+/* ---- descarga del dispositivo detectado ---- */
+.dl-hero{position:relative;isolation:isolate;overflow:hidden;display:flex;flex-direction:column;gap:20px;padding:clamp(28px,4vw,56px);border-radius:var(--rr);color:#fff;
+  background:linear-gradient(135deg,#0a0b10,#1b1f3a)}
+.dl-hero::before{content:"";position:absolute;z-index:-1;inset:auto -10% -40% 30%;height:90%;background:radial-gradient(closest-side,rgba(138,92,246,.5),transparent);filter:blur(30px)}
+.dl-hero h2{margin:0;font-size:clamp(34px,5.2vw,68px);line-height:1;font-weight:450;letter-spacing:-.05em;color:#fff;max-width:14ch}
+.dl-detect{margin:0;font-size:15px;color:var(--muted)}
+.dl-detect.on{display:inline-flex;align-self:flex-start;align-items:center;gap:8px;padding:7px 14px;border-radius:999px;background:rgba(255,255,255,.12);color:#fff;font-weight:500}
+.dl-detect.on::before{content:"";width:8px;height:8px;border-radius:50%;background:#6ff0d3}
+.dl-hero .dl-meta span{background:rgba(255,255,255,.12);color:#e6e9f2}
+.dl-hero .btn{align-self:flex-start;min-height:64px;padding:0 40px;font-size:19px;background:#fff;color:var(--ink)}
+.dl-hero .btn:hover{background:#fff;color:var(--ink)}
+.dl-hint{margin:0;max-width:52ch;font-size:15px;line-height:1.5;color:#c7ccdb}
+.dl-hero details summary{color:#c7ccdb}.dl-hero details summary:hover{color:#fff}
+.dl-hero details .acc-note{background:rgba(255,255,255,.08);color:#dfe3ee}
+.dl-hero code{color:#fff}
+@media (max-width:560px){.dl-hero .btn{align-self:stretch;padding:0 20px}}
+.dl-detect:not(.on){padding:16px 20px;border-radius:20px;background:var(--bg2);font-size:16px;line-height:1.5;margin-bottom:6px}
+
+/* ---- listas en el celular: la tabla pasa a tarjetas ---- */
+.tbl{margin-bottom:clamp(8px,2vw,24px)}
+@media (max-width:719px){
+  .adm-tbl{background:transparent!important;overflow:visible;border-radius:0}
+  .adm-tbl table{display:block;min-width:0!important;width:100%}
+  .adm-tbl thead{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+  .adm-tbl tbody{display:flex;flex-direction:column;gap:12px}
+  .adm-tbl tr{display:flex;flex-direction:column;background:#fff;border-radius:24px;padding:6px 18px 10px}
+  .adm-tbl td{display:flex;justify-content:space-between;align-items:baseline;gap:16px;padding:10px 0!important;border:0!important;border-bottom:1px solid var(--line)!important;text-align:right;white-space:normal!important}
+  .adm-tbl td:first-child{display:block;text-align:left;font-size:17px}
+  .adm-tbl td[data-l]::before{content:attr(data-l);flex-shrink:0;text-align:left;font-size:12px;font-weight:600;letter-spacing:.03em;text-transform:uppercase;color:var(--soft)}
+  .adm-tbl td:first-child[data-l]::before{display:none}
+  .adm-tbl td.acts{display:flex;flex-wrap:wrap;justify-content:flex-start;gap:4px;border-bottom:0!important;padding-top:12px!important}
+  .adm-tbl td:last-child{border-bottom:0!important}
+  .adm-tbl td[colspan]{display:block;text-align:left}
+  .pays li{grid-template-columns:1fr auto;row-gap:2px}
+  .pays li>span:first-child{grid-column:1/-1;font-weight:500;overflow-wrap:anywhere}
+  .pays li .lnk{justify-self:start}
+}
