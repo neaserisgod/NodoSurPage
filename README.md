@@ -100,6 +100,15 @@ Google Cloud → Google Auth Platform → Clientes (Aplicación web):
 
 El precio de fundador se activa o desactiva desde **/admin/** (sección "Precio de fundador"). El estado se guarda en la tabla `settings` de D1 (se crea sola al usarlo; `migrations/0002_settings.sql` es opcional). Por defecto está **activo**. Al desactivarlo desaparece de `/pagar/`, del bloque de la home y de las páginas del sistema, sin volver a publicar el sitio. `GET /api/promo` devuelve `{"activa": true|false}` (público). Los enlaces de pago con el precio de fundador se cargan en `pagar.js` (`promoHref` de cada plan).
 
+## Rediseño del index (estilo "antigravity")
+
+El index usa `home.css` + `home.js` (el resto de las páginas siguen con `styles.css`).
+Para volver a una versión anterior: `git checkout index-pre-antigravity -- index.html` (original) o `index-antigravity-v1` (primera versión del rediseño). Hay que acompañar con `home.css`/`home.js` de ese tag si se usa v1.
+
+Las páginas internas (sistema-pos, bot-whatsapp, guías, ingresar, pagar, 404, etc.) usan `theme.css` + `theme.js` encima de `styles.css`, con `fx.js` (partículas, compartido con el index). Para quitar el tema de esas páginas basta con sacar los `<link>`/`<script>` de `theme.*` y `fx.js`.
+
+Disposición de las páginas de contenido (12 páginas): el HTML se reordenó en bloques `.blk` (título a la izquierda, texto a la derecha, tarjetas `.card2`, pasos `.steps2`, capturas `.halo`, preguntas `<details class="q2">`). El texto es el mismo. Para volver a la disposición anterior de una página: `git checkout <commit anterior a este cambio> -- <pagina>/index.html`.
+
 ### Sincronización entre dispositivos (PC y celulares)
 
 `POST /api/sync` sube un lote de cambios y `GET /api/sync?desde=<seq>` baja los de los **otros** dispositivos de la cuenta. La nube es un buzón ordenado, no una copia maestra: quien aplica los lotes en el orden en que llegaron (`seq`) deja que el último pise a los anteriores; el reloj de los dispositivos no decide nada. Stock y caja se suman como movimientos.
