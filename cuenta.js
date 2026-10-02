@@ -87,7 +87,10 @@
     }
 
     var s = card('Tu suscripción');
-    if (!d.mpConfigured) {
+    if ((d.isAdmin || d.exempt) && !(d.subscriptions || []).length) {
+      // Administración y cuentas eximidas no pagan: no se les dice que "no encontramos" una suscripción ni se les ofrece una.
+      s.appendChild(el('p', 'acc-note', d.isAdmin ? 'Tu cuenta es de administración: no necesita suscripción.' : 'Tu cuenta está eximida: no necesita suscripción.'));
+    } else if (!d.mpConfigured) {
       s.appendChild(el('p', 'acc-note', 'Muy pronto vas a ver acá el estado de tu suscripción.'));
     } else if (d.mpError) {
       s.appendChild(el('p', 'acc-note', 'No pudimos consultar Mercado Pago en este momento. Probá de nuevo en unos minutos.'));
@@ -109,7 +112,7 @@
       root.appendChild(dl);
     }
     // Registrado sin suscripción: se le ofrecen los sistemas (o se sabe que no hay error de Mercado Pago).
-    if (!d.mpError && (!d.mpConfigured || !d.subscriptions || !d.subscriptions.length) && !d.isAdmin && !d.covered) root.appendChild(offerCard(d));
+    if (!d.mpError && (!d.mpConfigured || !d.subscriptions || !d.subscriptions.length) && !d.isAdmin && !d.exempt && !d.covered) root.appendChild(offerCard(d));
   }
 
   function offerCard(d) {
