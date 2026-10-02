@@ -23,12 +23,22 @@ import * as devicePing from './functions/api/device/ping.js';
 import * as devices from './functions/api/devices.js';
 import * as backup from './functions/api/backup.js';
 import * as backups from './functions/api/backups.js';
+import * as orgInvitations from './functions/api/org/invitations.js';
+import * as orgMembers from './functions/api/org/members.js';
+import * as orgBranches from './functions/api/org/branches.js';
+import * as orgTransfer from './functions/api/org/transfer.js';
+import * as orgBilling from './functions/api/org/billing.js';
+import * as adminOrg from './functions/api/admin/org.js';
+import * as sync from './functions/api/sync.js';
 import * as promo from './functions/api/promo.js';
 import * as adminPromo from './functions/api/admin/promo.js';
 import { sweep } from './functions/_lib/sweep.js';
 import { hasDB } from './functions/_lib/db.js';
 import { purgeBackups, backupsReady } from './functions/_lib/backups.js';
+import { backfillOrgs } from './functions/_lib/orgs.js';
 import { listAllSubscribers } from './functions/_lib/mp.js';
+
+export { SyncHub } from './functions/_lib/sync_hub.js';
 
 const ROUTES = {
   'GET /api/auth/google': google.onRequestGet,
@@ -51,6 +61,27 @@ const ROUTES = {
   'GET /api/backup': backup.onRequestGet,
   'DELETE /api/backup': backup.onRequestDelete,
   'GET /api/backups': backups.onRequestGet,
+  'GET /api/org/members': orgMembers.onRequestGet,
+  'POST /api/org/member/update': orgMembers.onRequestUpdate,
+  'POST /api/org/member/remove': orgMembers.onRequestRemove,
+  'POST /api/org/invite': orgInvitations.onRequestPost,
+  'GET /api/org/invitation': orgInvitations.onRequestGet,
+  'POST /api/org/invite/revoke': orgInvitations.onRequestRevoke,
+  'POST /api/org/accept': orgInvitations.onRequestAccept,
+  'GET /api/org/branches': orgBranches.onRequestGet,
+  'POST /api/org/branch': orgBranches.onRequestPost,
+  'POST /api/org/branch/update': orgBranches.onRequestUpdate,
+  'GET /api/org/transfer': orgTransfer.onRequestGet,
+  'POST /api/org/transfer': orgTransfer.onRequestPost,
+  'POST /api/org/transfer/accept': orgTransfer.onRequestAccept,
+  'POST /api/org/transfer/decline': orgTransfer.onRequestDecline,
+  'POST /api/org/transfer/cancel': orgTransfer.onRequestCancel,
+  'GET /api/org/billing': orgBilling.onRequestGet,
+  'POST /api/org/billing': orgBilling.onRequestPost,
+  'POST /api/admin/org': adminOrg.onRequestPost,
+  'POST /api/sync': sync.onRequestPost,
+  'GET /api/sync': sync.onRequestGet,
+  'GET /api/sync/escuchar': sync.onRequestEscuchar,
   'GET /api/download': download.onRequestGet,
   'GET /api/downloads': downloads.onRequestGet,
   'GET /api/update/latest.json': updLatest.onRequestGet,
@@ -88,9 +119,12 @@ export default {
 
   // Cron diario: avisa y limpia cuentas inactivas sin suscripción (apagado por defecto, ver README).
   async scheduled(_event, env, ctx) {
-    if (!hasDB(env) || !env.MP_ACCESS_TOKEN) return;
+    if (!hasDB(env)) return;
+    // Completa el negocio y la sucursal de lo que se vinculó/subió antes del modelo de negocios (idempotente).
+    ctx.waitUntil(backfillOrgs(env).then((r) => (r.orgsCreadas || r.filasActualizadas) && console.log(`backfill_negocios:${r.orgsCreadas}:${r.filasActualizadas}`)).catch((e) => console.error('backfill_error', e && e.message)));
+    if (!env.MP_ACCESS_TOKEN) return;
     if (backupsReady(env)) ctx.waitUntil(listAllSubscribers(env, { fresh: true }).then((subs) => purgeBackups(env, subs)).then((ids) => ids.length && console.log(`backups_purgadas:${ids.length}`)).catch(() => { /* sin Mercado Pago no se borra nada */ }));
     ctx.waitUntil(sweep(env, { apply: true }).then((r) =>
-      console.log(JSON.stringify({ ok: r.ok, autoDelete: r.autoDelete, notifier: r.notifier, actions: (r.actions || []).map((a) => `${a.action}:${a.email}:${a.applied ?? ''}`) }))));
+      console.log(JSON.stringify({ ok: r.ok, autoDelete: r.autoDelete, notifier: r.notifier, deletionNotices: r.deletionNotices, actions: (r.actions || []).map((a) => `${a.action}:${a.email}:${a.applied ?? ''}`) }))));
   },
 };

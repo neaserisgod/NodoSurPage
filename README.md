@@ -16,6 +16,40 @@ El sitio se publica como **Worker con archivos estáticos** (`wrangler.jsonc`, n
 - `/admin/`: solo `gtalovergamer@gmail.com` (o `ADMIN_EMAILS`). Clientes, último uso, suscripciones, ingresos. Requiere D1.
 - Solo se ven/cancelan suscripciones de los 3 planes propios (`functions/_lib/mp.js`).
 
+### Negocios, sucursales y miembros (en construcción)
+
+Hoy todo cuelga del `sub` de una persona. El modelo nuevo agrega el **negocio** (el que paga) entre la persona y todo lo demás. Se implementa por fases; ya están el modelo (fase 1), el acceso calculado por negocio (fase 2), la API de miembros, invitaciones y sucursales (fase 3), las pantallas (fase 4) y la transferencia de propiedad con la facturación (fase 5). Falta el POS (fase 6).
+
+- **`orgs`** (negocio, con `billing_email`), **`branches`** (sucursales), **`memberships`** (persona + rol + sucursales), **`invitations`**. Definición en `functions/_lib/orgs.js` (se crean solas) y `migrations/0005_orgs.sql` (opcional).
+- Todo negocio nace con una **"Sucursal principal"**; `devices` y `backups` ganan `owner_org` y `branch_id` (nullable). `backfillOrgs` convierte lo que ya existe, es idempotente y solo toca filas sin negocio.
+- **Roles**: `owner` (todo), `manager` (descarga, copias, opera) y `employee` (solo opera). Un empleado solo ve su sucursal. Los permisos viven en un único archivo, `functions/_lib/permisos.js`; nadie compara roles a mano.
+- **Paga el negocio entero**, una vez; las sucursales son ilimitadas. Los miembros son ilimitados (la idea es empezar a cobrar algo si algún negocio llega a ~50).
+- **`billing_email` queda aparte del dueño**: Mercado Pago cobra por el mail del pagador y la propiedad se puede transferir.
+- **El panel del negocio (`/negocio/`) es distinto de `/admin/`**: `/admin/` es de Nodo Sur (solo `ADMIN_EMAILS`); un cliente es dueño de su negocio y no admin de la plataforma.
+- **Acceso por negocio (fase 2)**: `functions/_lib/access.js` decide descargas y copias. Lo paga el negocio (se verifica el `billing_email` en Mercado Pago) y cada rol hace lo que permite `permisos.js`. Quien no tiene negocio sigue entrando por la suscripción de su propio mail.
+  - Vincular una PC (`/api/device/authorize`, opcionales `orgId` y `branchId`): solo el dueño. La primera vez crea su negocio y su "Sucursal principal" y pasa a ese negocio sus PC y copias anteriores. Una PC deja de valer si quien la vinculó deja de ser miembro activo.
+  - Copias: cada una queda en la sucursal de su PC y se rotan **las últimas 5 por sucursal**. La web muestra todas al dueño y solo las asignadas a un encargado; un empleado no ve ninguna. Un id de otro negocio devuelve 404.
+  - El barrido de cuentas inactivas no marca a quien está cubierto por la suscripción de su negocio. El cron diario corre `backfillOrgs` (idempotente) para completar lo anterior al modelo.
+- **Miembros, invitaciones y sucursales (fase 3)**: API en `functions/api/org/` (lógica en `functions/_lib/miembros.js`). Solo el dueño administra, solo por sesión web con mismo origen (nunca desde una PC).
+  - `POST /api/org/invite` `{orgId, email, role: manager|employee, branchIds | allBranches}` → link `/unirse/?t=<token>` (se manda por mail si `RESEND_API_KEY` y `MAIL_FROM` están cargados; si no, el dueño copia el link). Vence a los 7 días, reinvitar reemplaza la anterior, hasta 100 pendientes por negocio. En la base queda solo la huella SHA-256 del token.
+  - `GET /api/org/invitation?t=` (vista previa) y `POST /api/org/accept` `{token}`: se aceptan solo con el Google cuyo **mail verificado coincide** con el invitado; con otro mail, 403 sin mostrar a qué negocio era. El link sirve una sola vez; quien ya fue quitado se reactiva; un dueño no se degrada aceptando.
+  - `GET /api/org/members?org=`, `POST /api/org/member/update` y `/remove`: rol y sucursales; al dueño no se lo toca (la propiedad se transfiere aparte, fase 5). Quitar deja al miembro inactivo (las ventas viejas conservan su nombre) y sus PC dejan de valer.
+  - `GET /api/org/branches`, `POST /api/org/branch` y `/branch/update`: crear, renombrar, cerrar y reabrir. No se puede cerrar la última activa ni una con PC vinculadas.
+  - `MAX_MIEMBROS_SIN_COSTO` (por defecto 50): la lista de miembros devuelve `softCap` y `overSoftCap`; solo avisa, no bloquea.
+- **Pantallas (fase 4)**
+  - `/negocio/` (Mi negocio): el **dueño** administra equipo (invitar, cambiar rol y sucursales, quitar), sucursales, PC vinculadas y copias. Un **encargado** ve sus sucursales, copias y descargas. Un **empleado** ve solo su lugar de trabajo: sin copias, descargas ni facturación. Con más de un negocio hay selector. Las secciones salen de `can` en `/api/me` (que viene de `permisos.js`): la pantalla no repite la tabla de permisos.
+  - `/unirse/?t=`: aceptar una invitación. Sin sesión manda a `/ingresar/` y vuelve (el token de 64 hex es lo único que `safeNext` deja pasar). El token se saca de la barra de direcciones apenas se lee. Con otro mail muestra el mail enmascarado y no revela el negocio.
+  - `/cuenta/`: muestra "Tu negocio" y, a quien solo es encargado o empleado (`billing: false` en `/api/me`), no le consulta Mercado Pago ni le ofrece "elegí tu sistema". `/vincular/` deja elegir negocio y sucursal (solo el dueño vincula).
+  - `/admin/`: tabla de **Negocios** (solo lectura: dueño, mail de cobro, suscripción, equipo, sucursales, PC, tope blando). Es distinta de `/negocio/`: la de admin es de Nodo Sur, la otra es de cada dueño.
+  - Las páginas arman todo con `textContent` (nombres y mails vienen de la base; hay un test que prohíbe `innerHTML`).
+- **Transferencia de propiedad y facturación (fase 5)**
+  - En dos pasos: el dueño propone a un miembro (`POST /api/org/transfer`) y esa persona acepta (`/accept`) o rechaza (`/decline`); el dueño puede retirarla (`/cancel`). Una sola pendiente por negocio (índice parcial), vence a los 7 días, y quitar a la persona del equipo la retira. Hasta que acepte no cambia nada.
+  - Al aceptar: el nuevo es `owner` con todas las sucursales y el anterior queda de **encargado** con todas (sus PC siguen andando: el negocio no se queda sin caja ese día). Si el nuevo dueño lo quita después, las PC que vinculó dejan de valer (la pantalla lo avisa).
+  - **El mail de cobro (`billing_email`) no cambia solo** (Mercado Pago cobra a quien pagó). `GET/POST /api/org/billing` (solo el dueño): muestra quién paga (enmascarado si no es él) y deja **pasar el cobro a la suscripción propia**.
+  - Reglas de seguridad: (1) el mail sale **siempre de la sesión**, nunca del pedido, y debe tener una suscripción vigente: si no, cualquiera podría apuntar su negocio a la suscripción de otro cliente y usar el sistema sin pagar; (2) **nadie cancela la suscripción de otra persona** (puede cubrir otros negocios suyos): `cancel.js` no se tocó, cancela quien paga; (3) el administrador de la plataforma puede ajustar el mail de cobro (`POST /api/admin/org`, botón «Mail de cobro» en `/admin/`) para casos de soporte.
+  - `/api/me` suma `covered`: el dueño de un negocio cubierto por la suscripción de otra persona no recibe «elegí tu sistema». `/negocio/` muestra la propuesta recibida y la tarjeta de Facturación.
+- Las ventas y la caja siguen siendo **locales por PC**: no hay reportes consolidados entre sucursales (exigirían subir las ventas a la nube).
+
 ### Pagar exige ingresar (y se recuerda el plan)
 
 Los links de pago de Mercado Pago **no están en el sitio**: viven en `functions/_lib/plans.js` y solo se llega a ellos por `GET /api/checkout`, que exige sesión.
@@ -74,7 +108,8 @@ La PC con el POS se **vincula a la cuenta de Google** del dueño y sube copias d
 | `RELEASE_TOKEN` | (para publicar versiones del POS desde scripts/CI) texto aleatorio de 24+ caracteres |
 | `ADMIN_EMAILS` | (opcional) mails admin separados por coma; por defecto `gtalovergamer@gmail.com` |
 | `AUTO_DELETE` | (opcional) `on` habilita el borrado real; por defecto apagado |
-| `RESEND_API_KEY`, `MAIL_FROM` | (opcionales) para enviar el aviso previo al borrado |
+| `RESEND_API_KEY`, `MAIL_FROM` | (opcionales) mails de **invitaciones** a un negocio y **propuestas de transferencia**. `MAIL_FROM` tiene que ser de un dominio verificado en Resend (ej.: `Nodo Sur <hola@avisos.horsepos.com>`); con el remitente de prueba `onboarding@resend.dev` Resend solo entrega a la cuenta dueña. Sin esto, la invitación devuelve el link para copiar. |
+| `AVISOS_BORRADO` | (opcional) `on` permite que la limpieza diaria mande el aviso «tu cuenta se eliminará en 3 días». **Apagado por defecto, a propósito**: configurar Resend NO alcanza para activarlo, porque es un mail a gente real que no se puede desmandar. Antes de encenderlo, revisá `/admin/` → «Simular limpieza ahora». Sin aviso no hay borrado. |
 
 `wrangler.jsonc` tiene `keep_vars: true`, así que los deploys no borran lo cargado desde el panel.
 
@@ -108,3 +143,14 @@ Para volver a una versión anterior: `git checkout index-pre-antigravity -- inde
 Las páginas internas (sistema-pos, bot-whatsapp, guías, ingresar, pagar, 404, etc.) usan `theme.css` + `theme.js` encima de `styles.css`, con `fx.js` (partículas, compartido con el index). Para quitar el tema de esas páginas basta con sacar los `<link>`/`<script>` de `theme.*` y `fx.js`.
 
 Disposición de las páginas de contenido (12 páginas): el HTML se reordenó en bloques `.blk` (título a la izquierda, texto a la derecha, tarjetas `.card2`, pasos `.steps2`, capturas `.halo`, preguntas `<details class="q2">`). El texto es el mismo. Para volver a la disposición anterior de una página: `git checkout <commit anterior a este cambio> -- <pagina>/index.html`.
+
+### Sincronización entre dispositivos (PC y celulares de una sucursal)
+
+`POST /api/sync` sube un lote de cambios y `GET /api/sync?desde=<seq>` baja los de los **otros** dispositivos de la misma **sucursal**. La nube es un buzón ordenado, no una copia maestra: quien aplica los lotes en el orden en que llegaron (`seq`) deja que el último pise a los anteriores; el reloj de los dispositivos no decide nada. Stock y caja se suman como movimientos.
+
+- **El alcance es la sucursal, no la persona**: la PC y el celular de una misma sucursal se ven entre sí; otra sucursal del mismo dueño, o otro negocio, no ven nada (cada sucursal tiene su caja y su stock). El alcance (`scopeDeSync`) sale **siempre del dispositivo autenticado**, nunca del pedido: ni un parámetro ni una cabecera lo cambian. Un dispositivo anterior al modelo de negocios sigue atado a la persona hasta que se completa (`adoptarLegado` al vincular, o el cron). Por eso, al vincular el celular hay que elegir **la misma sucursal** que la PC.
+- Solo con token de dispositivo. Mismas reglas que las copias (`backupScope` + `backupAccess`): suscripción vigente **del negocio** (su mail de cobro), cuenta eximida o administrador, y que quien vinculó el dispositivo siga siendo miembro activo (si lo quitan, el dispositivo deja de sincronizar). Quien canceló puede bajar durante la ventana de restauración, no subir.
+- Lotes cifrados con AES-256-GCM (`BACKUP_KEY`); las tablas que sincroniza la app no llevan tokens. Tope de 1 MB por lote.
+- Subir es idempotente por `X-Lote-Id`. Se conservan 60 días (la purga corre cada 25 lotes); quien estuvo más tiempo apagado recibe `expirado: true` y se pone al día desde una copia. Tablas D1 `sync_lotes` y `sync_cuentas`, ambas por alcance (se crean solas, una vez por instancia).
+
+**Aviso en vivo, para no consultar de más.** `GET /api/sync/escuchar` (WebSocket) conecta al dispositivo con el Durable Object `SyncHub` de su sucursal (binding `SYNC_HUB`, clase con SQLite: está en el plan gratis; el nombre del hub es un hash, sin nada en claro). Cuando alguien sube un lote, el hub manda `{"seq":N}` a los demás dispositivos y recién ahí bajan; sin cambios no hay ningún pedido. Costo (WebSocket Hibernation): conectar es 1 pedido; un socket quieto no consume cómputo; los mensajes salientes y los pings no se cobran. El cliente no manda nada por el socket. Sin el binding todo anda igual, solo que los dispositivos tienen que consultar de vez en cuando. Cada subida hace ~3 consultas a D1 y 1 pedido al hub; cada bajada, 2 consultas.

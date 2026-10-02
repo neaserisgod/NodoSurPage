@@ -18,9 +18,32 @@
   }).then(function (u) {
     if (!u) return;
     done();
-    var c = card('¿Vincular esta PC a tu cuenta?');
+    if (u.canLink === false) {
+      var nc = card('Solo el dueño puede vincular un dispositivo');
+      nc.appendChild(el('p', 'acc-note', 'Ingresaste como ' + u.email + ', que es parte de un negocio pero no es su dueño. Pedile al dueño que vincule el dispositivo con su cuenta.'));
+      var na = el('a', 'btn btn-w', 'Ir a mi cuenta'); na.href = '/cuenta/'; nc.appendChild(na); root.appendChild(nc); return;
+    }
+    var orgs = u.orgs || [];
+    var c = card('¿Vincular este dispositivo a tu cuenta?');
     c.appendChild(el('p', 'acc-note', 'Vas a vincular «' + name + '» con la cuenta ' + u.email + '. Desde ahí la app puede guardar copias de tu base y, si reinstalás, recuperarlas entrando con esta cuenta.'));
-    c.appendChild(el('p', 'acc-note', 'Si no abriste esto desde la app de Nodo Sur POS en tu PC, cerrá esta página.'));
+    // Si tiene más de un negocio o más de una sucursal, elige a cuál pertenece este dispositivo.
+    var selOrg = null, selBr = null;
+    if (orgs.length) {
+      var frm = el('div', 'frm');
+      function opciones(sel, items) { sel.textContent = ''; items.forEach(function (x) { var o = el('option', null, x.name); o.value = String(x.id); sel.appendChild(o); }); }
+      if (orgs.length > 1) { var l1 = el('label', null, 'Negocio'); selOrg = el('select'); opciones(selOrg, orgs); l1.appendChild(selOrg); frm.appendChild(l1); }
+      var l2 = el('label', null, 'Sucursal'); selBr = el('select'); l2.appendChild(selBr);
+      var actual = function () { return orgs.filter(function (o) { return !selOrg || String(o.id) === selOrg.value; })[0] || orgs[0]; };
+      opciones(selBr, actual().branches);
+      if (selOrg) selOrg.addEventListener('change', function () { opciones(selBr, actual().branches); l2.hidden = actual().branches.length < 2; });
+      l2.hidden = actual().branches.length < 2; frm.appendChild(l2);
+      if (orgs.length > 1 || orgs[0].branches.length > 1) {
+        c.appendChild(frm);
+        // La sincronización entre dispositivos es por sucursal: la PC y el celular tienen que quedar en la misma para verse.
+        c.appendChild(el('p', 'acc-note', 'Para que la PC y el celular se sincronicen entre sí, vinculá los dos a la misma sucursal.'));
+      }
+    }
+    c.appendChild(el('p', 'acc-note', 'Si no abriste esto desde la app de Nodo Sur POS (en tu PC o en tu celular), cerrá esta página.'));
     var msg = el('p', 'login-err'); msg.setAttribute('role', 'alert');
     var acts = el('div', 'acc-actions');
     var ok = el('button', 'btn', 'Vincular'); ok.type = 'button';
@@ -29,7 +52,8 @@
     ok.addEventListener('click', function () {
       ok.disabled = true; ok.textContent = 'Vinculando…'; msg.textContent = '';
       fetch('/api/device/authorize', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' },
-        body: JSON.stringify({ port: port, state: state, challenge: challenge, deviceId: device, name: name }) })
+        body: JSON.stringify(Object.assign({ port: port, state: state, challenge: challenge, deviceId: device, name: name },
+          orgs.length ? { orgId: parseInt(selOrg ? selOrg.value : orgs[0].id, 10), branchId: parseInt(selBr.value, 10) } : {})) })
         .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
         .then(function (x) {
           if (!x.ok || typeof x.j.redirect !== 'string' || x.j.redirect.indexOf('http://127.0.0.1:' + port + '/') !== 0) throw new Error();

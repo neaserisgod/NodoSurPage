@@ -9,7 +9,7 @@
   var HDR = { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' };
   var PLAN_NAMES = { pos: 'Sistema POS', 'pos-bot': 'Sistema + Bot', bot: 'Solo el bot' };
   var ACTIVE = { authorized: 1, paused: 1, pending: 1 };
-  var target = null, bajaTarget = null;
+  var target = null, bajaTarget = null, cobroTarget = null;
 
   function post(url, body) {
     return fetch(url, { method: 'POST', credentials: 'same-origin', headers: HDR, body: JSON.stringify(body) })
@@ -47,7 +47,7 @@
     var k = d.kpis, cfg = d.config;
 
     var kp = el('div', 'kpis');
-    [['Usuarios', k.users], ['Nuevos (7 días)', k.new7d], ['Activos (7 días)', k.active7d], ['Suscripciones activas', k.activeSubs], ['Ingreso mensual', money(k.mrr)], ['Registrados sin pagar', k.unpaid == null ? '—' : k.unpaid], ['En aviso de borrado', k.inNotice]].forEach(function (x) {
+    [['Usuarios', k.users], ['Negocios', k.orgs == null ? '—' : k.orgs], ['Nuevos (7 días)', k.new7d], ['Activos (7 días)', k.active7d], ['Suscripciones activas', k.activeSubs], ['Ingreso mensual', money(k.mrr)], ['Registrados sin pagar', k.unpaid == null ? '—' : k.unpaid], ['En aviso de borrado', k.inNotice]].forEach(function (x) {
       var c = el('div', 'kpi'); c.appendChild(el('span', null, x[0])); c.appendChild(el('strong', null, String(x[1]))); kp.appendChild(c);
     });
     root.appendChild(kp);
@@ -69,6 +69,7 @@
     var cf = el('div', 'acc-actions');
     cf.appendChild(chip('Mercado Pago: ' + (cfg.mp ? 'conectado' : 'sin conexión'), cfg.mp ? 'ok' : 'bad'));
     cf.appendChild(chip('Avisos por mail: ' + (cfg.notifier ? 'activos' : 'sin configurar'), cfg.notifier ? 'ok' : 'wait'));
+    cf.appendChild(chip('Avisos de borrado: ' + (cfg.deletionNotices ? 'ACTIVADOS' : 'apagados'), cfg.deletionNotices ? 'bad' : 'ok'));
     cf.appendChild(chip('Borrado automático: ' + (cfg.autoDelete ? 'ACTIVADO' : 'apagado (solo simula)'), cfg.autoDelete ? 'bad' : 'wait'));
     root.appendChild(cf);
     if (d.mpStale) cf.after(el('p', 'acc-note', 'Mercado Pago pidió esperar: los datos de suscripciones son de hace unos minutos.'));
@@ -122,6 +123,32 @@
     if (!d.users.length) { var er = el('tr'); var ec = el('td', null, 'Todavía no hay clientes registrados.'); ec.colSpan = 8; er.appendChild(ec); tb.appendChild(er); }
     t.appendChild(tb); labelCells(t); wrap.appendChild(t); s1.appendChild(wrap); root.appendChild(s1);
 
+    // Negocios (solo lectura): cada dueño administra el suyo desde /negocio/; acá solo se miran los números.
+    var sn = el('section', 'acc'); sn.appendChild(el('h2', null, 'Negocios'));
+    sn.appendChild(el('p', 'acc-note', 'Cada negocio es un cliente que paga una vez, con sus sucursales y su equipo. Esto es solo para mirar: el dueño administra el suyo desde Mi negocio.'));
+    var nw = el('div', 'tbl adm-tbl'), nt = el('table'), nh = el('thead'), nr = el('tr');
+    ['Negocio', 'Dueño', 'Suscripción', 'Equipo', 'Sucursales', 'Dispositivos', 'Último uso', ''].forEach(function (h) { nr.appendChild(el('th', null, h)); });
+    nh.appendChild(nr); nt.appendChild(nh);
+    var nb = el('tbody');
+    (d.orgs || []).forEach(function (o) {
+      var tr = el('tr'), c1 = el('td'); c1.appendChild(el('strong', null, o.name)); c1.appendChild(document.createElement('br')); c1.appendChild(el('small', null, 'desde ' + dt(o.createdAt))); tr.appendChild(c1);
+      var c2 = el('td'); c2.appendChild(document.createTextNode(o.ownerEmail || '—'));
+      if (o.billingEmail && o.billingEmail !== o.ownerEmail) { c2.appendChild(document.createElement('br')); c2.appendChild(el('small', null, 'cobra: ' + o.billingEmail)); }
+      tr.appendChild(c2);
+      var cs = el('td');
+      if (o.subscription) { var st = ST[o.subscription.status] || [o.subscription.status, 'wait']; cs.appendChild(chip(st[0], st[1])); cs.appendChild(document.createTextNode(' ' + o.subscription.plan)); }
+      else cs.appendChild(el('small', null, 'Sin suscripción'));
+      tr.appendChild(cs);
+      var ce = el('td'); ce.appendChild(document.createTextNode(String(o.members))); if (o.overSoftCap) { ce.appendChild(document.createTextNode(' ')); ce.appendChild(chip('Pasó el tope', 'wait')); } tr.appendChild(ce);
+      tr.appendChild(el('td', null, String(o.branches))); tr.appendChild(el('td', null, String(o.devices))); tr.appendChild(el('td', null, o.lastSeen ? ago(o.lastSeen) : '—'));
+      var oa = el('td', 'acts'), ob = el('button', 'lnk', 'Mail de cobro'); ob.type = 'button';
+      ob.addEventListener('click', function () { cobroTarget = o; document.getElementById('cobro-org').textContent = o.name; document.getElementById('cobro-mail').value = o.billingEmail || ''; document.getElementById('cobro-err').textContent = ''; var cd = document.getElementById('cobro'); cd.showModal ? cd.showModal() : cd.setAttribute('open', ''); });
+      oa.appendChild(ob); tr.appendChild(oa);
+      nb.appendChild(tr);
+    });
+    if (!(d.orgs || []).length) { var ne = el('tr'), nc = el('td', null, 'Todavía no hay negocios: se crean cuando un cliente vincula su primer dispositivo.'); nc.colSpan = 8; ne.appendChild(nc); nb.appendChild(ne); }
+    nt.appendChild(nb); labelCells(nt); nw.appendChild(nt); sn.appendChild(nw); root.appendChild(sn);
+
     if (d.subscribersWithoutAccount.length) {
       var s2 = el('section', 'acc'); s2.appendChild(el('h2', null, 'Suscriptores sin cuenta en el sitio'));
       s2.appendChild(el('p', 'acc-note', 'Pagaron en Mercado Pago pero todavía no ingresaron con Google (o usaron otro mail).'));
@@ -143,9 +170,10 @@
         sb.disabled = false; out.textContent = '';
         if (!x.ok || !x.j.ok) { out.appendChild(el('p', 'login-err', 'No se pudo simular (¿Mercado Pago sin conexión?).')); return; }
         if (!x.j.actions.length) { out.appendChild(el('p', 'acc-note', 'Nada para hacer: ninguna cuenta cumple las reglas.')); return; }
-        var L = { send_notice: 'Se le enviaría el aviso', needs_notice: 'Cumple las reglas pero NO hay servicio de mail: no se le puede avisar (no se borra)', waiting: 'Avisada, esperando los 3 días', delete: 'Se eliminaría', clear_notice: 'Se le quitaría el aviso (volvió a estar al día)' };
+        var L = { send_notice: 'Se le enviaría el aviso', needs_notice: 'Cumple las reglas pero no se le puede avisar (no se borra)', waiting: 'Avisada, esperando los 3 días', delete: 'Se eliminaría', clear_notice: 'Se le quitaría el aviso (volvió a estar al día)' };
         var u2 = el('ul', 'pays');
-        x.j.actions.forEach(function (a) { var li = el('li'); li.appendChild(el('span', null, a.email)); li.appendChild(el('span', null, L[a.action] || a.action)); li.appendChild(el('strong', null, '')); u2.appendChild(li); });
+        var WHY = { notices_off: ' — los avisos de borrado están apagados', no_mail: ' — falta el servicio de mail' };
+        x.j.actions.forEach(function (a) { var li = el('li'); li.appendChild(el('span', null, a.email)); li.appendChild(el('span', null, (L[a.action] || a.action) + (a.reason ? (WHY[a.reason] || '') : ''))); li.appendChild(el('strong', null, '')); u2.appendChild(li); });
         out.appendChild(u2);
       });
     });
@@ -215,6 +243,18 @@
       if (!x.ok) { document.getElementById('del-err').textContent = 'No se pudo eliminar.'; return; }
       dlg.close ? dlg.close() : dlg.removeAttribute('open'); refresh();
     });
+  });
+  // Ajustar el mail con el que se cobra un negocio (soporte: pagó con otro mail, o una transferencia sin resolver).
+  var cd = document.getElementById('cobro');
+  document.getElementById('cobro-no').addEventListener('click', function () { cd.close ? cd.close() : cd.removeAttribute('open'); });
+  document.getElementById('cobro-si').addEventListener('click', function () {
+    if (!cobroTarget) return;
+    var btn = this; btn.disabled = true;
+    post('/api/admin/org', { orgId: cobroTarget.id, billingEmail: document.getElementById('cobro-mail').value }).then(function (x) {
+      btn.disabled = false;
+      if (!x.ok) { document.getElementById('cobro-err').textContent = x.j && x.j.error === 'bad_request' ? 'Revisá el mail: no parece válido.' : 'No se pudo guardar. Probá de nuevo.'; return; }
+      cd.close ? cd.close() : cd.removeAttribute('open'); refresh();
+    }).catch(function () { btn.disabled = false; document.getElementById('cobro-err').textContent = 'Error de conexión. Probá de nuevo.'; });
   });
   var bd = document.getElementById('baja');
   document.getElementById('baja-no').addEventListener('click', function () { bd.close ? bd.close() : bd.removeAttribute('open'); });

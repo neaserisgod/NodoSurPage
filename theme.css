@@ -354,3 +354,23 @@ body{overflow-x:clip}
   .pays li>span:first-child{grid-column:1/-1;font-weight:500;overflow-wrap:anywhere}
   .pays li .lnk{justify-self:start}
 }
+
+/* ---- negocio: formularios, equipo e invitaciones ---- */
+.frm{display:flex;flex-direction:column;gap:14px;max-width:560px}
+.frm label,.frm legend{display:flex;flex-direction:column;gap:6px;font-size:14px;font-weight:600;color:var(--muted)}
+.frm input[type=email],.frm input[type=text],.frm select{min-height:48px;width:100%;border:0;border-radius:14px;padding:0 16px;background:#fff;font:inherit;font-size:16px;font-weight:400;color:var(--ink);box-shadow:inset 0 0 0 1.5px var(--line)}
+.frm input:focus-visible,.frm select:focus-visible{outline:2px solid var(--ink);outline-offset:2px}
+.frm fieldset{border:0;margin:0;padding:0;display:flex;flex-direction:column;gap:10px;min-width:0}
+.frm .chk{flex-direction:row;align-items:center;gap:10px;font-size:16px;font-weight:400;color:var(--ink)}
+.frm .chk input{width:20px;height:20px;min-height:0;margin:0;accent-color:var(--ink)}
+.frm>.btn{align-self:flex-start}
+.frm [hidden]{display:none}
+.neg-head .prow{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+.acc h3{margin:6px 0 0;font-size:18px;font-weight:500}
+.linkbox{display:flex;gap:8px;margin-top:8px}.linkbox input{flex:1;min-width:0;min-height:48px;border:0;border-radius:14px;padding:0 14px;background:#fff;font:inherit;font-size:14px;box-shadow:inset 0 0 0 1.5px var(--line)}
+.linkbox .btn{min-height:48px;padding:0 20px;flex-shrink:0}
+.inv-res:empty{display:none}.inv-res .acc-note{background:#fff;border-radius:18px;padding:16px 18px}
+.inv-res .acc-note p{margin:6px 0 0}
+.pays .acts{display:flex;flex-wrap:wrap;gap:2px;white-space:normal}
+.dlg-body{display:flex;flex-direction:column;gap:12px;margin:12px 0}
+@media (max-width:719px){.linkbox{flex-direction:column}.linkbox .btn{width:100%}}

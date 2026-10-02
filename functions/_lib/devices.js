@@ -7,7 +7,7 @@
 //   4. La app canjea el código + su verificador (PKCE) por un token de dispositivo.
 // Todo se ata al `sub` de Google, no a la fila de `users`: el barrido automático puede borrar
 // y recrear esa fila y los dispositivos y las copias no se pierden.
-import { sign, verify, randomHex, now, isAdminEmail } from './util.js';
+import { sign, verify, randomHex, now, isAdminEmail, once, addColumn } from './util.js';
 
 export const DEVICE_TTL = 365 * 24 * 3600;
 const CODE_TTL = 120;
@@ -30,16 +30,22 @@ const DDL = [
   `CREATE INDEX IF NOT EXISTS idx_devices_cid ON devices(cid)`,
   `CREATE TABLE IF NOT EXISTS device_codes (jti TEXT PRIMARY KEY, exp INTEGER NOT NULL)`,
 ];
-export async function ensureDeviceTables(env) { for (const sql of DDL) await env.DB.prepare(sql).run(); }
+// owner_org / branch_id: el negocio y la sucursal de la PC (null en las vinculadas antes del modelo de negocios;
+// backfillOrgs las completa). Los dos lados las agregan solos: la tabla puede ser nueva o venir de producción.
+export const ensureDeviceTables = (env) => once(env, 'devices', async () => {
+  for (const sql of DDL) await env.DB.prepare(sql).run();
+  await addColumn(env, 'devices', 'owner_org INTEGER'); await addColumn(env, 'devices', 'branch_id INTEGER');
+  await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_devices_org ON devices(owner_org, branch_id)').run();
+});
 const safe = async (fn, fallback) => { try { return await fn(); } catch (e) { if (/no such table/i.test(String(e && e.message))) return fallback; throw e; } };
 
 // --- código de un solo uso (paso 3)
-export async function createDeviceCode(env, { sub, email, deviceId, name, challenge }, t = now()) {
+export async function createDeviceCode(env, { sub, email, deviceId, name, challenge, orgId, branchId }, t = now()) {
   await ensureDeviceTables(env);
   const jti = randomHex(16);
   await env.DB.prepare('DELETE FROM device_codes WHERE exp < ?1').bind(t).run(); // limpieza oportunista
   await env.DB.prepare('INSERT INTO device_codes (jti, exp) VALUES (?1, ?2)').bind(jti, t + CODE_TTL).run();
-  return sign({ typ: 'devcode', sub, email, did: deviceId, name, challenge, jti, exp: t + CODE_TTL }, secretCodigo(env));
+  return sign({ typ: 'devcode', sub, email, did: deviceId, name, challenge, org: orgId ?? null, branch: branchId ?? null, jti, exp: t + CODE_TTL }, secretCodigo(env));
 }
 export async function readDeviceCode(env, code) {
   const p = await verify(code, secretCodigo(env));
@@ -55,25 +61,32 @@ export async function consumeDeviceCode(env, jti) {
 export const signDeviceToken = (env, { sub, email, deviceId }, t = now()) =>
   sign({ typ: 'dev', sub, email, did: deviceId, exp: t + DEVICE_TTL }, secretDispositivo(env));
 
-export async function upsertDevice(env, { id, sub, email, name, cid, version, os }, t = now()) {
+export async function upsertDevice(env, { id, sub, email, name, cid, version, os, orgId, branchId }, t = now()) {
   await ensureDeviceTables(env);
+  // Vincular de nuevo una PC la deja en el negocio y la sucursal indicados (o sin ninguno si no se indican).
   await env.DB.prepare(
-    `INSERT INTO devices (id, owner_sub, owner_email, name, cid, app_version, os, created_at, last_seen, revoked)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8, 0)
+    `INSERT INTO devices (id, owner_sub, owner_email, name, cid, app_version, os, created_at, last_seen, revoked, owner_org, branch_id)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8, 0, ?9, ?10)
      ON CONFLICT(id) DO UPDATE SET owner_sub = ?2, owner_email = ?3, name = COALESCE(?4, name), cid = COALESCE(?5, cid),
-       app_version = COALESCE(?6, app_version), os = COALESCE(?7, os), last_seen = ?8, revoked = 0`
-  ).bind(id, sub, email, name ?? null, cid ?? null, version ?? null, os ?? null, t).run();
+       app_version = COALESCE(?6, app_version), os = COALESCE(?7, os), last_seen = ?8, revoked = 0, owner_org = ?9, branch_id = ?10`
+  ).bind(id, sub, email, name ?? null, cid ?? null, version ?? null, os ?? null, t, orgId ?? null, branchId ?? null).run();
 }
 export const touchDevice = (env, id, { version, os, cid }, t = now()) => env.DB.prepare(
   'UPDATE devices SET last_seen = ?2, app_version = COALESCE(?3, app_version), os = COALESCE(?4, os), cid = COALESCE(?5, cid) WHERE id = ?1'
 ).bind(id, t, version ?? null, os ?? null, cid ?? null).run();
 export const getDevice = (env, id) => safe(() => env.DB.prepare('SELECT * FROM devices WHERE id = ?1').bind(id).first(), null);
-export const listDevices = (env, sub) => safe(async () => (await env.DB.prepare(
-  'SELECT * FROM devices WHERE owner_sub = ?1 AND revoked = 0 ORDER BY last_seen DESC').bind(sub).all()).results, []);
+// Las PC de una persona: las que vinculó ella, más las de los negocios donde puede administrar PC (`orgIds`).
+const dePersonaONegocios = (orgIds) => (orgIds.length ? `(owner_sub = ?1 OR owner_org IN (${orgIds.map((_, i) => `?${i + 2}`).join(',')}))` : 'owner_sub = ?1');
+export const listDevices = (env, sub, orgIds = []) => safe(async () => {
+  await ensureDeviceTables(env);
+  return (await env.DB.prepare(`SELECT * FROM devices WHERE ${dePersonaONegocios(orgIds)} AND revoked = 0 ORDER BY last_seen DESC`).bind(sub, ...orgIds).all()).results;
+}, []);
 export const listAllDevices = (env) => safe(async () => (await env.DB.prepare(
   'SELECT * FROM devices WHERE revoked = 0 ORDER BY last_seen DESC LIMIT 500').all()).results, []);
-export const revokeDevice = (env, id, sub) => env.DB.prepare(
-  'UPDATE devices SET revoked = 1 WHERE id = ?1 AND owner_sub = ?2').bind(id, sub).run();
+export const revokeDevice = async (env, id, sub, orgIds = []) => {
+  await ensureDeviceTables(env);
+  return env.DB.prepare(`UPDATE devices SET revoked = 1 WHERE id = ?${orgIds.length + 2} AND ${dePersonaONegocios(orgIds)}`).bind(sub, ...orgIds, id).run();
+};
 
 // Quién llama con "Authorization: Bearer <token de dispositivo>": {sub, email, device} o null.
 export async function deviceFromRequest(request, env) {
@@ -83,6 +96,11 @@ export async function deviceFromRequest(request, env) {
   if (!p || p.typ !== 'dev' || !p.sub || !p.did) return null;
   const device = await getDevice(env, p.did);
   if (!device || device.revoked || device.owner_sub !== p.sub) return null;
+  // La PC es del negocio: si quien la vinculó ya no es miembro activo (se fue o lo quitaron), deja de valer.
+  if (device.owner_org) {
+    const m = await safe(() => env.DB.prepare('SELECT status FROM memberships WHERE org_id = ?1 AND user_sub = ?2').bind(device.owner_org, p.sub).first(), null);
+    if (!m || m.status !== 'active') return null;
+  }
   return { sub: p.sub, email: p.email, device, exp: p.exp };
 }
 

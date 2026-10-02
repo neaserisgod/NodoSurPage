@@ -50,6 +50,7 @@ var P=window.NS_PLANES||{},k=q.get("plan"),pl=document.getElementById("login-pla
 if(k&&P[k]&&pl&&g){var pr=q.get("promo")==="1";
 pl.textContent="Elegiste "+P[k].nombre+" ("+(pr?"precio de fundador: $ "+P[k].promo.toLocaleString("es-AR"):"$ "+P[k].precio.toLocaleString("es-AR"))+" por mes). Ingresá con Google para continuar al pago: tu elección queda guardada.";pl.hidden=false;
 g.href="/api/auth/google?plan="+k+(pr?"&promo=1":"")}
-var nx=q.get("next");if(nx&&g&&/^\/vincular\/\?[A-Za-z0-9_%=&.~+-]*$/.test(nx)){g.href="/api/auth/google?next="+encodeURIComponent(nx)}})();</script>
+var nx=q.get("next");if(nx&&g&&/^\/vincular\/\?[A-Za-z0-9_%=&.~+-]*$/.test(nx)){g.href="/api/auth/google?next="+encodeURIComponent(nx)}
+else if(nx&&g&&/^\/unirse\/\?t=[0-9a-f]{64}$/.test(nx)){g.href="/api/auth/google?next="+encodeURIComponent(nx);if(pl){pl.textContent="Ingresá con el mismo mail al que te llegó la invitación para sumarte al negocio.";pl.hidden=false}}})();</script>
 </body>
 </html>

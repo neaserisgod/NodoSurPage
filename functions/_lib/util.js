@@ -43,6 +43,20 @@ export const randomHex = (n) => [...crypto.getRandomValues(new Uint8Array(n))].m
 export const sha256b64u = async (s) => b64u(await crypto.subtle.digest('SHA-256', enc.encode(s)));
 export const now = () => Math.floor(Date.now() / 1000);
 
+// Corre `fn` una sola vez por base D1 (por instancia del Worker): sirve para crear tablas y columnas sin repetir
+// el trabajo en cada pedido. Si `fn` falla, no se marca hecho y se reintenta.
+const hechos = new WeakMap();
+export async function once(env, clave, fn) {
+  let s = hechos.get(env.DB); if (!s) hechos.set(env.DB, (s = new Set()));
+  if (s.has(clave)) return;
+  await fn(); s.add(clave);
+}
+// Agrega una columna a una tabla que ya existe en producción; si ya está, no hace nada.
+export async function addColumn(env, tabla, definicion) {
+  try { await env.DB.prepare(`ALTER TABLE ${tabla} ADD COLUMN ${definicion}`).run(); }
+  catch (e) { if (!/duplicate column/i.test(String(e && e.message))) throw e; }
+}
+
 export function parseCookies(header) {
   const out = {};
   for (const part of (header || '').split(';')) {
@@ -57,8 +71,10 @@ export function cookie(name, value, { maxAge, httpOnly = true, path = '/' } = {}
 
 // A dónde se puede volver después de ingresar con Google: SOLO la página de vinculación de la app, con su
 // consulta. Nada de URLs libres (sería un redireccionamiento abierto).
+// A dónde se puede volver después de ingresar con Google: la vinculación de la app, o aceptar una invitación
+// (el token de 64 hex y nada más: ni otros parámetros ni otras rutas).
 export const safeNext = (n) =>
-  typeof n === 'string' && n.length <= 600 && /^\/vincular\/\?[A-Za-z0-9_%=&.~+-]*$/.test(n) ? n : null;
+  typeof n === 'string' && n.length <= 600 && (/^\/vincular\/\?[A-Za-z0-9_%=&.~+-]*$/.test(n) || /^\/unirse\/\?t=[0-9a-f]{64}$/.test(n)) ? n : null;
 
 export const siteUrl = (env) => (env.SITE_URL || 'https://horsepos.com').replace(/\/$/, '');
 
