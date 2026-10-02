@@ -1,7 +1,7 @@
 import { json, now, sameOriginPost } from '../../_lib/util.js';
 import { requireAdmin } from '../../_lib/auth.js';
 import { hasDB } from '../../_lib/db.js';
-import { PLATFORMS, CHANNELS, SIG_TYPES, hasR2, validVersion, validKey, listReleases, getRelease, addRelease, setRollout, setBlocked, setActive } from '../../_lib/releases.js';
+import { PLATFORMS, CHANNELS, SIG_TYPES, hasR2, validVersion, validKey, listReleases, getRelease, addRelease, podarVersiones, setRollout, setBlocked, setActive } from '../../_lib/releases.js';
 
 function constantTimeEqual(aStr, bStr) {
   if (!aStr || !bStr) return false;
@@ -74,8 +74,11 @@ export async function onRequestPost({ request, env }) {
       await addRelease(env, { channel: b.channel, platform: b.platform, version: b.version, file_key: b.key, size: head.size, sha256: b.sha256,
         signature: b.signature, sigType: b.signatureType, notes: b.notes, mandatory: b.mandatory === true, rollout }, now());
     } catch (e) { if (/UNIQUE/i.test(String(e && e.message))) return json({ error: 'exists' }, 409); throw e; }
+    // Cada versión nueva deja solo las 2 últimas por plataforma y canal. Si la poda falla no se pierde la publicación.
+    try { await podarVersiones(env); } catch { /* la publicación ya quedó */ }
     return json({ ok: true, size: head.size });
   }
+  if (action === 'prune') return json({ ok: true, ...(await podarVersiones(env)) });
 
   const id = Number(b.id);
   if (!Number.isInteger(id) || !['rollout', 'block', 'unblock', 'retire', 'restore'].includes(action)) return json({ error: 'bad_request' }, 400);

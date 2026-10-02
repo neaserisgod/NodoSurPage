@@ -50,6 +50,11 @@ export async function ensureTables(env) {
 }
 export const SIG_TYPES = ['ed', 'dsa'];
 
+// Cuántas versiones se conservan (y se ofrecen) por plataforma y canal: la vigente y la anterior para volver atrás.
+// El resto se borra, de la base y de R2, para no acumular instaladores de 13 a 40 MB cada uno.
+export const VERSIONES_A_GUARDAR = 2;
+const UNA_HORA = 3600;
+
 // Lecturas: si todavía no existe la tabla (no se publicó nada), devuelven vacío en lugar de fallar.
 const safe = async (fn, fallback) => { try { return await fn(); } catch (e) { if (/no such table/i.test(String(e && e.message))) return fallback; throw e; } };
 
@@ -68,7 +73,7 @@ export async function latestForInstall(env, platform, channel) {
 
 // Historial para volver atrás (rollback): las últimas versiones activas y no bloqueadas de cada canal, de la más
 // nueva a la más vieja, con cualquier reparto. Solo lo consultan administradores y cuentas eximidas.
-export async function historyForInstall(env, platform, channel, limit = 10) {
+export async function historyForInstall(env, platform, channel, limit = VERSIONES_A_GUARDAR) {
   return (await candidates(env, platform, channel)).sort((a, b) => cmpVersion(b.version, a.version)).slice(0, limit);
 }
 // Una versión puntual (la que eligió quien hace el rollback). Respeta activa/bloqueada igual que el resto.
@@ -100,6 +105,41 @@ export async function addRelease(env, r, t) {
      VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12)`
   ).bind(r.channel, r.platform, r.version, r.file_key, r.size, r.sha256, r.signature || null, r.notes || null, r.mandatory ? 1 : 0, r.rollout, t, r.sigType || 'ed').run();
 }
+// Borra las versiones que sobran: por cada plataforma y canal se quedan las `keep` más nuevas que sirven (activas y no
+// bloqueadas: una bloqueada es una compilación mala y no cuenta como "la anterior"); lo más viejo se borra, con su archivo.
+// Después limpia los archivos de R2 que ninguna versión registrada usa (por ejemplo, de una corrida que subió el archivo y
+// no llegó a registrarse), pero solo si tienen más de una hora: uno recién subido todavía puede estar por registrarse.
+export async function podarVersiones(env, { keep = VERSIONES_A_GUARDAR, t = Math.floor(Date.now() / 1000) } = {}) {
+  await ensureTables(env);
+  const borradas = [];
+  for (const platform of PLATFORMS) for (const channel of CHANNELS) {
+    const filas = (await env.DB.prepare('SELECT * FROM releases WHERE platform = ?1 AND channel = ?2').bind(platform, channel).all()).results
+      .sort((a, b) => cmpVersion(b.version, a.version));
+    let guardadas = 0;
+    for (const r of filas) {
+      if (guardadas < keep) { if (r.active && !r.blocked) guardadas++; continue; } // las más nuevas, y las bloqueadas que las preceden, se dejan
+      await env.RELEASES.delete(r.file_key);
+      await env.DB.prepare('DELETE FROM downloads WHERE release_id = ?1').bind(r.id).run();
+      await env.DB.prepare('DELETE FROM releases WHERE id = ?1').bind(r.id).run();
+      borradas.push(`${channel}/${platform}/${r.version}`);
+    }
+  }
+  let huerfanos = 0;
+  if (typeof env.RELEASES.list === 'function') {
+    const usadas = new Set((await env.DB.prepare('SELECT file_key FROM releases').all()).results.map((r) => r.file_key));
+    let cursor;
+    do {
+      const pagina = await env.RELEASES.list({ cursor, limit: 500 });
+      for (const o of pagina.objects || []) {
+        const subido = o.uploaded instanceof Date ? o.uploaded.getTime() / 1000 : Number(o.uploaded) || 0;
+        if (!usadas.has(o.key) && /^(stable|beta)\//.test(o.key) && t - subido > UNA_HORA) { await env.RELEASES.delete(o.key); huerfanos++; }
+      }
+      cursor = pagina.truncated ? pagina.cursor : undefined;
+    } while (cursor);
+  }
+  return { borradas, huerfanos };
+}
+
 export const setRollout = (env, id, v) => env.DB.prepare('UPDATE releases SET rollout = ?2 WHERE id = ?1').bind(id, v).run();
 export const setBlocked = (env, id, v) => env.DB.prepare('UPDATE releases SET blocked = ?2 WHERE id = ?1').bind(id, v ? 1 : 0).run();
 export const setActive = (env, id, v) => env.DB.prepare('UPDATE releases SET active = ?2 WHERE id = ?1').bind(id, v ? 1 : 0).run();
