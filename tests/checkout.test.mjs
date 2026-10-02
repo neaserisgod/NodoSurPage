@@ -147,6 +147,13 @@ await t('/api/me: si Mercado Pago falla no se afirma nada (sin ns_sub); admin si
   const env2 = mkEnv({ ADMIN_EMAILS: 'ana@gmail.com' }); await login(env2, ''); mockMP();
   assert.equal(ck(await meCall(env2, await sess(env2, 'ana@gmail.com', 's1'))).ns_sub, '1');
 });
+await t('/api/me: una cuenta eximida no paga: devuelve exempt y ns_sub=1 aunque no tenga suscripción', async () => {
+  const env = mkEnv(); await login(env, ''); SUBS = []; mockMP();
+  let j = await (await meCall(env, await sess(env, 'ana@gmail.com', 's1'))).json(); assert.equal(j.exempt, false);
+  env.DB.raw.prepare("UPDATE users SET exempt = 1 WHERE sub = 's1'").run();
+  const r = await meCall(env, await sess(env, 'ana@gmail.com', 's1')); j = await r.json();
+  assert.equal(j.exempt, true); assert.equal(ck(r).ns_sub, '1');
+});
 await t('/api/me: plan elegido inexistente en la base se ignora', async () => {
   const env = mkEnv(); await login(env, ''); env.DB.raw.exec("ALTER TABLE users ADD COLUMN plan_interest TEXT; ALTER TABLE users ADD COLUMN promo_interest INTEGER DEFAULT 0; ALTER TABLE users ADD COLUMN plan_chosen_at INTEGER;");
   env.DB.raw.prepare("UPDATE users SET plan_interest='<script>'").run(); SUBS = []; mockMP();

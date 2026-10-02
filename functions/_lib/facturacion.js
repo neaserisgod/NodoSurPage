@@ -7,12 +7,15 @@
 //  * Nadie cancela la suscripción de otra persona (puede cubrir otros negocios suyos): cancela quien paga (cancel.js).
 import { listSubscriptions } from './mp.js';
 import { enmascarar } from './miembros.js';
+import { isPrivilegedSub } from './devices.js';
 
 const vigente = (subs) => subs.some((s) => s.status === 'authorized');
 
 export async function estadoFacturacion(env, org, email) {
   const mine = org.billing_email === email;
   const base = { mine, billingEmail: mine ? org.billing_email : enmascarar(org.billing_email), mpConfigured: Boolean(env.MP_ACCESS_TOKEN) };
+  // Negocio de administración o eximido: se trata como pago y sin vencimiento (igual que en descargas, copias y sync).
+  if (await isPrivilegedSub(env, org.owner_sub, org.billing_email)) return { ...base, status: 'authorized', subscriptions: [], ownHasSubscription: true };
   if (!env.MP_ACCESS_TOKEN) return { ...base, status: 'unknown', subscriptions: [], ownHasSubscription: false };
   try {
     const subs = await listSubscriptions(env, org.billing_email);
