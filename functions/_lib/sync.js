@@ -11,15 +11,17 @@
 //  * Cada lote se guarda cifrado (AES-256-GCM, mismo secreto BACKUP_KEY que las copias). El operador puede
 //    técnicamente descifrarlos; por eso la app no incluye en ellos los tokens de Mercado Pago ni del celular.
 //  * Subir un lote es idempotente por `loteId`: reintentar tras un corte no duplica nada.
-//  * Solo se conservan RETENCION_DIAS días. Un dispositivo que estuvo apagado más tiempo recibe
-//    `expirado: true` y tiene que volver a ponerse al día desde una copia de seguridad.
+//  * Los lotes viejos solo se borran si pasaron RETENCION_DIAS días Y la sucursal acumula más de TOPE_BYTES: un local
+//    chico nunca llega a ese tope, así que un celular nuevo (o uno que estuvo meses apagado) siempre puede bajar la
+//    historia entera. Un dispositivo que quedó detrás de lo ya borrado recibe `expirado: true`.
 //  * Reloj: las respuestas incluyen la hora del servidor (`ahora`, ms) para que la app corrija la diferencia
 //    de su reloj antes de sellar `actualizado_en`; de eso depende que "gana el último" sea justo.
 import { now } from './util.js';
 import { cifrar, descifrar, sha256Hex, claveValida } from './backups.js';
 import { backupAccess, backupScope } from './access.js';
 
-export const RETENCION_DIAS = 60;
+export const RETENCION_DIAS = 365;
+export const TOPE_BYTES = 50 * 1024 * 1024; // por sucursal; `env.SYNC_TOPE_BYTES` lo pisa (tests)
 export const MAX_LOTE_BYTES = 1024 * 1024;      // una fila de D1 admite hasta 2 MB; base64 + cifrado agrandan
 export const MAX_RESPUESTA_BYTES = 3 * 1024 * 1024;
 const DAY = 86400;
@@ -82,6 +84,11 @@ export async function guardarLote(env, { scope, deviceId, loteId, bytes }, t = n
 
 export async function purgarViejos(env, scope, t = now()) {
   await ensureSyncTables(env);
+  // Purgar por tiempo solo, rompe a quien llega después: un dispositivo nuevo arranca de cero y queda "expirado" para
+  // siempre aunque la sucursal tenga pocos datos. Por eso se borra recién cuando además hay volumen que lo justifique.
+  const tope_bytes = Number(env.SYNC_TOPE_BYTES ?? TOPE_BYTES);
+  const total = await env.DB.prepare('SELECT COALESCE(SUM(size), 0) AS b FROM sync_lotes WHERE scope = ?1').bind(scope).first();
+  if (!total || total.b <= tope_bytes) return;
   const limite = t - RETENCION_DIAS * DAY;
   const tope = await env.DB.prepare('SELECT MAX(seq) AS m FROM sync_lotes WHERE scope = ?1 AND created_at < ?2').bind(scope, limite).first();
   if (!tope || !tope.m) return;
