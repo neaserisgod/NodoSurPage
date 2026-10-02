@@ -19,10 +19,13 @@ export async function onRequestGet({ request, env }) {
   const r = await latestForUpdate(env, platform, channel, null, cid, { conBeta: await cidIsPrivileged(env, cid) });
   if (!r) return xml(head + '</channel></rss>');
   const os = platform === 'macos' ? 'macos' : platform;
+  // La dirección termina en un nombre con extensión (la del archivo publicado): sin eso, WinSparkle guarda el
+  // instalador como "file" y Windows no lo puede ejecutar.
+  const ext = (String(r.file_key || '').match(/\.([A-Za-z0-9]{2,5})$/) || [])[0] || ({ windows: '.exe', macos: '.dmg', linux: '.AppImage' }[platform] || '');
   const item = `<item><title>Versión ${esc(r.version)}</title><pubDate>${new Date(r.published_at * 1000).toUTCString()}</pubDate>`
     + `<sparkle:version>${esc(sparkleVersion(r.version))}</sparkle:version><sparkle:shortVersionString>${esc(String(r.version).split('+')[0])}</sparkle:shortVersionString>`
     + (r.mandatory ? '<sparkle:criticalUpdate></sparkle:criticalUpdate>' : '')
     + (r.notes ? `<description><![CDATA[${String(r.notes).replace(/]]>/g, ']]]]><![CDATA[>')}]]></description>` : '')
-    + `<enclosure url="${esc(`${siteUrl(env)}/api/update/file?id=${r.id}`)}" length="${r.size}" type="application/octet-stream" sparkle:os="${os}"${r.signature ? ` sparkle:${r.sig_type === 'dsa' ? 'dsaSignature' : 'edSignature'}="${esc(r.signature)}"` : ''}/></item>`;
+    + `<enclosure url="${esc(`${siteUrl(env)}/api/update/file/NodoSurPOS-Actualizacion${ext}?id=${r.id}`)}" length="${r.size}" type="application/octet-stream" sparkle:os="${os}"${r.signature ? ` sparkle:${r.sig_type === 'dsa' ? 'dsaSignature' : 'edSignature'}="${esc(r.signature)}"` : ''}/></item>`;
   return xml(head + item + '</channel></rss>');
 }

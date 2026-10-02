@@ -69,9 +69,13 @@ export default {
     const url = new URL(request.url);
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
 
-    const handler = ROUTES[`${request.method} ${url.pathname}`];
+    // El feed de actualizaciones apunta a /api/update/file/<nombre>.exe?id=N: WinSparkle guarda el instalador con el
+    // último tramo de la dirección, y sin extensión Windows no sabe cómo ejecutarlo ("Abrir con"). El nombre es solo
+    // decorativo: el archivo sale del id.
+    const path = url.pathname.startsWith('/api/update/file/') ? '/api/update/file' : url.pathname;
+    const handler = ROUTES[`${request.method} ${path}`];
     if (!handler) {
-      const known = Object.keys(ROUTES).some((k) => k.endsWith(` ${url.pathname}`));
+      const known = Object.keys(ROUTES).some((k) => k.endsWith(` ${path}`));
       return new Response(JSON.stringify({ error: known ? 'method_not_allowed' : 'not_found' }), { status: known ? 405 : 404, headers: NO_STORE });
     }
     try {
