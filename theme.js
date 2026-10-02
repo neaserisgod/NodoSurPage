@@ -1,7 +1,7 @@
 /* Partículas y rayita en las páginas internas (encabezado y cierre). Usa fx.js. */
 (function(){
   var d=document,path=location.pathname.replace(/\/+$/,'');
-  if(/^\/(pagar|cuenta|ingresar|vincular|admin)$/.test(path))return;
+  if(/^\/(pagar|cuenta|ingresar|vincular|admin|descargar)$/.test(path))return;
   var add=function(host,pal,cx,cy){
     if(!host||host.querySelector('canvas.particles'))return;
     var c=d.createElement('canvas');c.className='particles';c.setAttribute('aria-hidden','true');
