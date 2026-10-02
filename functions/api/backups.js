@@ -11,6 +11,9 @@ export async function onRequestGet({ request, env }) {
   if (!a) return json({ error: 'no_session' }, 401);
   if (!hasDB(env) || !backupsReady(env)) return json({ error: 'backups_no_configurados' }, 503);
   const scope = await backupScope(env, a, { orgId: Number(new URL(request.url).searchParams.get('org')) || undefined });
+  // Un empleado (o quien no administra copias) no es una cuenta "sin suscripción": el negocio sí la tiene. Se lo dice aparte
+  // para que la app no le diga que su suscripción no está activa.
+  if (!scope.denied && scope.allowed === false) return json({ upload: false, restore: false, noPermission: true, max: MAX_COPIAS, maxBytes: MAX_BYTES, restoreDays: VENTANA_RESTAURAR_DIAS, backups: [] });
   const acc = await backupAccess(env, a, scope);
   const copias = (await listBackups(env, scope)).map(publicBackup);
   if (acc.error) return json({ error: acc.error, backups: copias }, 503);
