@@ -36,6 +36,12 @@
 /vincular.js
   Cache-Control: public, max-age=0, must-revalidate
 
+/negocio.js
+  Cache-Control: public, max-age=0, must-revalidate
+
+/unirse.js
+  Cache-Control: public, max-age=0, must-revalidate
+
 /pagar.js
   Cache-Control: public, max-age=0, must-revalidate
 

@@ -36,3 +36,7 @@ export function puedeEnAlguna(miembro, accion) {
   if (miembro.role === 'owner' || DE_NEGOCIO.has(accion) || miembro.all_branches) return true;
   return (miembro.branches || []).length > 0;
 }
+
+// Todo lo que puede hacer en al menos una sucursal: { facturacion: true, operar: false, ... }. Las pantallas lo usan
+// para mostrar u ocultar secciones sin repetir la tabla de arriba.
+export const permisosDe = (miembro) => Object.fromEntries(ACCIONES.map((a) => [a, puedeEnAlguna(miembro, a)]));

@@ -22,7 +22,7 @@
   (function(){
     var c=function(n){var m=d.cookie.match(new RegExp('(?:^|; )'+n+'=([^;]*)'));return m?m[1]:''};
     if(!c('ns_hint')||c('ns_sub')!=='0'||!hdr)return;
-    if(/^\/(pagar|cuenta|ingresar|admin)(\/|$)/.test(location.pathname))return;
+    if(/^\/(pagar|cuenta|ingresar|admin|negocio|unirse)(\/|$)/.test(location.pathname))return;
     try{if(sessionStorage.getItem('ns_offer_x'))return}catch(e){}
     var nm='';try{nm=decodeURIComponent(c('ns_hint'))}catch(e){}
     var pl=c('ns_plan'),bar=d.createElement('div');bar.className='offer-bar';bar.setAttribute('role','region');bar.setAttribute('aria-label','Elegí tu sistema');
@@ -134,7 +134,7 @@
   /* botón fijo de WhatsApp en celulares (solo en las páginas comerciales) */
   (function(){
     var path=location.pathname.replace(/\/+$/,'')||'/';
-    var skip=['/pagar','/ingresar','/cuenta','/admin','/privacidad','/descargar','/vincular'];
+    var skip=['/pagar','/ingresar','/cuenta','/admin','/privacidad','/descargar','/vincular','/negocio','/unirse'];
     if(skip.indexOf(path)>-1||!matchMedia('(max-width:719px)').matches)return;
     var a=d.createElement('a');a.className='sticky-cta';
     a.href='https://wa.me/5492944796044?text='+encodeURIComponent('Hola, quiero probar el sistema');

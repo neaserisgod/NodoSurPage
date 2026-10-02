@@ -6,6 +6,7 @@
   var date = function (s) { var d = new Date(s); return isNaN(d) ? '' : d.toLocaleDateString('es-AR', { day: 'numeric', month: 'long', year: 'numeric' }); };
   var STATUS = { authorized: ['Activa', 'ok'], paused: ['Pausada', 'wait'], cancelled: ['Cancelada', 'bad'], canceled: ['Cancelada', 'bad'], pending: ['Pendiente', 'wait'] };
   var PAY = { processed: 'Cobrado', scheduled: 'Programado', recycling: 'Reintentando', cancelled: 'Cancelado', canceled: 'Cancelado' };
+  var ROL = { owner: 'Dueño', manager: 'Encargado', employee: 'Empleado' };
   var WA = 'https://wa.me/5492944796044?text=';
   var pending = null;
 
@@ -45,6 +46,29 @@
     p.appendChild(out);
     if (d.isAdmin) { var ad = el('a', 'btn', 'Ir al panel de administración'); ad.href = '/admin/'; ad.style.alignSelf = 'flex-start'; p.appendChild(ad); }
     root.appendChild(p);
+
+    if (d.orgs && d.orgs.length) {
+      var nc = card(d.orgs.length === 1 ? 'Tu negocio' : 'Tus negocios');
+      var nl = el('ul', 'pays');
+      d.orgs.forEach(function (o) {
+        var li = el('li'); li.appendChild(el('span', null, o.name));
+        li.appendChild(el('span', null, ROL[o.role] || o.role));
+        var oa = el('a', 'lnk', 'Abrir'); oa.href = '/negocio/?org=' + encodeURIComponent(o.id); li.appendChild(oa); nl.appendChild(li);
+      });
+      nc.appendChild(nl); root.appendChild(nc);
+    }
+    // Quien solo es encargado o empleado no paga nada: la suscripción es del negocio, así que no se le muestra ni se le ofrece.
+    if (d.billing === false) {
+      var eb = card('Tu acceso');
+      eb.appendChild(el('p', 'acc-note', 'Tu acceso lo da el negocio: la suscripción la maneja el dueño. No tenés que pagar ni elegir ningún plan.'));
+      root.appendChild(eb);
+      if (d.orgs.some(function (o) { return o.can && o.can.descargar; })) {
+        var eg = card('Descargá el sistema'); eg.classList.add('acc-dl');
+        eg.appendChild(el('p', 'acc-note', 'Instalador para tu compu y la app del celular, siempre en su última versión.'));
+        var el2 = el('a', 'btn', 'Ir a las descargas'); el2.href = '/descargar/'; el2.style.alignSelf = 'flex-start'; eg.appendChild(el2); root.appendChild(eg);
+      }
+      return;
+    }
 
     if (d.notice) {
       var nb = el('div', 'login-err'); nb.setAttribute('role', 'alert');

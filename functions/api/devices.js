@@ -3,7 +3,7 @@ import { actorOf, csrfOk, forbidden } from '../_lib/actor.js';
 import { listDevices, revokeDevice } from '../_lib/devices.js';
 import { orgsWith } from '../_lib/orgs.js';
 
-const pub = (d, actual) => ({ id: d.id, name: d.name, version: d.app_version, os: d.os, lastSeen: d.last_seen, createdAt: d.created_at, branchId: d.branch_id ?? null, current: d.id === actual });
+const pub = (d, actual) => ({ id: d.id, name: d.name, version: d.app_version, os: d.os, lastSeen: d.last_seen, createdAt: d.created_at, branchId: d.branch_id ?? null, orgId: d.owner_org ?? null, current: d.id === actual });
 
 // Mis dispositivos (Mi cuenta, o la propia app): los que vinculé yo y, si soy dueña, los de todo mi negocio.
 const orgIdsDe = async (env, sub) => (await orgsWith(env, sub, 'vincular_pc')).map((o) => o.org.id);

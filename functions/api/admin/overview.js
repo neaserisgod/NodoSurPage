@@ -4,6 +4,8 @@ import { hasDB, listUsers, getPromo } from '../../_lib/db.js';
 import { listAllSubscribers } from '../../_lib/mp.js';
 import { notifierReady } from '../../_lib/notify.js';
 import { RULES } from '../../_lib/sweep.js';
+import { listOrgsOverview } from '../../_lib/orgs.js';
+import { softCap } from '../../_lib/miembros.js';
 
 const RANK = { authorized: 4, pending: 3, paused: 2, cancelled: 1, canceled: 1 };
 const best = (a, b) => (!a || (RANK[b.status] || 0) > (RANK[a.status] || 0) ? b : a);
@@ -34,11 +36,19 @@ export async function onRequestGet({ request, env }) {
       subscription: sub && { id: sub.id, plan: sub.plan, status: sub.status, amount: sub.amount, nextPayment: sub.nextPayment },
     };
   });
+  const cap = softCap(env);
+  const orgs = (await listOrgsOverview(env)).map((o) => {
+    const sub = byEmail.get(o.billing_email) || null;
+    return { id: o.id, name: o.name, ownerEmail: o.owner_email, billingEmail: o.billing_email, createdAt: o.created_at, members: o.members, branches: o.branches,
+      devices: o.devices, lastSeen: o.last_seen, overSoftCap: o.members > cap,
+      subscription: sub && { id: sub.id, plan: sub.plan, status: sub.status, amount: sub.amount, nextPayment: sub.nextPayment } };
+  });
   const emails = new Set(users.map((u) => u.email));
   const active = subs.filter((s) => s.status === 'authorized');
   return json({
     kpis: {
       users: users.length,
+      orgs: orgs.length,
       new7d: users.filter((u) => t - u.created_at < 7 * DAY).length,
       active7d: users.filter((u) => t - u.last_seen < 7 * DAY).length,
       activeSubs: active.length,
@@ -48,6 +58,7 @@ export async function onRequestGet({ request, env }) {
       unpaid: mpError ? null : rows.filter((r) => !r.subscription && !r.isAdmin).length,
     },
     users: rows,
+    orgs,
     subscribersWithoutAccount: subs.filter((s) => !emails.has(s.payerEmail)).map((s) => ({ id: s.id, email: s.payerEmail, plan: s.plan, status: s.status, amount: s.amount })),
     config: { db: true, mp: !mpError, autoDelete: env.AUTO_DELETE === 'on', notifier: notifierReady(env) },
     mpError,

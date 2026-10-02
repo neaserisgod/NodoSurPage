@@ -9,7 +9,7 @@
 // Todo negocio nace con una "Sucursal principal", así el código nunca tiene el caso especial "sin sucursal".
 // Las tablas se crean solas (como el resto del sitio); migrations/0005_orgs.sql es la misma definición, opcional.
 import { now, once } from './util.js';
-import { puedeEnAlguna } from './permisos.js';
+import { puedeEnAlguna, permisosDe } from './permisos.js';
 import { ensureDeviceTables } from './devices.js';
 import { ensureBackupTables } from './backups.js';
 
@@ -165,3 +165,29 @@ export const billingEmailsBySub = (env) => sinTabla(async () => {
   for (const f of filas) mapa.set(f.user_sub, [...(mapa.get(f.user_sub) || []), f.billing_email]);
   return mapa;
 }, new Map());
+
+// Los negocios de una persona tal como los muestran las pantallas: rol, sucursales que ve (la dueña y quien tiene
+// "todas" ven todas las activas; el resto, solo las asignadas) y qué puede hacer. Sin ids de Google ni mail de cobro.
+export async function describirOrgs(env, membresias) {
+  const out = [];
+  for (const m of membresias) {
+    const todas = (await listBranches(env, m.org.id)).filter((b) => b.active);
+    const ve = m.role === 'owner' || m.all_branches ? todas : todas.filter((b) => m.branches.includes(b.id));
+    out.push({ id: m.org.id, name: m.org.name, role: m.role, allBranches: Boolean(m.role === 'owner' || m.all_branches),
+      branches: ve.map((b) => ({ id: b.id, name: b.name })), can: permisosDe(m) });
+  }
+  return out;
+}
+
+// Para el panel de administración (solo lectura): una fila por negocio, con sus números.
+export async function listOrgsOverview(env) {
+  await ensureOrgTables(env);
+  return (await env.DB.prepare(
+    `SELECT o.id, o.name, o.billing_email, o.created_at,
+       (SELECT email FROM memberships WHERE org_id = o.id AND role = 'owner' AND status = 'active' ORDER BY id LIMIT 1) AS owner_email,
+       (SELECT COUNT(*) FROM memberships WHERE org_id = o.id AND status = 'active') AS members,
+       (SELECT COUNT(*) FROM branches WHERE org_id = o.id AND active = 1) AS branches,
+       (SELECT COUNT(*) FROM devices WHERE owner_org = o.id AND revoked = 0) AS devices,
+       (SELECT MAX(last_seen) FROM devices WHERE owner_org = o.id) AS last_seen
+     FROM orgs o ORDER BY o.id`).all()).results;
+}

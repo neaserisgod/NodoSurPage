@@ -18,7 +18,7 @@ El sitio se publica como **Worker con archivos estáticos** (`wrangler.jsonc`, n
 
 ### Negocios, sucursales y miembros (en construcción)
 
-Hoy todo cuelga del `sub` de una persona. El modelo nuevo agrega el **negocio** (el que paga) entre la persona y todo lo demás. Se implementa por fases; ya están el modelo (fase 1), el acceso calculado por negocio (fase 2) y la API de miembros, invitaciones y sucursales (fase 3). Todavía no hay pantallas (`/negocio/`, `/unirse/`).
+Hoy todo cuelga del `sub` de una persona. El modelo nuevo agrega el **negocio** (el que paga) entre la persona y todo lo demás. Se implementa por fases; ya están el modelo (fase 1), el acceso calculado por negocio (fase 2), la API de miembros, invitaciones y sucursales (fase 3) y las pantallas (fase 4). Falta la transferencia de propiedad (fase 5) y el POS (fase 6).
 
 - **`orgs`** (negocio, con `billing_email`), **`branches`** (sucursales), **`memberships`** (persona + rol + sucursales), **`invitations`**. Definición en `functions/_lib/orgs.js` (se crean solas) y `migrations/0005_orgs.sql` (opcional).
 - Todo negocio nace con una **"Sucursal principal"**; `devices` y `backups` ganan `owner_org` y `branch_id` (nullable). `backfillOrgs` convierte lo que ya existe, es idempotente y solo toca filas sin negocio.
@@ -36,6 +36,12 @@ Hoy todo cuelga del `sub` de una persona. El modelo nuevo agrega el **negocio** 
   - `GET /api/org/members?org=`, `POST /api/org/member/update` y `/remove`: rol y sucursales; al dueño no se lo toca (la propiedad se transfiere aparte, fase 5). Quitar deja al miembro inactivo (las ventas viejas conservan su nombre) y sus PC dejan de valer.
   - `GET /api/org/branches`, `POST /api/org/branch` y `/branch/update`: crear, renombrar, cerrar y reabrir. No se puede cerrar la última activa ni una con PC vinculadas.
   - `MAX_MIEMBROS_SIN_COSTO` (por defecto 50): la lista de miembros devuelve `softCap` y `overSoftCap`; solo avisa, no bloquea.
+- **Pantallas (fase 4)**
+  - `/negocio/` (Mi negocio): el **dueño** administra equipo (invitar, cambiar rol y sucursales, quitar), sucursales, PC vinculadas y copias. Un **encargado** ve sus sucursales, copias y descargas. Un **empleado** ve solo su lugar de trabajo: sin copias, descargas ni facturación. Con más de un negocio hay selector. Las secciones salen de `can` en `/api/me` (que viene de `permisos.js`): la pantalla no repite la tabla de permisos.
+  - `/unirse/?t=`: aceptar una invitación. Sin sesión manda a `/ingresar/` y vuelve (el token de 64 hex es lo único que `safeNext` deja pasar). El token se saca de la barra de direcciones apenas se lee. Con otro mail muestra el mail enmascarado y no revela el negocio.
+  - `/cuenta/`: muestra "Tu negocio" y, a quien solo es encargado o empleado (`billing: false` en `/api/me`), no le consulta Mercado Pago ni le ofrece "elegí tu sistema". `/vincular/` deja elegir negocio y sucursal (solo el dueño vincula).
+  - `/admin/`: tabla de **Negocios** (solo lectura: dueño, mail de cobro, suscripción, equipo, sucursales, PC, tope blando). Es distinta de `/negocio/`: la de admin es de Nodo Sur, la otra es de cada dueño.
+  - Las páginas arman todo con `textContent` (nombres y mails vienen de la base; hay un test que prohíbe `innerHTML`).
 - Las ventas y la caja siguen siendo **locales por PC**: no hay reportes consolidados entre sucursales (exigirían subir las ventas a la nube).
 
 ### Pagar exige ingresar (y se recuerda el plan)

@@ -47,7 +47,7 @@
     var k = d.kpis, cfg = d.config;
 
     var kp = el('div', 'kpis');
-    [['Usuarios', k.users], ['Nuevos (7 días)', k.new7d], ['Activos (7 días)', k.active7d], ['Suscripciones activas', k.activeSubs], ['Ingreso mensual', money(k.mrr)], ['Registrados sin pagar', k.unpaid == null ? '—' : k.unpaid], ['En aviso de borrado', k.inNotice]].forEach(function (x) {
+    [['Usuarios', k.users], ['Negocios', k.orgs == null ? '—' : k.orgs], ['Nuevos (7 días)', k.new7d], ['Activos (7 días)', k.active7d], ['Suscripciones activas', k.activeSubs], ['Ingreso mensual', money(k.mrr)], ['Registrados sin pagar', k.unpaid == null ? '—' : k.unpaid], ['En aviso de borrado', k.inNotice]].forEach(function (x) {
       var c = el('div', 'kpi'); c.appendChild(el('span', null, x[0])); c.appendChild(el('strong', null, String(x[1]))); kp.appendChild(c);
     });
     root.appendChild(kp);
@@ -121,6 +121,29 @@
     });
     if (!d.users.length) { var er = el('tr'); var ec = el('td', null, 'Todavía no hay clientes registrados.'); ec.colSpan = 8; er.appendChild(ec); tb.appendChild(er); }
     t.appendChild(tb); labelCells(t); wrap.appendChild(t); s1.appendChild(wrap); root.appendChild(s1);
+
+    // Negocios (solo lectura): cada dueño administra el suyo desde /negocio/; acá solo se miran los números.
+    var sn = el('section', 'acc'); sn.appendChild(el('h2', null, 'Negocios'));
+    sn.appendChild(el('p', 'acc-note', 'Cada negocio es un cliente que paga una vez, con sus sucursales y su equipo. Esto es solo para mirar: el dueño administra el suyo desde Mi negocio.'));
+    var nw = el('div', 'tbl adm-tbl'), nt = el('table'), nh = el('thead'), nr = el('tr');
+    ['Negocio', 'Dueño', 'Suscripción', 'Equipo', 'Sucursales', 'PC', 'Último uso'].forEach(function (h) { nr.appendChild(el('th', null, h)); });
+    nh.appendChild(nr); nt.appendChild(nh);
+    var nb = el('tbody');
+    (d.orgs || []).forEach(function (o) {
+      var tr = el('tr'), c1 = el('td'); c1.appendChild(el('strong', null, o.name)); c1.appendChild(document.createElement('br')); c1.appendChild(el('small', null, 'desde ' + dt(o.createdAt))); tr.appendChild(c1);
+      var c2 = el('td'); c2.appendChild(document.createTextNode(o.ownerEmail || '—'));
+      if (o.billingEmail && o.billingEmail !== o.ownerEmail) { c2.appendChild(document.createElement('br')); c2.appendChild(el('small', null, 'cobra: ' + o.billingEmail)); }
+      tr.appendChild(c2);
+      var cs = el('td');
+      if (o.subscription) { var st = ST[o.subscription.status] || [o.subscription.status, 'wait']; cs.appendChild(chip(st[0], st[1])); cs.appendChild(document.createTextNode(' ' + o.subscription.plan)); }
+      else cs.appendChild(el('small', null, 'Sin suscripción'));
+      tr.appendChild(cs);
+      var ce = el('td'); ce.appendChild(document.createTextNode(String(o.members))); if (o.overSoftCap) { ce.appendChild(document.createTextNode(' ')); ce.appendChild(chip('Pasó el tope', 'wait')); } tr.appendChild(ce);
+      tr.appendChild(el('td', null, String(o.branches))); tr.appendChild(el('td', null, String(o.devices))); tr.appendChild(el('td', null, o.lastSeen ? ago(o.lastSeen) : '—'));
+      nb.appendChild(tr);
+    });
+    if (!(d.orgs || []).length) { var ne = el('tr'), nc = el('td', null, 'Todavía no hay negocios: se crean cuando un cliente vincula su primera PC.'); nc.colSpan = 7; ne.appendChild(nc); nb.appendChild(ne); }
+    nt.appendChild(nb); labelCells(nt); nw.appendChild(nt); sn.appendChild(nw); root.appendChild(sn);
 
     if (d.subscribersWithoutAccount.length) {
       var s2 = el('section', 'acc'); s2.appendChild(el('h2', null, 'Suscriptores sin cuenta en el sitio'));
