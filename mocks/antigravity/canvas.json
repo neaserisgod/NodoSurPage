@@ -65,6 +65,14 @@
       "h": 900,
       "title": "PC · cierre, separaciones, equilibrio, comparar, stock, histórico, impresión, respaldo y diálogos (interactivo)",
       "is_interactive": true
+    },
+    "Conteo.dc.html": {
+      "x": 9590,
+      "y": 0,
+      "w": 390,
+      "h": 844,
+      "title": "Celular · Conteo de stock (interactivo)",
+      "is_interactive": true
     }
   },
   "order": [
@@ -74,7 +82,8 @@
     "Historial.dc.html",
     "Proveedores.dc.html",
     "Dashboard.dc.html",
-    "Main.dc.html"
+    "Main.dc.html",
+    "Conteo.dc.html"
   ],
   "notes": {},
   "designSystems": []

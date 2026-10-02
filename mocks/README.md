@@ -8,5 +8,6 @@ aplicado en `neaserisgod/P41---POS-`. Son archivos `.dc.html` de Claude Design
 - `antigravity/PCMas` cierre, separaciones, equilibrio, comparar, stock, histórico,
   detalle del día, impresión, respaldo y diálogos
 - `antigravity/Movil` app Android completa, con modales
+- `antigravity/Conteo` celular · conteo de stock (proveedores, conteo, salir sin guardar)
 - `antigravity/auxiliares/` scripts usados para generarlos
 - Funciones que existen solo en los mocks: `docs/anotaciones-mocks.md` en P41.
