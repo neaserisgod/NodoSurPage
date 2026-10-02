@@ -29,6 +29,7 @@ import * as orgBranches from './functions/api/org/branches.js';
 import * as orgTransfer from './functions/api/org/transfer.js';
 import * as orgBilling from './functions/api/org/billing.js';
 import * as adminOrg from './functions/api/admin/org.js';
+import * as sync from './functions/api/sync.js';
 import * as promo from './functions/api/promo.js';
 import * as adminPromo from './functions/api/admin/promo.js';
 import { sweep } from './functions/_lib/sweep.js';
@@ -36,6 +37,8 @@ import { hasDB } from './functions/_lib/db.js';
 import { purgeBackups, backupsReady } from './functions/_lib/backups.js';
 import { backfillOrgs } from './functions/_lib/orgs.js';
 import { listAllSubscribers } from './functions/_lib/mp.js';
+
+export { SyncHub } from './functions/_lib/sync_hub.js';
 
 const ROUTES = {
   'GET /api/auth/google': google.onRequestGet,
@@ -76,6 +79,9 @@ const ROUTES = {
   'GET /api/org/billing': orgBilling.onRequestGet,
   'POST /api/org/billing': orgBilling.onRequestPost,
   'POST /api/admin/org': adminOrg.onRequestPost,
+  'POST /api/sync': sync.onRequestPost,
+  'GET /api/sync': sync.onRequestGet,
+  'GET /api/sync/escuchar': sync.onRequestEscuchar,
   'GET /api/download': download.onRequestGet,
   'GET /api/downloads': downloads.onRequestGet,
   'GET /api/update/latest.json': updLatest.onRequestGet,

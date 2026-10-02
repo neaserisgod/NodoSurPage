@@ -127,7 +127,7 @@
     var sn = el('section', 'acc'); sn.appendChild(el('h2', null, 'Negocios'));
     sn.appendChild(el('p', 'acc-note', 'Cada negocio es un cliente que paga una vez, con sus sucursales y su equipo. Esto es solo para mirar: el dueño administra el suyo desde Mi negocio.'));
     var nw = el('div', 'tbl adm-tbl'), nt = el('table'), nh = el('thead'), nr = el('tr');
-    ['Negocio', 'Dueño', 'Suscripción', 'Equipo', 'Sucursales', 'PC', 'Último uso', ''].forEach(function (h) { nr.appendChild(el('th', null, h)); });
+    ['Negocio', 'Dueño', 'Suscripción', 'Equipo', 'Sucursales', 'Dispositivos', 'Último uso', ''].forEach(function (h) { nr.appendChild(el('th', null, h)); });
     nh.appendChild(nr); nt.appendChild(nh);
     var nb = el('tbody');
     (d.orgs || []).forEach(function (o) {
@@ -146,7 +146,7 @@
       oa.appendChild(ob); tr.appendChild(oa);
       nb.appendChild(tr);
     });
-    if (!(d.orgs || []).length) { var ne = el('tr'), nc = el('td', null, 'Todavía no hay negocios: se crean cuando un cliente vincula su primera PC.'); nc.colSpan = 8; ne.appendChild(nc); nb.appendChild(ne); }
+    if (!(d.orgs || []).length) { var ne = el('tr'), nc = el('td', null, 'Todavía no hay negocios: se crean cuando un cliente vincula su primer dispositivo.'); nc.colSpan = 8; ne.appendChild(nc); nb.appendChild(ne); }
     nt.appendChild(nb); labelCells(nt); nw.appendChild(nt); sn.appendChild(nw); root.appendChild(sn);
 
     if (d.subscribersWithoutAccount.length) {

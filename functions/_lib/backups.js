@@ -17,7 +17,7 @@ export const VENTANA_RESTAURAR_DIAS = 90;
 const DAY = 86400;
 
 export const backupBucket = (env) => env.BACKUPS || env.RELEASES;
-const claveValida = (k) => { try { return atob(String(k).trim()).length === 32; } catch { return false; } };
+export const claveValida = (k) => { try { return atob(String(k).trim()).length === 32; } catch { return false; } };
 export const backupsReady = (env) => Boolean(env.DB && backupBucket(env) && claveValida(env.BACKUP_KEY));
 
 const DDL = [

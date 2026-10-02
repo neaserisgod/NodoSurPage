@@ -19,14 +19,14 @@
     if (!u) return;
     done();
     if (u.canLink === false) {
-      var nc = card('Solo el dueño puede vincular una PC');
-      nc.appendChild(el('p', 'acc-note', 'Ingresaste como ' + u.email + ', que es parte de un negocio pero no es su dueño. Pedile al dueño que vincule la PC con su cuenta.'));
+      var nc = card('Solo el dueño puede vincular un dispositivo');
+      nc.appendChild(el('p', 'acc-note', 'Ingresaste como ' + u.email + ', que es parte de un negocio pero no es su dueño. Pedile al dueño que vincule el dispositivo con su cuenta.'));
       var na = el('a', 'btn btn-w', 'Ir a mi cuenta'); na.href = '/cuenta/'; nc.appendChild(na); root.appendChild(nc); return;
     }
     var orgs = u.orgs || [];
-    var c = card('¿Vincular esta PC a tu cuenta?');
+    var c = card('¿Vincular este dispositivo a tu cuenta?');
     c.appendChild(el('p', 'acc-note', 'Vas a vincular «' + name + '» con la cuenta ' + u.email + '. Desde ahí la app puede guardar copias de tu base y, si reinstalás, recuperarlas entrando con esta cuenta.'));
-    // Si tiene más de un negocio o más de una sucursal, elige a cuál pertenece esta PC.
+    // Si tiene más de un negocio o más de una sucursal, elige a cuál pertenece este dispositivo.
     var selOrg = null, selBr = null;
     if (orgs.length) {
       var frm = el('div', 'frm');
@@ -37,9 +37,13 @@
       opciones(selBr, actual().branches);
       if (selOrg) selOrg.addEventListener('change', function () { opciones(selBr, actual().branches); l2.hidden = actual().branches.length < 2; });
       l2.hidden = actual().branches.length < 2; frm.appendChild(l2);
-      if (orgs.length > 1 || orgs[0].branches.length > 1) c.appendChild(frm);
+      if (orgs.length > 1 || orgs[0].branches.length > 1) {
+        c.appendChild(frm);
+        // La sincronización entre dispositivos es por sucursal: la PC y el celular tienen que quedar en la misma para verse.
+        c.appendChild(el('p', 'acc-note', 'Para que la PC y el celular se sincronicen entre sí, vinculá los dos a la misma sucursal.'));
+      }
     }
-    c.appendChild(el('p', 'acc-note', 'Si no abriste esto desde la app de Nodo Sur POS en tu PC, cerrá esta página.'));
+    c.appendChild(el('p', 'acc-note', 'Si no abriste esto desde la app de Nodo Sur POS (en tu PC o en tu celular), cerrá esta página.'));
     var msg = el('p', 'login-err'); msg.setAttribute('role', 'alert');
     var acts = el('div', 'acc-actions');
     var ok = el('button', 'btn', 'Vincular'); ok.type = 'button';

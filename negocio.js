@@ -8,7 +8,7 @@
     bad_email: 'Revisá el mail: no parece válido.', bad_role: 'Elegí un rol válido.', bad_branches: 'Elegí al menos una sucursal que esté activa.',
     already_member: 'Esa persona ya es parte del negocio.', too_many_pending: 'Hay demasiadas invitaciones pendientes. Cancelá algunas.',
     owner_immutable: 'Al dueño no se lo puede cambiar ni quitar desde acá.', name_taken: 'Ya hay una sucursal con ese nombre.', bad_name: 'Poné un nombre para la sucursal.',
-    last_branch: 'No se puede cerrar la última sucursal activa.', has_devices: 'Esa sucursal tiene PC vinculadas. Primero desvinculalas.', too_many: 'Llegaste al máximo de sucursales.',
+    last_branch: 'No se puede cerrar la última sucursal activa.', has_devices: 'Esa sucursal tiene dispositivos vinculados (PC o celulares). Primero desvinculalos.', too_many: 'Llegaste al máximo de sucursales.',
     self: 'No podés transferirte el negocio a vos mismo.', stale: 'La propuesta ya no es válida: el negocio cambió de dueño.', not_member: 'Esa persona ya no es parte del negocio.',
     expired: 'La propuesta venció.', accepted: 'Esa propuesta ya se resolvió.', declined: 'Esa propuesta ya se resolvió.', cancelled: 'Esa propuesta ya se resolvió.',
     no_subscription: 'Tu mail no tiene una suscripción vigente. Suscribite primero.', mp_error: 'No pudimos consultar Mercado Pago. Probá de nuevo en unos minutos.', not_configured: 'La facturación todavía no está disponible.',
@@ -128,7 +128,7 @@
     var quien = m.name || m.email, cuerpo = el('div', 'dlg-body');
     ['Le mandamos una propuesta. Hasta que la acepte, seguís siendo el dueño y no cambia nada.',
      'Si acepta, pasa a ser quien administra el negocio (equipo, sucursales y facturación) y vos quedás como encargado.',
-     'Tus PC siguen funcionando. El cobro sigue a tu nombre hasta que la persona pase el cobro a su propia suscripción: si cancelás la tuya antes, el negocio se queda sin cobertura.',
+     'Tus dispositivos siguen funcionando. El cobro sigue a tu nombre hasta que la persona pase el cobro a su propia suscripción: si cancelás la tuya antes, el negocio se queda sin cobertura.',
      'La propuesta vence en 7 días y la podés retirar cuando quieras.'].forEach(function (x) { cuerpo.appendChild(note(x)); });
     abrir({ titulo: '¿Transferir «' + o.name + '» a ' + quien + '?', cuerpo: cuerpo, boton: 'Sí, proponer la transferencia',
       accion: function () { return api('POST', '/api/org/transfer', { orgId: o.id, memberId: m.id }).then(function (r) { return r.ok ? {} : { error: msgError(r.j) }; }); },
@@ -138,7 +138,7 @@
   function sinNegocio() {
     root.textContent = '';
     var c = card('Todavía no tenés un negocio');
-    c.appendChild(note('Tu negocio se crea cuando vinculás la primera PC con el sistema POS. Si te invitaron a uno, abrí el link de la invitación que te llegó por mail.'));
+    c.appendChild(note('Tu negocio se crea cuando vinculás el primer dispositivo (la PC del local o el celular) con el sistema POS. Si te invitaron a uno, abrí el link de la invitación que te llegó por mail.'));
     var a = el('div', 'acc-actions'); var l = el('a', 'btn', 'Ir a mi cuenta'); l.href = '/cuenta/'; a.appendChild(l); c.appendChild(a); root.appendChild(c);
   }
 
@@ -180,7 +180,7 @@
 
   // ---- dueño: equipo, sucursales y PC
   function owner(o) {
-    var eq = card('Equipo'), su = card('Sucursales'), pc = card('PC vinculadas');
+    var eq = card('Equipo'), su = card('Sucursales'), pc = card('Dispositivos vinculados');
     [eq, su, pc].forEach(function (k) { k.appendChild(note('Cargando…')); root.appendChild(k); });
     refrescarDueno(o, eq, su, pc);
   }
@@ -278,17 +278,17 @@
     } });
   }
   function quitarMiembro(o, m, recargar) {
-    confirmar('¿Quitar a ' + (m.name || m.email) + '?', 'Pierde el acceso al negocio y las PC que vinculó dejan de funcionar. Sus ventas anteriores conservan su nombre. Podés invitarla de nuevo cuando quieras.', 'Sí, quitar',
+    confirmar('¿Quitar a ' + (m.name || m.email) + '?', 'Pierde el acceso al negocio y los dispositivos que vinculó (PC o celular) dejan de funcionar. Sus ventas anteriores conservan su nombre. Podés invitarla de nuevo cuando quieras.', 'Sí, quitar',
       function () { return api('POST', '/api/org/member/remove', { orgId: o.id, memberId: m.id }).then(function (r) { return r.ok ? {} : { error: msgError(r.j) }; }); }, recargar);
   }
 
   function pintarSucursales(o, c, recargar) {
     c.textContent = ''; c.appendChild(el('h2', null, 'Sucursales'));
-    c.appendChild(note('Cada PC pertenece a una sucursal, y cada persona ve solo las suyas. El negocio paga una vez, sin importar cuántas sucursales tenga.'));
+    c.appendChild(note('Cada dispositivo (PC o celular) pertenece a una sucursal, y los de una misma sucursal se sincronizan entre sí. Cada persona ve solo las suyas. El negocio paga una vez, sin importar cuántas sucursales tenga.'));
     var ul = el('ul', 'pays');
     datos.branches.forEach(function (b) {
       var li = el('li'), n = el('span'); n.appendChild(el('strong', null, b.name)); n.appendChild(document.createTextNode(' ')); n.appendChild(chip(b.active ? 'Activa' : 'Cerrada', b.active ? 'ok' : 'wait'));
-      li.appendChild(n); li.appendChild(el('span', null, b.devices === 1 ? '1 PC' : b.devices + ' PC'));
+      li.appendChild(n); li.appendChild(el('span', null, b.devices === 1 ? '1 dispositivo' : b.devices + ' dispositivos'));
       var ac = el('span', 'acts');
       ac.appendChild(lnk('Renombrar', function () {
         var inp = el('input'); inp.type = 'text'; inp.value = b.name; inp.maxLength = 60; var f = el('div', 'frm'); f.appendChild(campo('Nombre', inp));
@@ -312,16 +312,16 @@
   }
 
   function pintarPc(o, c, recargar) {
-    c.textContent = ''; c.appendChild(el('h2', null, 'PC vinculadas'));
+    c.textContent = ''; c.appendChild(el('h2', null, 'Dispositivos vinculados'));
     var ramas = {}; datos.branches.forEach(function (b) { ramas[b.id] = b.name; });
-    if (!datos.devices.length) { c.appendChild(note('Todavía no hay ninguna PC vinculada. Abrí el sistema POS en la PC del local y elegí «Vincular con mi cuenta».')); return; }
+    if (!datos.devices.length) { c.appendChild(note('Todavía no hay ningún dispositivo vinculado. Abrí el sistema POS en la PC del local (o en el celular) y elegí «Vincular con mi cuenta».')); return; }
     var ul = el('ul', 'pays');
     datos.devices.forEach(function (d) {
-      var li = el('li'), n = el('span'); n.appendChild(el('strong', null, d.name || 'PC')); n.appendChild(document.createTextNode(' · ' + (ramas[d.branchId] || 'Sin sucursal')));
+      var li = el('li'), n = el('span'); n.appendChild(el('strong', null, d.name || 'Dispositivo')); n.appendChild(document.createTextNode(' · ' + (ramas[d.branchId] || 'Sin sucursal')));
       li.appendChild(n); li.appendChild(el('span', null, (d.version ? 'v' + d.version + ' · ' : '') + 'visto ' + ago(d.lastSeen)));
       var ac = el('span', 'acts');
       ac.appendChild(lnk('Desvincular', function () {
-        confirmar('¿Desvincular «' + (d.name || 'PC') + '»?', 'Esa PC deja de poder subir copias y recibir novedades de la cuenta. Sus datos locales no se tocan. Podés volver a vincularla cuando quieras.', 'Sí, desvincular',
+        confirmar('¿Desvincular «' + (d.name || 'dispositivo') + '»?', 'Ese dispositivo deja de poder subir copias y sincronizar con la cuenta. Sus datos locales no se tocan. Podés volver a vincularlo cuando quieras.', 'Sí, desvincular',
           function () { return api('POST', '/api/device/revoke', { id: d.id }).then(function (r) { return r.ok ? {} : { error: msgError(r.j) }; }); }, recargar);
       }, true));
       li.appendChild(ac); ul.appendChild(li);

@@ -17,6 +17,10 @@
   "triggers": { "crons": ["0 12 * * *"] },
   // Instaladores y actualizaciones del sistema POS (bucket privado; hay que crearlo antes en R2).
   "r2_buckets": [{ "binding": "RELEASES", "bucket_name": "nodosur-releases" }],
+  // Aviso en vivo de la sync entre dispositivos: un Durable Object por cuenta, con WebSockets que hibernan (un
+  // socket quieto no consume cómputo). Está en el plan gratis (solo la versión con SQLite).
+  "durable_objects": { "bindings": [{ "name": "SYNC_HUB", "class_name": "SyncHub" }] },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["SyncHub"] }],
   // Base D1 (usuarios y uso). El ID no es secreto.
   "d1_databases": [
     { "binding": "DB", "database_name": "nodosur", "database_id": "285a2863-0227-4056-98f8-9156fc84455e" }
