@@ -47,10 +47,12 @@ await t('/api/me: trae los negocios de la persona con su rol, sus sucursales y l
   assert.ok(!JSON.stringify(dueña).includes('"sd"') && !JSON.stringify(dueña).includes('billing_email'), 'no se filtran subs de Google ni el mail de cobro');
 });
 await t('/api/me: un empleado no ve facturación: no se consulta Mercado Pago y no se le ofrece "elegí tu sistema"', async () => {
-  const env = mkEnv(); const n = await negocio(env); miembro(env, n, 'emp@x.com', 'sm', 'employee', { branches: [n.a] }); contarMP();
+  const env = mkEnv(); const n = await negocio(env); miembro(env, n, 'emp@x.com', 'sm', 'employee', { branches: [n.a] }); miembro(env, n, 'enc@x.com', 'se', 'manager', { all: 1 }); contarMP();
   const r = await getMe(env, 'emp@x.com', 'sm'); const j = await r.json();
   assert.equal(j.billing, false); assert.equal(j.subscriptions, null); assert.equal(j.intent, null); assert.equal(llamadasMP, 0, 'ni una consulta a Mercado Pago');
-  assert.match(lista(r.headers), /ns_sub=1/, 'la franja "Elegí tu sistema" no le aparece');
+  assert.match(lista(r.headers), /ns_sub=2/, 'ni la barra "Elegí tu sistema" ni el link "Descargar" del menú (un empleado no descarga)');
+  assert.doesNotMatch(lista(r.headers), /ns_sub=[01]/);
+  const enc = await getMe(env, 'enc@x.com', 'se'); assert.match(lista(enc.headers), /ns_sub=1/, 'el encargado sí puede descargar: ve el link del menú');
 });
 await t('/api/me: quien es dueño de un negocio (aunque también sea miembro de otro) y quien no tiene negocio siguen viendo su suscripción', async () => {
   const env = mkEnv(); const n1 = await negocio(env); const n2 = await negocio(env, ['otro@x.com', 'so'], 'Otro'); miembro(env, n2, 'duena@x.com', 'sd', 'employee', { branches: [n2.a] });

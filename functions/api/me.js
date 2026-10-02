@@ -55,7 +55,12 @@ export async function onRequestGet({ request, env }) {
   // "elegí tu sistema" en todo el sitio sin consultar a Mercado Pago en cada página.
   const has = (subscriptions || []).some((x) => ['authorized', 'pending', 'paused'].includes(x.status));
   const month = 30 * 24 * 3600;
-  if (isAdmin || has || covered || !billing) res.headers.append('Set-Cookie', cookie('ns_sub', '1', { maxAge: month, httpOnly: false }));
+  // ns_sub: 1 = puede descargar (el menú muestra "Descargar"), 0 = debería suscribirse (aparece "Elegí tu sistema"), 2 = no necesita
+  // ni una cosa ni la otra (un empleado: lo paga el negocio y no descarga). Dos usos distintos de la misma cookie, así que el valor
+  // "no molestar" no puede ser 1: un empleado vería un "Descargar" que lo llevaría a una página que le niega el acceso.
+  const puedeDescargar = (await describirOrgs(env, membresias)).some((o) => o.can.descargar);
+  if (isAdmin || has || covered || (!billing && puedeDescargar)) res.headers.append('Set-Cookie', cookie('ns_sub', '1', { maxAge: month, httpOnly: false }));
+  else if (!billing) res.headers.append('Set-Cookie', cookie('ns_sub', '2', { maxAge: month, httpOnly: false }));
   else if (!mpError) res.headers.append('Set-Cookie', cookie('ns_sub', '0', { maxAge: month, httpOnly: false }));
   res.headers.append('Set-Cookie', cookie('ns_plan', intent ? intent.plan : '', { maxAge: intent ? month : 0, httpOnly: false }));
   return res;
