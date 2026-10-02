@@ -3,7 +3,7 @@ import { actorOf } from '../../_lib/actor.js';
 import { hasDB } from '../../_lib/db.js';
 import { readJson } from '../../_lib/miembros.js';
 import { syncAccess } from '../../_lib/sync.js';
-import { mpConfigurado, ensureMpTables, crearOrden, consultarOrden, cancelarOrden, detalleError } from '../../_lib/mp_conexion.js';
+import { mpConfigurado, ensureMpTables, crearOrden, consultarOrden, cancelarOrden, imprimirTicket, MAX_CONTENIDO_TICKET, detalleError } from '../../_lib/mp_conexion.js';
 
 // Cobrar con la terminal Point DESDE EL SERVIDOR: la PC o el celular piden la orden acá y el sitio la crea con el token del
 // negocio (que nunca sale del servidor). Pueden quienes operan la sucursal del dispositivo con el negocio al día.
@@ -48,4 +48,16 @@ export async function onRequestCancelar({ request, env }) {
   const b = await readJson(request);
   if (!b || typeof b.id !== 'string' || !/^[\w-]{1,64}$/.test(b.id)) return json({ error: 'bad_request' }, 400);
   return salida(await cancelarOrden(env, w.orgId, b.id));
+}
+
+// Imprimir un ticket en la terminal de la sucursal. Cuerpo: { externalReference, idempotencyKey, contenido }.
+export async function onRequestImprimir({ request, env }) {
+  const w = await quien(request, env); if (w.error) return w.error;
+  const b = await readJson(request);
+  if (!b || typeof b.externalReference !== 'string' || !/^[\w-]{1,64}$/.test(b.externalReference) || typeof b.idempotencyKey !== 'string' || !/^[\w-]{8,64}$/.test(b.idempotencyKey)
+    || typeof b.contenido !== 'string' || !b.contenido || b.contenido.length > MAX_CONTENIDO_TICKET) return json({ error: 'bad_request' }, 400);
+  const r = await imprimirTicket(env, w.orgId, w.branchId, b);
+  if (r.status === 409 || !r.j && !(r.status >= 200 && r.status < 300)) return json({ error: (r.j && r.j.error) || 'mp_error' }, r.status === 409 ? 409 : 502);
+  if (r.status < 200 || r.status >= 300) return json({ error: 'mp_rechazo', status: r.status, mensaje: detalleError(r.j) }, 502);
+  return json({ ok: true });
 }

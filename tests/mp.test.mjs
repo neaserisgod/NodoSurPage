@@ -37,6 +37,7 @@ function simular() {
     if (u.pathname === '/terminals/v1/setup') return r({ terminals: cuerpo.terminals.map((x) => ({ id: x.id, operating_mode: x.operating_mode })) });
     if (u.pathname === '/v1/orders' && init.method === 'POST' && m.rechazarOrden) return r(m.rechazarOrden, 400);
     if (u.pathname === '/v1/orders' && init.method === 'POST') { const id = 'ORD' + (m.ordenes.size + 1); m.ordenes.set(id, 'created'); return r({ id, status: 'created', secreto_interno: 'no-se-filtra' }, 201); }
+    if (u.pathname === '/terminals/v1/actions' && init.method === 'POST') return m.rechazarImpresion ? r({ errors: [{ code: 'property_value', message: 'Invalid value for property', details: ["'$.config.point.terminal_id' - does not match pattern"] }] }, 400) : r({ id: 'ACT1', status: 'created' }, 201);
     const g = /^\/v1\/orders\/([^/]+)(\/cancel)?$/.exec(u.pathname);
     if (g && m.ordenes.has(g[1])) { if (g[2]) m.ordenes.set(g[1], 'canceled'); return r({ id: g[1], status: m.ordenes.get(g[1]), status_detail: g[2] ? 'canceled' : 'created' }); }
     return r({ message: 'not found' }, 404);
@@ -238,5 +239,22 @@ await t('un rechazo de Mercado Pago llega con su código y su motivo, en cualqui
   const cel = await celular(env, n, n.a, 'sd', 'duena@x.com', 'cel-dueno-0123456789abcdefg');
   const o = await post(orden.onRequestPost, env, '/api/mp/orden', null, { externalReference: 'v-1', idempotencyKey: 'clave-idem-0001', montoCentavos: 5000, canal: 'qr' }, cel);
   assert.equal((await o.json()).mensaje, 'terminal_not_found · Terminal not found for this user', 'también por el camino que usan la PC y el celular');
+});
+await t('imprimir: el celular de quien opera manda el ticket a la terminal de su sucursal con el token del negocio; datos raros y errores de Mercado Pago se tratan', async () => {
+  const env = mkEnv(MP_ENV); const n = await negocio(env); const m = simular(); const cookie = await sess(env, 'duena@x.com', 'sd'); await conectar(env, n, m, cookie);
+  miembro(env, n, 'emp@x.com', 'sm', 'employee', { branches: [n.b] }); const cel = await celular(env, n, n.b, 'sm', 'emp@x.com', 'cel-emp-0123456789abcdefghi');
+  const cuerpo = { externalReference: 'ticket-1', idempotencyKey: 'clave-imp-0001', contenido: '{center}{w}La Plazoleta{/w}{/center}{br}Total $100{br}' };
+  assert.equal((await post(orden.onRequestImprimir, env, '/api/mp/imprimir', null, cuerpo, cel)).status, 409, 'sin terminal elegida en la sucursal');
+  await post(conexion.onRequestElegirTerminal, env, '/api/mp/terminal', cookie, { orgId: n.org.id, branchId: n.b, terminalId: 'PAX_A910__SERIE1' });
+  const ok = await post(orden.onRequestImprimir, env, '/api/mp/imprimir', null, cuerpo, cel); assert.equal(ok.status, 200); assert.deepEqual(await ok.json(), { ok: true });
+  const llamada = m.llamadas.find((x) => x.path === '/terminals/v1/actions');
+  assert.equal(llamada.auth, 'Bearer token-falso-acceso-1'); assert.equal(llamada.headers['X-Idempotency-Key'], 'clave-imp-0001');
+  assert.deepEqual(llamada.cuerpo, { type: 'print', external_reference: 'ticket-1', config: { point: { terminal_id: 'PAX_A910__SERIE1', subtype: 'custom' } }, content: cuerpo.contenido });
+  for (const malo of [{ ...cuerpo, contenido: '' }, { ...cuerpo, contenido: 'x'.repeat(8001) }, { ...cuerpo, contenido: 5 }, { ...cuerpo, idempotencyKey: 'x' }, { ...cuerpo, externalReference: '../..' }])
+    assert.equal((await post(orden.onRequestImprimir, env, '/api/mp/imprimir', null, malo, cel)).status, 400, JSON.stringify(malo).slice(0, 60));
+  assert.equal((await post(orden.onRequestImprimir, env, '/api/mp/imprimir', cookie, cuerpo)).status, 401, 'la sesión web no imprime');
+  m.rechazarImpresion = true;
+  const r = await post(orden.onRequestImprimir, env, '/api/mp/imprimir', null, { ...cuerpo, idempotencyKey: 'clave-imp-0002' }, cel); const j = await r.json();
+  assert.equal(r.status, 502); assert.equal(j.error, 'mp_rechazo'); assert.match(j.mensaje, /property_value/);
 });
 console.log(`\n${pass} pruebas OK (Mercado Pago por negocio)`);

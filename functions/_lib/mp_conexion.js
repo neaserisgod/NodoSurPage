@@ -199,3 +199,16 @@ export async function crearOrden(env, orgId, branchId, { externalReference, idem
 }
 export const consultarOrden = (env, orgId, id) => mpFetch(env, orgId, `/v1/orders/${encodeURIComponent(id)}`);
 export const cancelarOrden = (env, orgId, id) => mpFetch(env, orgId, `/v1/orders/${encodeURIComponent(id)}/cancel`, { method: 'POST', headers: { 'X-Idempotency-Key': randomHex(16) }, body: '{}' });
+
+// Imprimir un ticket en la terminal Point de la sucursal (Terminals API, `type: print`). El contenido ya viene armado por
+// la app (etiquetas {br}, {center}…); acá solo se acota y se manda con el token del negocio, así ni la PC ni el celular
+// necesitan guardar un access token para imprimir.
+export const MAX_CONTENIDO_TICKET = 8000;
+export async function imprimirTicket(env, orgId, branchId, { externalReference, idempotencyKey, contenido }) {
+  const terminal = await terminalDeSucursal(env, orgId, branchId);
+  if (!terminal) return { status: 409, j: { error: 'mp_sin_terminal' } };
+  return mpFetch(env, orgId, '/terminals/v1/actions', {
+    method: 'POST', headers: { 'X-Idempotency-Key': idempotencyKey },
+    body: JSON.stringify({ type: 'print', external_reference: externalReference, config: { point: { terminal_id: terminal, subtype: 'custom' } }, content: contenido }),
+  });
+}
