@@ -100,7 +100,7 @@ await t('el aviso en vivo va a un hub por sucursal, sin datos en claro en el nom
 await t('la retención purga por sucursal: lo viejo de una no toca a la otra', async () => {
   const env = mkEnv(); const g = await negocio(env); paga('duena@x.com'); const pcA = await disp(env, g, g.a, g.dueno, 'a'), pcB = await disp(env, g, g.b, g.dueno, 'b');
   await subir(env, pcA, 'viejo A', 'lote-1009-aaaa'); await subir(env, pcB, 'viejo B', 'lote-1009-bbbb');
-  env.DB.raw.prepare('UPDATE sync_lotes SET created_at = ?').run(nowS() - (RETENCION_DIAS + 1) * 86400);
+  env.SYNC_TOPE_BYTES = 0; env.DB.raw.prepare('UPDATE sync_lotes SET created_at = ?').run(nowS() - (RETENCION_DIAS + 1) * 86400);
   await purgarViejos(env, `n${g.org.id}:${g.a}`);
   assert.equal(one(env, 'SELECT COUNT(*) c FROM sync_lotes').c, 1); assert.equal(one(env, 'SELECT scope s FROM sync_lotes').s, `n${g.org.id}:${g.b}`, 'queda el de la otra sucursal');
 });

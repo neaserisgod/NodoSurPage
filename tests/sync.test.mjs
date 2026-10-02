@@ -89,17 +89,25 @@ await t('sin la clave de cifrado el servicio avisa que no está configurado', as
 await t('retención: se borran los lotes viejos y quien se quedó atrás recibe expirado', async () => {
   const { env, pc, cel } = await cuenta();
   const viejo = await (await subir(env, pc, 'viejo', 'lote-0010-aaaa')).json();
-  env.DB.raw.prepare('UPDATE sync_lotes SET created_at = ?').run(nowS() - (RETENCION_DIAS + 1) * 86400);
+  env.SYNC_TOPE_BYTES = 0; env.DB.raw.prepare('UPDATE sync_lotes SET created_at = ?').run(nowS() - (RETENCION_DIAS + 1) * 86400);
   const nuevo = await (await subir(env, pc, 'nuevo', 'lote-0010-bbbb')).json();
   await purgarViejos(env, 'p:s1');
   assert.equal(env.DB.raw.prepare('SELECT COUNT(*) AS n FROM sync_lotes').get().n, 1);
   const atrasado = await (await bajar(env, cel, 0)).json(); assert.equal(atrasado.expirado, true); assert.equal(atrasado.purgadoHasta, viejo.seq);
   const alDia = await (await bajar(env, cel, viejo.seq)).json(); assert.equal(alDia.expirado, false); assert.equal(dec(alDia.lotes[0].datos), 'nuevo'); assert.equal(alDia.hasta, nuevo.seq);
 });
+await t('retención: un local chico no purga nunca, por viejo que sea el lote (un celular nuevo baja todo)', async () => {
+  const { env, pc, cel } = await cuenta();
+  const viejo = await (await subir(env, pc, 'viejo', 'lote-0013-aaaa')).json();
+  env.DB.raw.prepare('UPDATE sync_lotes SET created_at = ?').run(nowS() - (RETENCION_DIAS + 100) * 86400);
+  await purgarViejos(env, 'p:s1');
+  assert.equal(env.DB.raw.prepare('SELECT COUNT(*) AS n FROM sync_lotes').get().n, 1);
+  const nuevo = await (await bajar(env, cel, 0)).json(); assert.equal(nuevo.expirado, false); assert.equal(dec(nuevo.lotes[0].datos), 'viejo'); assert.equal(nuevo.hasta, viejo.seq);
+});
 await t('la purga corre sola cada PURGA_CADA lotes, no en cada subida', async () => {
   const { env, pc } = await cuenta();
   await subir(env, pc, 'viejo', 'lote-0012-0000');
-  env.DB.raw.prepare('UPDATE sync_lotes SET created_at = ?').run(nowS() - (RETENCION_DIAS + 1) * 86400);
+  env.SYNC_TOPE_BYTES = 0; env.DB.raw.prepare('UPDATE sync_lotes SET created_at = ?').run(nowS() - (RETENCION_DIAS + 1) * 86400);
   for (let i = 1; i < PURGA_CADA - 1; i++) await subir(env, pc, `n${i}`, `lote-0012-${String(i).padStart(4, '0')}x`);
   assert.equal(env.DB.raw.prepare("SELECT COUNT(*) AS n FROM sync_lotes WHERE created_at < ?").get(nowS() - 86400).n, 1, 'todavía no se purgó');
   await subir(env, pc, 'el que dispara', 'lote-0012-final');
