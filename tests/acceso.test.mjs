@@ -14,6 +14,9 @@ import * as whoami from '../functions/api/device/whoami.js';
 import * as backup from '../functions/api/backup.js';
 import * as backups from '../functions/api/backups.js';
 import * as devices from '../functions/api/devices.js';
+import { addRelease } from '../functions/_lib/releases.js';
+import * as ping from '../functions/api/device/ping.js';
+import * as latest from '../functions/api/update/latest.js';
 import { mkEnv, addUser, sess, req, web, mp, mpSub, mockMP, nowS } from './helpers-nube.mjs';
 
 let pass = 0; const t = async (n, f) => { await f(); pass++; console.log('ok  ', n); };
@@ -276,5 +279,25 @@ await t('barrido: si el negocio NO paga, sus miembros inactivos califican como c
   const viejo = nowS() - 90 * DAY; env.DB.raw.prepare('UPDATE users SET created_at = ?, last_seen = ?').run(viejo, viejo);
   mp.subs = [mpSub('otra@x.com', 'authorized')]; mockMP();
   const r = await sweep(env, { apply: false }); assert.deepEqual(r.actions.map((a) => a.email).sort(), ['duena@x.com', 'emp@x.com']);
+});
+// ───────── herencia: quien trabaja en un negocio hereda lo del dueño
+await t('herencia: la PC de un empleado de un negocio eximido recibe las betas y ping le dice beta; sin eximir, stable', async () => {
+  const env = mkEnv(); const n = await negocio(env); miembro(env, n, 'emp@x.com', 'sm', 'employee', { branches: [n.a] });
+  const tok = await pc(env, n, n.a, 'sm', 'emp@x.com', ID('emp1'));
+  const doPing = (cid) => ping.onRequestPost({ request: req('/api/device/ping', { method: 'POST', headers: bearer(tok), body: { cid } }), env });
+  assert.equal((await (await doPing('cid-emp-0000001')).json()).channel, 'stable');
+  env.DB.raw.prepare("UPDATE users SET exempt = 1 WHERE sub = 'sd'").run(); // se exime a la dueña
+  assert.equal((await (await doPing('cid-emp-0000001')).json()).channel, 'beta'); // hereda: ni su cuenta ni su mail están eximidos
+  await addRelease(env, { channel: 'beta', platform: 'windows', version: '1.0.0.2099', file_key: 'beta/1.0.0.2099/S.exe', size: 1, sha256: 'a'.repeat(64), rollout: 100 }, nowS());
+  const ver = async () => (await (await latest.onRequestGet({ request: req('/api/update/latest.json?platform=windows&version=1.0.0.2000&cid=cid-emp-0000001'), env })).json()).version;
+  assert.equal(await ver(), '1.0.0.2099');
+});
+await t('herencia: el barrido no borra a un empleado de un negocio eximido, pero sí al de uno común', async () => {
+  const env = mkEnv(); const n = await negocio(env); miembro(env, n, 'emp@x.com', 'sm', 'employee', { branches: [n.a] });
+  const viejo = nowS() - 90 * DAY; env.DB.raw.prepare('UPDATE users SET created_at = ?, last_seen = ?').run(viejo, viejo);
+  mp.subs = [mpSub('otra@x.com', 'authorized')]; mp.fail = false; mockMP();
+  assert.deepEqual((await sweep(env, { apply: false })).actions.map((a) => a.email).sort(), ['duena@x.com', 'emp@x.com']);
+  env.DB.raw.prepare("UPDATE users SET exempt = 1 WHERE sub = 'sd'").run();
+  assert.deepEqual((await sweep(env, { apply: false })).actions, []); // ni la dueña ni su gente
 });
 console.log(`\n${pass} pruebas OK (acceso por negocio y sucursal)`);
