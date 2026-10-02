@@ -28,6 +28,7 @@ import * as adminPromo from './functions/api/admin/promo.js';
 import { sweep } from './functions/_lib/sweep.js';
 import { hasDB } from './functions/_lib/db.js';
 import { purgeBackups, backupsReady } from './functions/_lib/backups.js';
+import { backfillOrgs } from './functions/_lib/orgs.js';
 import { listAllSubscribers } from './functions/_lib/mp.js';
 
 const ROUTES = {
@@ -88,7 +89,10 @@ export default {
 
   // Cron diario: avisa y limpia cuentas inactivas sin suscripción (apagado por defecto, ver README).
   async scheduled(_event, env, ctx) {
-    if (!hasDB(env) || !env.MP_ACCESS_TOKEN) return;
+    if (!hasDB(env)) return;
+    // Completa el negocio y la sucursal de lo que se vinculó/subió antes del modelo de negocios (idempotente).
+    ctx.waitUntil(backfillOrgs(env).then((r) => (r.orgsCreadas || r.filasActualizadas) && console.log(`backfill_negocios:${r.orgsCreadas}:${r.filasActualizadas}`)).catch((e) => console.error('backfill_error', e && e.message)));
+    if (!env.MP_ACCESS_TOKEN) return;
     if (backupsReady(env)) ctx.waitUntil(listAllSubscribers(env, { fresh: true }).then((subs) => purgeBackups(env, subs)).then((ids) => ids.length && console.log(`backups_purgadas:${ids.length}`)).catch(() => { /* sin Mercado Pago no se borra nada */ }));
     ctx.waitUntil(sweep(env, { apply: true }).then((r) =>
       console.log(JSON.stringify({ ok: r.ok, autoDelete: r.autoDelete, notifier: r.notifier, actions: (r.actions || []).map((a) => `${a.action}:${a.email}:${a.applied ?? ''}`) }))));

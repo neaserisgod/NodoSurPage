@@ -18,7 +18,7 @@ El sitio se publica como **Worker con archivos estáticos** (`wrangler.jsonc`, n
 
 ### Negocios, sucursales y miembros (en construcción)
 
-Hoy todo cuelga del `sub` de una persona. El modelo nuevo agrega el **negocio** (el que paga) entre la persona y todo lo demás. Se implementa por fases; esta es la Fase 1 (solo el modelo, sin cambios visibles).
+Hoy todo cuelga del `sub` de una persona. El modelo nuevo agrega el **negocio** (el que paga) entre la persona y todo lo demás. Se implementa por fases; ya están el modelo (fase 1) y el acceso calculado por negocio (fase 2). Todavía no hay pantallas ni API de miembros e invitaciones.
 
 - **`orgs`** (negocio, con `billing_email`), **`branches`** (sucursales), **`memberships`** (persona + rol + sucursales), **`invitations`**. Definición en `functions/_lib/orgs.js` (se crean solas) y `migrations/0005_orgs.sql` (opcional).
 - Todo negocio nace con una **"Sucursal principal"**; `devices` y `backups` ganan `owner_org` y `branch_id` (nullable). `backfillOrgs` convierte lo que ya existe, es idempotente y solo toca filas sin negocio.
@@ -26,6 +26,10 @@ Hoy todo cuelga del `sub` de una persona. El modelo nuevo agrega el **negocio** 
 - **Paga el negocio entero**, una vez; las sucursales son ilimitadas. Los miembros son ilimitados (la idea es empezar a cobrar algo si algún negocio llega a ~50).
 - **`billing_email` queda aparte del dueño**: Mercado Pago cobra por el mail del pagador y la propiedad se puede transferir.
 - **El panel del negocio (`/negocio/`) es distinto de `/admin/`**: `/admin/` es de Nodo Sur (solo `ADMIN_EMAILS`); un cliente es dueño de su negocio y no admin de la plataforma.
+- **Acceso por negocio (fase 2)**: `functions/_lib/access.js` decide descargas y copias. Lo paga el negocio (se verifica el `billing_email` en Mercado Pago) y cada rol hace lo que permite `permisos.js`. Quien no tiene negocio sigue entrando por la suscripción de su propio mail.
+  - Vincular una PC (`/api/device/authorize`, opcionales `orgId` y `branchId`): solo el dueño. La primera vez crea su negocio y su "Sucursal principal" y pasa a ese negocio sus PC y copias anteriores. Una PC deja de valer si quien la vinculó deja de ser miembro activo.
+  - Copias: cada una queda en la sucursal de su PC y se rotan **las últimas 5 por sucursal**. La web muestra todas al dueño y solo las asignadas a un encargado; un empleado no ve ninguna. Un id de otro negocio devuelve 404.
+  - El barrido de cuentas inactivas no marca a quien está cubierto por la suscripción de su negocio. El cron diario corre `backfillOrgs` (idempotente) para completar lo anterior al modelo.
 - Las ventas y la caja siguen siendo **locales por PC**: no hay reportes consolidados entre sucursales (exigirían subir las ventas a la nube).
 
 ### Pagar exige ingresar (y se recuerda el plan)

@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { puede, ROLES, ACCIONES } from '../functions/_lib/permisos.js';
+import { puede, puedeEnAlguna, ROLES, ACCIONES } from '../functions/_lib/permisos.js';
 
 let pass = 0; const t = (n, f) => { f(); pass++; console.log('ok  ', n); };
 const m = (role, { all = 0, branches = [] } = {}) => ({ role, all_branches: all, branches });
@@ -42,5 +42,14 @@ t('entradas inválidas se niegan: sin membresía, rol raro, acción desconocida'
   assert.equal(puede(null, 'operar', 1), false);
   assert.equal(puede(m('jefe', { all: 1 }), 'operar', 1), false);
   assert.equal(puede(m('owner'), 'volar', 1), false);
+});
+t('puedeEnAlguna: sirve para "¿puede descargar en algún lado?" (sin elegir sucursal)', () => {
+  assert.equal(puedeEnAlguna(m('manager', { branches: [2] }), 'descargar'), true);
+  assert.equal(puedeEnAlguna(m('manager', { branches: [] }), 'descargar'), false, 'sin sucursales asignadas no puede nada de sucursal');
+  assert.equal(puedeEnAlguna(m('manager', { all: 1 }), 'copias'), true);
+  assert.equal(puedeEnAlguna(m('employee', { branches: [1] }), 'descargar'), false, 'el rol no lo permite');
+  assert.equal(puedeEnAlguna(m('owner'), 'vincular_pc'), true);
+  assert.equal(puedeEnAlguna(m('manager', { all: 1 }), 'miembros'), false);
+  assert.equal(puedeEnAlguna(null, 'operar'), false);
 });
 console.log(`${pass} pruebas de permisos ok`);

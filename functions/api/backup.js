@@ -1,9 +1,8 @@
 import { json } from '../_lib/util.js';
 import { actorOf, csrfOk, forbidden } from '../_lib/actor.js';
 import { hasDB } from '../_lib/db.js';
-import {
-  backupsReady, backupAccess, saveBackup, getBackup, readBackup, deleteBackup, sha256Hex, MAX_BYTES,
-} from '../_lib/backups.js';
+import { backupsReady, saveBackup, getBackup, readBackup, deleteBackup, sha256Hex, MAX_BYTES } from '../_lib/backups.js';
+import { backupAccess, backupScope } from '../_lib/access.js';
 
 const denied = (acc, what) => (acc.error ? json({ error: acc.error }, 503) : json({ error: what }, 403));
 const noConfig = () => json({ error: 'backups_no_configurados' }, 503);
@@ -14,7 +13,8 @@ export async function onRequestPut({ request, env }) {
   const a = await actorOf(request, env);
   if (!a || a.via !== 'device') return json({ error: 'no_device' }, 401);
   if (!hasDB(env) || !backupsReady(env)) return noConfig();
-  const acc = await backupAccess(env, a);
+  const scope = await backupScope(env, a);
+  const acc = await backupAccess(env, a, scope);
   if (acc.error || !acc.upload) return denied(acc, 'no_upload');
 
   const declared = Number(request.headers.get('Content-Length') || 0);
@@ -30,20 +30,24 @@ export async function onRequestPut({ request, env }) {
   const r = await saveBackup(env, {
     sub: a.sub, email: a.email, deviceId: a.device.id, bytes, sha256,
     schemaVersion: Number.isInteger(schema) && schema > 0 ? schema : null, appVersion,
+    orgId: scope.orgId, branchId: a.device.branch_id,
   });
   return json({ ok: true, id: r.id, createdAt: r.createdAt, guardadas: r.guardadas });
 }
 
-// Bajar una copia (la app al restaurar, o la persona desde Mi cuenta): ?id=. Solo las propias.
+// Bajar una copia (la app al restaurar, o la persona desde Mi cuenta): ?id=. Solo las de su negocio y sucursal
+// (`&org=` elige el negocio si la persona tiene más de uno).
 export async function onRequestGet({ request, env }) {
   const a = await actorOf(request, env);
   if (!a) return json({ error: 'no_session' }, 401);
   if (!hasDB(env) || !backupsReady(env)) return noConfig();
-  const id = Number(new URL(request.url).searchParams.get('id'));
+  const q = new URL(request.url).searchParams;
+  const id = Number(q.get('id'));
   if (!Number.isInteger(id) || id < 1) return json({ error: 'bad_request' }, 400);
-  const acc = await backupAccess(env, a);
+  const scope = await backupScope(env, a, { orgId: Number(q.get('org')) || undefined });
+  const acc = await backupAccess(env, a, scope);
   if (acc.error || !acc.restore) return denied(acc, 'no_restore');
-  const b = await getBackup(env, id, a.sub);
+  const b = await getBackup(env, id, scope);
   if (!b) return json({ error: 'not_found' }, 404);
   const bytes = await readBackup(env, b);
   if (!bytes) return json({ error: 'corrupt' }, 500);
@@ -55,7 +59,7 @@ export async function onRequestGet({ request, env }) {
   return new Response(bytes, { status: 200, headers: h });
 }
 
-// Borrar una copia propia (la persona puede sacar sus datos del servidor).
+// Borrar una copia de su negocio y sucursal (la persona puede sacar sus datos del servidor).
 export async function onRequestDelete({ request, env }) {
   const a = await actorOf(request, env);
   if (!a) return json({ error: 'no_session' }, 401);
@@ -64,7 +68,9 @@ export async function onRequestDelete({ request, env }) {
   let body; try { body = await request.json(); } catch { return json({ error: 'bad_request' }, 400); }
   const id = Number(body.id);
   if (!Number.isInteger(id) || id < 1) return json({ error: 'bad_request' }, 400);
-  const b = await getBackup(env, id, a.sub);
+  const scope = await backupScope(env, a, { orgId: Number(body.org) || undefined });
+  if (!scope.allowed) return forbidden();
+  const b = await getBackup(env, id, scope);
   if (!b) return json({ error: 'not_found' }, 404);
   await deleteBackup(env, b);
   return json({ ok: true });

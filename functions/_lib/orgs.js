@@ -8,7 +8,8 @@
 //
 // Todo negocio nace con una "Sucursal principal", así el código nunca tiene el caso especial "sin sucursal".
 // Las tablas se crean solas (como el resto del sitio); migrations/0005_orgs.sql es la misma definición, opcional.
-import { now } from './util.js';
+import { now, once } from './util.js';
+import { puedeEnAlguna } from './permisos.js';
 import { ensureDeviceTables } from './devices.js';
 import { ensureBackupTables } from './backups.js';
 
@@ -36,25 +37,11 @@ const DDL = [
      exp INTEGER NOT NULL, created_at INTEGER NOT NULL, accepted_at INTEGER)`,
   `CREATE INDEX IF NOT EXISTS idx_invitations_email ON invitations(email)`,
 ];
-// Columnas nuevas en tablas que ya existen en producción. Nullable: las filas viejas se completan con el backfill.
-const COLUMNAS = [
-  ['devices', 'owner_org INTEGER'], ['devices', 'branch_id INTEGER'],
-  ['backups', 'owner_org INTEGER'], ['backups', 'branch_id INTEGER'],
-];
-const INDICES = [
-  'CREATE INDEX IF NOT EXISTS idx_devices_org ON devices(owner_org, branch_id)',
-  'CREATE INDEX IF NOT EXISTS idx_backups_org ON backups(owner_org, branch_id, created_at)',
-];
-
-export async function ensureOrgTables(env) {
+// devices y backups traen solas sus columnas owner_org y branch_id (ver ensureDeviceTables / ensureBackupTables).
+export const ensureOrgTables = (env) => once(env, 'orgs', async () => {
   await ensureDeviceTables(env); await ensureBackupTables(env);
   for (const sql of DDL) await env.DB.prepare(sql).run();
-  for (const [tabla, col] of COLUMNAS) {
-    try { await env.DB.prepare(`ALTER TABLE ${tabla} ADD COLUMN ${col}`).run(); }
-    catch (e) { if (!/duplicate column/i.test(String(e && e.message))) throw e; }
-  }
-  for (const sql of INDICES) await env.DB.prepare(sql).run();
-}
+});
 
 const minus = (e) => String(e || '').trim().toLowerCase();
 
@@ -116,6 +103,17 @@ export async function listOrgsForSub(env, sub) {
      WHERE m.user_sub = ?1 AND m.status = 'active' ORDER BY o.id`).bind(sub).all()).results;
 }
 
+// Pasa al negocio y la sucursal indicados lo que esta persona vinculó o subió ANTES del modelo de negocios (filas
+// sin negocio). Solo toca filas sin negocio, así que se puede repetir. Devuelve cuántas filas cambió.
+export async function adoptarLegado(env, sub, orgId, branchId) {
+  let n = 0;
+  for (const tabla of ['devices', 'backups']) {
+    const res = await env.DB.prepare(`UPDATE ${tabla} SET owner_org = ?1, branch_id = ?2 WHERE owner_sub = ?3 AND owner_org IS NULL`).bind(orgId, branchId, sub).run();
+    n += (res.meta && res.meta.changes) || 0;
+  }
+  return n;
+}
+
 // Convierte lo que ya existe (dispositivos y copias atados a un `sub`) al modelo nuevo: cada dueño recibe su
 // negocio y todo cuelga de su sucursal principal. Idempotente: solo toca filas sin negocio.
 export async function backfillOrgs(env, t = now()) {
@@ -130,11 +128,40 @@ export async function backfillOrgs(env, t = now()) {
     const u = await env.DB.prepare('SELECT email, name FROM users WHERE sub = ?1').bind(d.owner_sub).first();
     const r = await ensurePersonalOrg(env, { sub: d.owner_sub, email: (u && u.email) || d.owner_email || '', name: u && u.name }, t);
     if (r.created) orgsCreadas++;
-    for (const tabla of ['devices', 'backups']) {
-      const res = await env.DB.prepare(`UPDATE ${tabla} SET owner_org = ?1, branch_id = ?2 WHERE owner_sub = ?3 AND owner_org IS NULL`)
-        .bind(r.org.id, r.branch.id, d.owner_sub).run();
-      filasActualizadas += (res.meta && res.meta.changes) || 0;
-    }
+    filasActualizadas += await adoptarLegado(env, d.owner_sub, r.org.id, r.branch.id);
   }
   return { orgsCreadas, filasActualizadas };
 }
+
+// --- consultas de lectura. Toleran que las tablas todavía no existan (el sitio las crea al primer uso).
+const sinTabla = async (fn, vacio) => { try { return await fn(); } catch (e) { if (/no such table/i.test(String(e && e.message))) return vacio; throw e; } };
+
+// Membresías activas de la persona, con su negocio y sus sucursales asignadas: [{...membresía, branches, org}].
+export const membershipsOf = (env, sub) => sinTabla(async () => {
+  if (!env.DB) return []; // sin base el sitio sigue andando, solo que sin negocios
+  const filas = (await env.DB.prepare(
+    `SELECT m.*, o.name AS org_name, o.owner_sub AS org_owner_sub, o.billing_email AS org_billing_email, o.created_at AS org_created_at
+     FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.user_sub = ?1 AND m.status = 'active' ORDER BY o.id`).bind(sub).all()).results;
+  const out = [];
+  for (const f of filas) {
+    const branches = (await env.DB.prepare('SELECT branch_id FROM membership_branches WHERE membership_id = ?1').bind(f.id).all()).results.map((r) => Number(r.branch_id));
+    out.push({ ...f, branches, org: { id: f.org_id, name: f.org_name, owner_sub: f.org_owner_sub, billing_email: f.org_billing_email, created_at: f.org_created_at } });
+  }
+  return out;
+}, []);
+
+// Los negocios donde la persona puede hacer `accion` en alguna sucursal: [{ org, membership }].
+export async function orgsWith(env, sub, accion) {
+  return (await membershipsOf(env, sub)).filter((m) => puedeEnAlguna(m, accion)).map((m) => ({ org: m.org, membership: m }));
+}
+
+// Mail de cobro de cada negocio donde cada persona es miembro activa: Map(sub → [mails]). Lo usa el barrido para
+// no marcar como inactiva a una cuenta cubierta por la suscripción de su negocio.
+export const billingEmailsBySub = (env) => sinTabla(async () => {
+  const mapa = new Map();
+  if (!env.DB) return mapa;
+  const filas = (await env.DB.prepare(
+    `SELECT m.user_sub, o.billing_email FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.status = 'active'`).all()).results;
+  for (const f of filas) mapa.set(f.user_sub, [...(mapa.get(f.user_sub) || []), f.billing_email]);
+  return mapa;
+}, new Map());

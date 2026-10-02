@@ -28,3 +28,11 @@ export function puede(miembro, accion, sucursalId) {
   // Sin sucursal indicada no se asume "todas": un permiso por sucursal siempre se pregunta por una.
   return sucursalId !== undefined && sucursalId !== null && (miembro.branches || []).includes(Number(sucursalId));
 }
+
+// ¿Puede hacer esta acción en AL MENOS una sucursal? Sirve para lo que no es de una sucursal en particular
+// (por ejemplo descargar el instalador). Sin sucursales asignadas no puede nada de sucursal.
+export function puedeEnAlguna(miembro, accion) {
+  if (!miembro || !POR_ROL[miembro.role] || !ACCIONES.includes(accion) || !POR_ROL[miembro.role].has(accion)) return false;
+  if (miembro.role === 'owner' || DE_NEGOCIO.has(accion) || miembro.all_branches) return true;
+  return (miembro.branches || []).length > 0;
+}
