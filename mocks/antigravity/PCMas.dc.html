@@ -1,0 +1,586 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<title>PC · resto de pantallas</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+input{font-family:inherit}
+input::placeholder{color:#7b8494}
+button:focus-visible,input:focus-visible{outline:3px solid #3b6cff;outline-offset:2px}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 900px; display: flex; flex-direction: column; background: #ffffff; color: #121317; overflow: hidden; font-family: 'Figtree', system-ui, sans-serif">
+
+<div style="height: 72px; flex-shrink: 0; display: flex; align-items: center; gap: 28px; padding: 0 40px">
+<div style="display: flex; align-items: center; gap: 12px; font-size: 19px; font-weight: 700; letter-spacing: -0.02em; flex-shrink: 0">
+<div style="width: 38px; height: 38px; border-radius: 12px; background: #121317; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px">NS</div>Nodo Sur
+</div>
+<div style="display: flex; align-items: center; gap: 2px; min-width: 0; overflow-x: auto">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="10"><button type="button" onClick="{{n.pick}}" style="{{n.style}}">{{n.label}}</button></sc-for>
+</div>
+</div>
+
+<div style="flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0 40px 32px; gap: 18px">
+<div style="display: flex; align-items: flex-end; justify-content: space-between; gap: 30px; flex-shrink: 0">
+<div style="min-width: 0">
+<div style="font-size: 52px; line-height: 1.02; font-weight: 400; letter-spacing: -0.058em">{{title}}</div>
+<div style="font-size: 16px; line-height: 1.4; color: #566070; margin-top: 8px; max-width: 760px">{{sub}}</div>
+</div>
+<div style="display: flex; gap: 8px; flex-shrink: 0">
+<sc-for list="{{actions}}" as="a" hint-placeholder-count="2"><button type="button" onClick="{{a.pick}}" style="{{a.style}}">{{a.label}}</button></sc-for>
+</div>
+</div>
+
+<div style="flex: 1; min-height: 0; display: flex; gap: 20px">
+<div style="flex: 1; min-width: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding-right: 8px">
+<sc-for list="{{left}}" as="b" hint-placeholder-count="5">
+<sc-if value="{{b.isHero}}" hint-placeholder-val="{{false}}"><div style="position: relative; overflow: hidden; flex-shrink: 0; border-radius: 36px; padding: 26px 30px; background: linear-gradient(150deg,#07080c,#14183a 130%); color: #fff; display: flex; flex-direction: column; gap: 6px">
+<svg width="100%" height="100%" viewBox="0 0 600 200" preserveAspectRatio="none" style="position: absolute; inset: 0" aria-hidden="true"><g stroke-linecap="round" stroke-width="2"><line x1="400" y1="30" x2="407" y2="34" stroke="#7da0ff" opacity="0.8"/><line x1="480" y1="70" x2="483" y2="71" stroke="#b59bff" opacity="0.8"/><line x1="560" y1="34" x2="567" y2="39" stroke="#7da0ff" opacity="0.6"/><line x1="520" y1="130" x2="523" y2="131" stroke="#4f7cff" opacity="0.8"/><line x1="440" y1="110" x2="443" y2="111" stroke="#3a4a78" opacity="0.9"/></g></svg>
+<div style="position: relative; font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.7)">{{b.label}}</div>
+<div style="position: relative; font-size: 56px; line-height: 1.02; font-weight: 400; letter-spacing: -0.06em; font-variant-numeric: tabular-nums">{{b.big}}</div>
+<div style="position: relative; font-size: 15px; line-height: 1.4; color: rgba(255,255,255,0.72)">{{b.sub}}</div>
+</div></sc-if>
+<sc-if value="{{b.isStats}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; gap: 12px"><sc-for list="{{b.items}}" as="i" hint-placeholder-count="3"><div style="flex: 1; min-width: 0; padding: 18px 22px; border-radius: 30px; background: #f3f4f7; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 14px; color: #566070">{{i.k}}</span><span style="{{i.vs}}">{{i.v}}</span></div></sc-for></div></sc-if>
+<sc-if value="{{b.isSection}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; margin-top: 10px; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #7b8494">{{b.text}}</div></sc-if>
+<sc-if value="{{b.isInfo}}" hint-placeholder-val="{{false}}"><div style="{{b.istyle}}; flex-shrink: 0">{{b.text}}</div></sc-if>
+<sc-if value="{{b.isKv}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 13px 6px; border-bottom: 1px solid rgba(18,19,23,0.08)"><span style="font-size: 16px; color: #566070">{{b.k}}</span><span style="{{b.vstyle}}">{{b.v}}</span></div></sc-if>
+<sc-if value="{{b.isField}}" hint-placeholder-val="{{false}}"><label style="flex-shrink: 0; display: flex; flex-direction: column; gap: 4px; padding: 14px 24px 16px; border-radius: 28px; background: #f3f4f7"><span style="font-size: 13px; font-weight: 600; color: #7b8494">{{b.label}}</span><input type="text" value="{{b.value}}" onChange="{{b.onChange}}" placeholder="{{b.ph}}" aria-label="{{b.label}}" style="{{b.fstyle}}"></label></sc-if>
+<sc-if value="{{b.isToggle}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{b.pick}}" style="flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; padding: 14px 24px; box-sizing: border-box; border: 0; border-radius: 999px; background: #f3f4f7; color: #121317; text-align: left"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 17px; font-weight: 500; letter-spacing: -0.02em">{{b.label}}</span><span style="font-size: 13px; color: #566070">{{b.desc}}</span></span><span style="{{b.track}}"><span style="{{b.knob}}"></span></span></button></sc-if>
+<sc-if value="{{b.isChips}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; flex-direction: column; gap: 8px"><span style="font-size: 14px; font-weight: 600; color: #566070">{{b.label}}</span><div style="display: flex; gap: 8px; flex-wrap: wrap"><sc-for list="{{b.opts}}" as="o" hint-placeholder-count="3"><button type="button" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button></sc-for></div></div></sc-if>
+<sc-if value="{{b.isRow}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{b.pick}}" style="{{b.rstyle}}"><span style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 18px; font-weight: 500; letter-spacing: -0.02em">{{b.name}}</span><span style="font-size: 13px; opacity: 0.65; line-height: 1.3">{{b.meta}}</span></span><span style="font-size: 19px; font-weight: 500; letter-spacing: -0.03em; white-space: nowrap; font-variant-numeric: tabular-nums">{{b.right}}</span></button></sc-if>
+<sc-if value="{{b.isCheck}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{b.pick}}" style="{{b.rstyle}}"><span style="{{b.cstyle}}">{{b.mark}}</span><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 19px; font-weight: 500; letter-spacing: -0.02em">{{b.name}}</span><span style="font-size: 13px; color: #566070">{{b.meta}}</span></span><span style="font-size: 24px; letter-spacing: -0.04em; font-variant-numeric: tabular-nums">{{b.right}}</span></button></sc-if>
+<sc-if value="{{b.isProgress}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 6px 4px"><div style="display: flex; justify-content: space-between; font-size: 15px"><span style="font-weight: 600">{{b.label}}</span><span style="color: #566070">{{b.text}}</span></div><div style="height: 10px; border-radius: 5px; background: #e6e8ee"><span style="{{b.bar}}"></span></div></div></sc-if>
+<sc-if value="{{b.isPaper}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; padding: 22px 26px; border-radius: 22px; background: #fff; box-shadow: 0 10px 34px rgba(18,19,23,0.12), 0 0 0 1px rgba(18,19,23,0.06); display: flex; flex-direction: column; gap: 5px"><sc-for list="{{b.plines}}" as="l" hint-placeholder-count="6"><div style="{{l.ls}}"><span>{{l.a}}</span><span>{{l.b}}</span></div></sc-for></div></sc-if>
+<sc-if value="{{b.isBtn}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{b.pick}}" style="{{b.bstyle}}">{{b.label}}</button></sc-if>
+<sc-if value="{{b.isTable}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; flex-direction: column; gap: 6px">
+<sc-if value="{{b.hasHead}}" hint-placeholder-val="{{false}}"><div style="display: grid; {{b.cols}}; gap: 12px; padding: 0 22px 4px; font-size: 13px; font-weight: 600; color: #7b8494"><sc-for list="{{b.head}}" as="h" hint-placeholder-count="4"><span style="{{h.s}}">{{h.t}}</span></sc-for></div></sc-if>
+<sc-for list="{{b.rows}}" as="r" hint-placeholder-count="5"><div onClick="{{r.pick}}" style="display: grid; {{b.cols}}; gap: 12px; align-items: center; padding: 14px 22px; border-radius: 26px; background: #f3f4f7; font-size: 16px; color: #121317; cursor: pointer"><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="4"><span style="{{c.s}}">{{c.t}}</span></sc-for>
+<sc-if value="{{r.step}}" hint-placeholder-val="{{false}}"><span style="display: flex; align-items: center; justify-content: flex-end; gap: 6px"><button type="button" onClick="{{r.minus}}" aria-label="Menos" style="width: 36px; height: 36px; border-radius: 50%; border: 0; background: #fff; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#121317" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg></button><button type="button" onClick="{{r.plus}}" aria-label="Más" style="width: 36px; height: 36px; border-radius: 50%; border: 0; background: #fff; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#121317" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></span></sc-if></div></sc-for></div></sc-if>
+</sc-for>
+</div>
+<sc-if value="{{hasRight}}" hint-placeholder-val="{{true}}">
+<div style="width: 480px; flex-shrink: 0; box-sizing: border-box; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; padding: 26px; border-radius: 40px; background: #ffffff; box-shadow: 0 0 0 1px rgba(18,19,23,0.1)">
+<sc-for list="{{right}}" as="b" hint-placeholder-count="5">
+<sc-if value="{{b.isHero}}" hint-placeholder-val="{{false}}"><div style="position: relative; overflow: hidden; flex-shrink: 0; border-radius: 36px; padding: 26px 30px; background: linear-gradient(150deg,#07080c,#14183a 130%); color: #fff; display: flex; flex-direction: column; gap: 6px">
+<svg width="100%" height="100%" viewBox="0 0 600 200" preserveAspectRatio="none" style="position: absolute; inset: 0" aria-hidden="true"><g stroke-linecap="round" stroke-width="2"><line x1="400" y1="30" x2="407" y2="34" stroke="#7da0ff" opacity="0.8"/><line x1="480" y1="70" x2="483" y2="71" stroke="#b59bff" opacity="0.8"/><line x1="560" y1="34" x2="567" y2="39" stroke="#7da0ff" opacity="0.6"/><line x1="520" y1="130" x2="523" y2="131" stroke="#4f7cff" opacity="0.8"/><line x1="440" y1="110" x2="443" y2="111" stroke="#3a4a78" opacity="0.9"/></g></svg>
+<div style="position: relative; font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.7)">{{b.label}}</div>
+<div style="position: relative; font-size: 56px; line-height: 1.02; font-weight: 400; letter-spacing: -0.06em; font-variant-numeric: tabular-nums">{{b.big}}</div>
+<div style="position: relative; font-size: 15px; line-height: 1.4; color: rgba(255,255,255,0.72)">{{b.sub}}</div>
+</div></sc-if>
+<sc-if value="{{b.isStats}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; gap: 12px"><sc-for list="{{b.items}}" as="i" hint-placeholder-count="3"><div style="flex: 1; min-width: 0; padding: 18px 22px; border-radius: 30px; background: #f3f4f7; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 14px; color: #566070">{{i.k}}</span><span style="{{i.vs}}">{{i.v}}</span></div></sc-for></div></sc-if>
+<sc-if value="{{b.isSection}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; margin-top: 10px; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #7b8494">{{b.text}}</div></sc-if>
+<sc-if value="{{b.isInfo}}" hint-placeholder-val="{{false}}"><div style="{{b.istyle}}; flex-shrink: 0">{{b.text}}</div></sc-if>
+<sc-if value="{{b.isKv}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 13px 6px; border-bottom: 1px solid rgba(18,19,23,0.08)"><span style="font-size: 16px; color: #566070">{{b.k}}</span><span style="{{b.vstyle}}">{{b.v}}</span></div></sc-if>
+<sc-if value="{{b.isField}}" hint-placeholder-val="{{false}}"><label style="flex-shrink: 0; display: flex; flex-direction: column; gap: 4px; padding: 14px 24px 16px; border-radius: 28px; background: #f3f4f7"><span style="font-size: 13px; font-weight: 600; color: #7b8494">{{b.label}}</span><input type="text" value="{{b.value}}" onChange="{{b.onChange}}" placeholder="{{b.ph}}" aria-label="{{b.label}}" style="{{b.fstyle}}"></label></sc-if>
+<sc-if value="{{b.isToggle}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{b.pick}}" style="flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; padding: 14px 24px; box-sizing: border-box; border: 0; border-radius: 999px; background: #f3f4f7; color: #121317; text-align: left"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 17px; font-weight: 500; letter-spacing: -0.02em">{{b.label}}</span><span style="font-size: 13px; color: #566070">{{b.desc}}</span></span><span style="{{b.track}}"><span style="{{b.knob}}"></span></span></button></sc-if>
+<sc-if value="{{b.isChips}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; flex-direction: column; gap: 8px"><span style="font-size: 14px; font-weight: 600; color: #566070">{{b.label}}</span><div style="display: flex; gap: 8px; flex-wrap: wrap"><sc-for list="{{b.opts}}" as="o" hint-placeholder-count="3"><button type="button" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button></sc-for></div></div></sc-if>
+<sc-if value="{{b.isRow}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{b.pick}}" style="{{b.rstyle}}"><span style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 18px; font-weight: 500; letter-spacing: -0.02em">{{b.name}}</span><span style="font-size: 13px; opacity: 0.65; line-height: 1.3">{{b.meta}}</span></span><span style="font-size: 19px; font-weight: 500; letter-spacing: -0.03em; white-space: nowrap; font-variant-numeric: tabular-nums">{{b.right}}</span></button></sc-if>
+<sc-if value="{{b.isCheck}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{b.pick}}" style="{{b.rstyle}}"><span style="{{b.cstyle}}">{{b.mark}}</span><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 19px; font-weight: 500; letter-spacing: -0.02em">{{b.name}}</span><span style="font-size: 13px; color: #566070">{{b.meta}}</span></span><span style="font-size: 24px; letter-spacing: -0.04em; font-variant-numeric: tabular-nums">{{b.right}}</span></button></sc-if>
+<sc-if value="{{b.isProgress}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 6px 4px"><div style="display: flex; justify-content: space-between; font-size: 15px"><span style="font-weight: 600">{{b.label}}</span><span style="color: #566070">{{b.text}}</span></div><div style="height: 10px; border-radius: 5px; background: #e6e8ee"><span style="{{b.bar}}"></span></div></div></sc-if>
+<sc-if value="{{b.isPaper}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; padding: 22px 26px; border-radius: 22px; background: #fff; box-shadow: 0 10px 34px rgba(18,19,23,0.12), 0 0 0 1px rgba(18,19,23,0.06); display: flex; flex-direction: column; gap: 5px"><sc-for list="{{b.plines}}" as="l" hint-placeholder-count="6"><div style="{{l.ls}}"><span>{{l.a}}</span><span>{{l.b}}</span></div></sc-for></div></sc-if>
+<sc-if value="{{b.isBtn}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{b.pick}}" style="{{b.bstyle}}">{{b.label}}</button></sc-if>
+<sc-if value="{{b.isTable}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; flex-direction: column; gap: 6px">
+<sc-if value="{{b.hasHead}}" hint-placeholder-val="{{false}}"><div style="display: grid; {{b.cols}}; gap: 12px; padding: 0 22px 4px; font-size: 13px; font-weight: 600; color: #7b8494"><sc-for list="{{b.head}}" as="h" hint-placeholder-count="4"><span style="{{h.s}}">{{h.t}}</span></sc-for></div></sc-if>
+<sc-for list="{{b.rows}}" as="r" hint-placeholder-count="5"><div onClick="{{r.pick}}" style="display: grid; {{b.cols}}; gap: 12px; align-items: center; padding: 14px 22px; border-radius: 26px; background: #f3f4f7; font-size: 16px; color: #121317; cursor: pointer"><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="4"><span style="{{c.s}}">{{c.t}}</span></sc-for>
+<sc-if value="{{r.step}}" hint-placeholder-val="{{false}}"><span style="display: flex; align-items: center; justify-content: flex-end; gap: 6px"><button type="button" onClick="{{r.minus}}" aria-label="Menos" style="width: 36px; height: 36px; border-radius: 50%; border: 0; background: #fff; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#121317" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg></button><button type="button" onClick="{{r.plus}}" aria-label="Más" style="width: 36px; height: 36px; border-radius: 50%; border: 0; background: #fff; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#121317" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></span></sc-if></div></sc-for></div></sc-if>
+</sc-for>
+</div>
+</sc-if>
+</div>
+</div>
+
+<sc-if value="{{hasModal}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; z-index: 40; background: rgba(18,19,23,0.5); display: flex; align-items: center; justify-content: center">
+<div style="width: 620px; max-height: 84%; box-sizing: border-box; border-radius: 40px; background: #fff; padding: 30px 32px 28px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 40px 100px rgba(18,19,23,0.35)">
+<div style="font-size: 32px; line-height: 1.08; letter-spacing: -0.045em; flex-shrink: 0">{{mTitle}}</div>
+<sc-if value="{{hasMText}}" hint-placeholder-val="{{false}}"><div style="font-size: 16px; line-height: 1.45; color: #566070; flex-shrink: 0">{{mText}}</div></sc-if>
+<div style="min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{mBlocks}}" as="b" hint-placeholder-count="5">
+<sc-if value="{{b.isHero}}" hint-placeholder-val="{{false}}"><div style="position: relative; overflow: hidden; flex-shrink: 0; border-radius: 36px; padding: 26px 30px; background: linear-gradient(150deg,#07080c,#14183a 130%); color: #fff; display: flex; flex-direction: column; gap: 6px">
+<svg width="100%" height="100%" viewBox="0 0 600 200" preserveAspectRatio="none" style="position: absolute; inset: 0" aria-hidden="true"><g stroke-linecap="round" stroke-width="2"><line x1="400" y1="30" x2="407" y2="34" stroke="#7da0ff" opacity="0.8"/><line x1="480" y1="70" x2="483" y2="71" stroke="#b59bff" opacity="0.8"/><line x1="560" y1="34" x2="567" y2="39" stroke="#7da0ff" opacity="0.6"/><line x1="520" y1="130" x2="523" y2="131" stroke="#4f7cff" opacity="0.8"/><line x1="440" y1="110" x2="443" y2="111" stroke="#3a4a78" opacity="0.9"/></g></svg>
+<div style="position: relative; font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.7)">{{b.label}}</div>
+<div style="position: relative; font-size: 56px; line-height: 1.02; font-weight: 400; letter-spacing: -0.06em; font-variant-numeric: tabular-nums">{{b.big}}</div>
+<div style="position: relative; font-size: 15px; line-height: 1.4; color: rgba(255,255,255,0.72)">{{b.sub}}</div>
+</div></sc-if>
+<sc-if value="{{b.isStats}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; gap: 12px"><sc-for list="{{b.items}}" as="i" hint-placeholder-count="3"><div style="flex: 1; min-width: 0; padding: 18px 22px; border-radius: 30px; background: #f3f4f7; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 14px; color: #566070">{{i.k}}</span><span style="{{i.vs}}">{{i.v}}</span></div></sc-for></div></sc-if>
+<sc-if value="{{b.isSection}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; margin-top: 10px; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #7b8494">{{b.text}}</div></sc-if>
+<sc-if value="{{b.isInfo}}" hint-placeholder-val="{{false}}"><div style="{{b.istyle}}; flex-shrink: 0">{{b.text}}</div></sc-if>
+<sc-if value="{{b.isKv}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 13px 6px; border-bottom: 1px solid rgba(18,19,23,0.08)"><span style="font-size: 16px; color: #566070">{{b.k}}</span><span style="{{b.vstyle}}">{{b.v}}</span></div></sc-if>
+<sc-if value="{{b.isField}}" hint-placeholder-val="{{false}}"><label style="flex-shrink: 0; display: flex; flex-direction: column; gap: 4px; padding: 14px 24px 16px; border-radius: 28px; background: #f3f4f7"><span style="font-size: 13px; font-weight: 600; color: #7b8494">{{b.label}}</span><input type="text" value="{{b.value}}" onChange="{{b.onChange}}" placeholder="{{b.ph}}" aria-label="{{b.label}}" style="{{b.fstyle}}"></label></sc-if>
+<sc-if value="{{b.isToggle}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{b.pick}}" style="flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; padding: 14px 24px; box-sizing: border-box; border: 0; border-radius: 999px; background: #f3f4f7; color: #121317; text-align: left"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 17px; font-weight: 500; letter-spacing: -0.02em">{{b.label}}</span><span style="font-size: 13px; color: #566070">{{b.desc}}</span></span><span style="{{b.track}}"><span style="{{b.knob}}"></span></span></button></sc-if>
+<sc-if value="{{b.isChips}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; flex-direction: column; gap: 8px"><span style="font-size: 14px; font-weight: 600; color: #566070">{{b.label}}</span><div style="display: flex; gap: 8px; flex-wrap: wrap"><sc-for list="{{b.opts}}" as="o" hint-placeholder-count="3"><button type="button" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button></sc-for></div></div></sc-if>
+<sc-if value="{{b.isRow}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{b.pick}}" style="{{b.rstyle}}"><span style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 18px; font-weight: 500; letter-spacing: -0.02em">{{b.name}}</span><span style="font-size: 13px; opacity: 0.65; line-height: 1.3">{{b.meta}}</span></span><span style="font-size: 19px; font-weight: 500; letter-spacing: -0.03em; white-space: nowrap; font-variant-numeric: tabular-nums">{{b.right}}</span></button></sc-if>
+<sc-if value="{{b.isCheck}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{b.pick}}" style="{{b.rstyle}}"><span style="{{b.cstyle}}">{{b.mark}}</span><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 19px; font-weight: 500; letter-spacing: -0.02em">{{b.name}}</span><span style="font-size: 13px; color: #566070">{{b.meta}}</span></span><span style="font-size: 24px; letter-spacing: -0.04em; font-variant-numeric: tabular-nums">{{b.right}}</span></button></sc-if>
+<sc-if value="{{b.isProgress}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 6px 4px"><div style="display: flex; justify-content: space-between; font-size: 15px"><span style="font-weight: 600">{{b.label}}</span><span style="color: #566070">{{b.text}}</span></div><div style="height: 10px; border-radius: 5px; background: #e6e8ee"><span style="{{b.bar}}"></span></div></div></sc-if>
+<sc-if value="{{b.isPaper}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; padding: 22px 26px; border-radius: 22px; background: #fff; box-shadow: 0 10px 34px rgba(18,19,23,0.12), 0 0 0 1px rgba(18,19,23,0.06); display: flex; flex-direction: column; gap: 5px"><sc-for list="{{b.plines}}" as="l" hint-placeholder-count="6"><div style="{{l.ls}}"><span>{{l.a}}</span><span>{{l.b}}</span></div></sc-for></div></sc-if>
+<sc-if value="{{b.isBtn}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{b.pick}}" style="{{b.bstyle}}">{{b.label}}</button></sc-if>
+<sc-if value="{{b.isTable}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; flex-direction: column; gap: 6px">
+<sc-if value="{{b.hasHead}}" hint-placeholder-val="{{false}}"><div style="display: grid; {{b.cols}}; gap: 12px; padding: 0 22px 4px; font-size: 13px; font-weight: 600; color: #7b8494"><sc-for list="{{b.head}}" as="h" hint-placeholder-count="4"><span style="{{h.s}}">{{h.t}}</span></sc-for></div></sc-if>
+<sc-for list="{{b.rows}}" as="r" hint-placeholder-count="5"><div onClick="{{r.pick}}" style="display: grid; {{b.cols}}; gap: 12px; align-items: center; padding: 14px 22px; border-radius: 26px; background: #f3f4f7; font-size: 16px; color: #121317; cursor: pointer"><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="4"><span style="{{c.s}}">{{c.t}}</span></sc-for>
+<sc-if value="{{r.step}}" hint-placeholder-val="{{false}}"><span style="display: flex; align-items: center; justify-content: flex-end; gap: 6px"><button type="button" onClick="{{r.minus}}" aria-label="Menos" style="width: 36px; height: 36px; border-radius: 50%; border: 0; background: #fff; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#121317" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg></button><button type="button" onClick="{{r.plus}}" aria-label="Más" style="width: 36px; height: 36px; border-radius: 50%; border: 0; background: #fff; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#121317" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></span></sc-if></div></sc-for></div></sc-if>
+</sc-for>
+</div>
+<div style="display: flex; gap: 10px; flex-shrink: 0; margin-top: 6px">
+<sc-for list="{{mButtons}}" as="b" hint-placeholder-count="2"><button type="button" onClick="{{b.pick}}" style="{{b.style}}">{{b.label}}</button></sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{hasToast}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 50%; bottom: 36px; transform: translateX(-50%); z-index: 60; padding: 16px 30px; border-radius: 999px; background: #121317; color: #fff; font-size: 16px; font-weight: 600; box-shadow: 0 18px 40px rgba(18,19,23,0.3)">{{toastTxt}}</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  state = {
+    scr: 'cierre', modal: '', toast: '', m: {},
+    cierre: { stage: 'count', efec: '', mp: '', lata: '', nota: '' },
+    sepVista: 'Qué separar', sepPer: 'Hoy', sepDone: {}, sepQ: '',
+    fijos: [
+      { id: 'f1', name: 'Alquiler del local', monto: 480000, pagado: false },
+      { id: 'f2', name: 'Luz', monto: 62300, pagado: true },
+      { id: 'f3', name: 'Internet', monto: 0, pagado: false },
+      { id: 'f4', name: 'Contador', monto: 85000, pagado: false }
+    ],
+    sueldo: '350000', ventaMeta: '', gananciaMeta: '',
+    cmpProv: 'Todos', cmpQ: '', cmpSel: 'cerveza', cmpFresh: false,
+    stProv: 'Del Sur', stQ: '', stFilter: 'Todos', stVals: {}, stocks: {},
+    days: [
+      { id: 'd1', fecha: 'Dom 28 sep', vendido: 312400, ganancia: 104800, n: 41 },
+      { id: 'd2', fecha: 'Sáb 27 sep', vendido: 398900, ganancia: 131200, n: 55 }
+    ],
+    newday: { fecha: 'Lun 29 sep', medio: 'Efectivo', q: '', items: [] },
+    imp: { token: 'APP_USR-5821…9f3a', term: 'NEWLAND_N950__N950NCC503383252', termCobro: 'NEWLAND_N950__N950NCC503383252', carpeta: 'C:\\NodoSur\\Tickets', venta: '' },
+    resp: { carpeta: 'D:\\Respaldos\\NodoSur', copias: '10', hecho: false, lista: [['Hoy · 8:12', '14,2 MB'], ['Ayer · 21:40', '14,1 MB'], ['Anteayer · 21:35', '13,9 MB']] },
+    detalleDia: 'Hoy', voided: {}, editSale: '0143', editLines: null, editMedio: 'Efectivo',
+    catalog: {}
+  };
+
+  renderVals() {
+    const s = this.state;
+    const fmt = (n) => '$ ' + Math.round(n).toLocaleString('es-AR');
+    const norm = (t) => String(t).normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+    const num = (v) => parseInt(String(v).replace(/\D/g, ''), 10) || 0;
+    const go = (scr) => this.setState({ scr, modal: '' });
+    const toast = (msg) => { this.setState({ toast: msg }); setTimeout(() => this.setState({ toast: '' }), 2600); };
+    const patch = (key, v) => this.setState({ [key]: { ...this.state[key], ...v } });
+    const openModal = (modal, init) => this.setState({ modal, m: init || {} });
+    const closeModal = () => this.setState({ modal: '' });
+    const setM = (k) => (e) => this.setState({ m: { ...this.state.m, [k]: e.target.value } });
+    const m = s.m;
+
+    // ------------------------------------------------ constructores de bloques
+    const pill = (on) => 'height:42px;padding:0 18px;border-radius:999px;border:0;font-size:15px;font-weight:600;flex-shrink:0;white-space:nowrap;' + (on ? 'background:#121317;color:#fff' : 'background:#f3f4f7;color:#121317');
+    const track = (on) => 'width:56px;height:32px;border-radius:999px;flex-shrink:0;padding:3px;box-sizing:border-box;display:flex;align-items:center;justify-content:' + (on ? 'flex-end' : 'flex-start') + ';background:' + (on ? '#121317' : '#d3d7df');
+    const tone = (t) => (t === 'good' ? '#0b7a5e' : t === 'bad' ? '#b3261e' : t === 'warn' ? '#9a4a06' : '#121317');
+    const B = {
+      hero: (label, big, sub) => ({ isHero: true, label, big, sub }),
+      stats: (items) => ({ isStats: true, items: items.map(([k, v, t]) => ({ k, v, vs: 'font-size:34px;line-height:1.05;font-weight:400;letter-spacing:-0.05em;font-variant-numeric:tabular-nums;color:' + tone(t) })) }),
+      kv: (k, v, t) => ({ isKv: true, k, v, vstyle: 'font-size:19px;font-weight:500;letter-spacing:-0.03em;font-variant-numeric:tabular-nums;color:' + tone(t) }),
+      section: (text) => ({ isSection: true, text }),
+      info: (text, t) => ({ isInfo: true, text, istyle: 'padding:14px 18px;border-radius:22px;font-size:14px;line-height:1.45;' + (t === 'warn' ? 'background:#fdecd6;color:#9a4a06' : t === 'good' ? 'background:#e3f6ef;color:#0b7a5e' : 'background:#f3f4f7;color:#566070') }),
+      field: (label, value, onChange, ph, big) => ({ isField: true, label, value, onChange, ph: ph || '', fstyle: 'height:' + (big ? '54px' : '32px') + ';border:0;padding:0;background:transparent;color:#121317;font-size:' + (big ? '40px' : '20px') + ';font-weight:' + (big ? '400' : '500') + ';letter-spacing:' + (big ? '-0.05em' : '-0.02em') }),
+      toggle: (label, desc, on, pick) => ({ isToggle: true, label, desc, track: track(on), knob: 'width:26px;height:26px;border-radius:50%;background:#fff', pick }),
+      chips: (label, opts) => ({ isChips: true, label, opts: opts.map((o) => ({ label: o.label, style: pill(o.on), pick: o.pick })) }),
+      row: (name, meta, right, pick, on, sub) => ({ isRow: true, name, meta, right, sub: sub || '', pick: pick || (() => {}), rstyle: 'display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;flex-shrink:0;padding:16px 24px;box-sizing:border-box;border:0;border-radius:30px;text-align:left;' + (on ? 'background:#121317;color:#fff' : 'background:#f3f4f7;color:#121317') }),
+      check: (name, meta, right, on, pick) => ({ isCheck: true, name, meta, right, pick, cstyle: 'width:32px;height:32px;border-radius:50%;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;flex-shrink:0;' + (on ? 'background:#121317;color:#fff' : 'background:#fff;border:2px solid #c4c9d4'), mark: on ? '✓' : '', rstyle: 'display:flex;align-items:center;gap:16px;width:100%;flex-shrink:0;padding:16px 24px;box-sizing:border-box;border:0;border-radius:999px;background:#f3f4f7;color:#121317;text-align:left;' + (on ? 'opacity:0.55' : '') }),
+      table: (cols, head, rows) => ({ isTable: true, hasHead: head.length > 0, cols: 'grid-template-columns:' + cols, head: head.map((h, i) => ({ t: h, s: i ? 'text-align:right' : '' })), rows }),
+      trow: (cells, pick, step) => ({ cells: cells.map((c, i) => ({ t: Array.isArray(c) ? c[0] : c, s: (i ? 'text-align:right;' : '') + (Array.isArray(c) ? c[1] : '') })), pick: pick || (() => {}), step: Boolean(step), minus: step ? step[0] : null, plus: step ? step[1] : null }),
+      progress: (label, pct, text) => ({ isProgress: true, label, text, bar: 'display:block;height:100%;border-radius:4px;background:#121317;width:' + Math.max(2, Math.min(100, pct)) + '%' }),
+      btn: (label, pick, kind) => ({ isBtn: true, label, pick, bstyle: 'flex-shrink:0;height:54px;border-radius:999px;border:0;font-size:16px;font-weight:600;' + (kind === 'dark' ? 'background:#121317;color:#fff' : kind === 'danger' ? 'background:#fbe0de;color:#b3261e' : 'background:#f3f4f7;color:#121317') }),
+      paper: (lines) => ({ isPaper: true, plines: lines.map((l) => ({ a: l[0], b: l[1] === 'c' ? '' : l[1], ls: 'display:flex;justify-content:' + (l[1] === 'c' ? 'center' : 'space-between') + ';gap:12px;font-family:ui-monospace,Menlo,monospace;color:#121317;' + (l[2] === 'b' ? 'font-weight:700;font-size:17px;padding-top:6px;border-top:1px dashed #c4c9d4;margin-top:4px;' : 'font-size:14px;') })) })
+    };
+    const act = (label, pick, dark) => ({ label, pick, style: 'height:48px;padding:0 24px;border-radius:999px;border:0;font-size:15px;font-weight:600;' + (dark ? 'background:#121317;color:#fff' : 'background:#f3f4f7;color:#121317') });
+    const prim = (label, pick, ok) => ({ label, pick, style: 'height:56px;padding:0 28px;border-radius:999px;border:0;font-size:16px;font-weight:600;flex:1;' + (ok === false ? 'background:#f3f4f7;color:#9aa1ae;cursor:default' : 'background:#121317;color:#fff') });
+    const sec2 = (label, pick, danger) => ({ label, pick, style: 'height:56px;padding:0 28px;border-radius:999px;border:0;font-size:16px;font-weight:600;flex:1;' + (danger ? 'background:#fbe0de;color:#b3261e' : 'background:#f3f4f7;color:#121317') });
+    const cancel = (label) => sec2(label || 'Cancelar', closeModal);
+    const F = (key, k) => (e) => patch(key, { [k]: e.target.value });
+
+    // ------------------------------------------------ datos
+    const PROVS = ['Del Sur', 'La Espiga', 'Don Julio', 'Limpieza Total'];
+    const P = [
+      { id: 'cerveza', name: 'Cerveza lata 473 ml', prov: 'Del Sur', costo: 1500, price: 2100, stock: 48, sup: [['Carrefour', 2250], ['Coto', 2190], ['Día', 1990], ['Vea', 2290]] },
+      { id: 'gaseosa', name: 'Gaseosa cola 2,25 L', prov: 'Del Sur', costo: 2000, price: 2900, stock: 4, sup: [['Carrefour', 3100], ['Coto', 3050], ['Día', 2790], ['Vea', 3150]] },
+      { id: 'agua', name: 'Agua mineral 1,5 L', prov: 'Del Sur', costo: 800, price: 1200, stock: 30, sup: [['Carrefour', 1150], ['Coto', 1180], ['Día', 1050], ['Vea', 1190]] },
+      { id: 'yogur', name: 'Yogur bebible 1 L', prov: 'Del Sur', costo: 1500, price: 2200, stock: 15, sup: [['Carrefour', 2400], ['Coto', 2350], ['Día', 2100], ['Vea', 2450]] },
+      { id: 'yerba', name: 'Yerba 1 kg', prov: 'Del Sur', costo: 3100, price: 4600, stock: 20, sup: [['Carrefour', 4900], ['Coto', 4850], ['Día', 4400], ['Vea', 4990]] },
+      { id: 'facturas', name: 'Facturas (docena)', prov: 'La Espiga', costo: 4200, price: 6500, stock: 9, sup: [] },
+      { id: 'pan', name: 'Pan lactal grande', prov: 'La Espiga', costo: 1900, price: 2800, stock: 14, sup: [['Carrefour', 2950], ['Coto', 2890], ['Día', 2700], ['Vea', 3000]] },
+      { id: 'jamon', name: 'Jamón cocido (kg)', prov: 'Don Julio', costo: 9800, price: 14600, stock: 3200, kg: true, sup: [['Carrefour', 15900], ['Coto', 15400], ['Día', 14200], ['Vea', 16100]] },
+      { id: 'papel', name: 'Papel higiénico x4', prov: 'Limpieza Total', costo: 1900, price: 2900, stock: 14, sup: [['Carrefour', 3300], ['Coto', 3150], ['Día', 2850], ['Vea', 3400]] },
+      { id: 'detergente', name: 'Detergente 750 ml', prov: 'Limpieza Total', costo: 2000, price: 3100, stock: 17, sup: [['Carrefour', 3600], ['Coto', 3490], ['Día', 3200], ['Vea', 3650]] }
+    ].map((p) => ({ ...p, stock: s.stocks[p.id] !== undefined ? s.stocks[p.id] : p.stock }));
+    const byId = Object.fromEntries(P.map((p) => [p.id, p]));
+    const EXP = { ef: 186400, ventasEf: 156400, mp: 250800, lata: 42000 };
+    const SEP = [['Distribuidora Del Sur', 84200, 'ef', 22300], ['Panadería La Espiga', 31500, 'ef', 12100], ['Fiambres Don Julio', 46800, 'mp', 19200], ['Limpieza Total', 18900, 'mp', 7600]];
+    const diffTxt = (d) => (d === 0 ? 'Cuadra justo' : d > 0 ? 'Sobran ' + fmt(d) : 'Faltan ' + fmt(-d));
+    const diffTone = (d) => (d === 0 ? 'good' : 'bad');
+
+    // ------------------------------------------------ pantallas
+    const screen = () => {
+      const sc = s.scr;
+      if (sc === 'cierre') {
+        const c = s.cierre;
+        if (c.stage === 'count') {
+          const ok = c.efec !== '' && c.mp !== '' && c.lata !== '';
+          return {
+            title: 'Cierre de caja', sub: 'Contá todo el efectivo del cajón, cigarrillos incluidos, y anotalo acá. Recién después se ve cuánto tendría que haber.',
+            actions: [act('Volver a la venta', () => toast('Volvería a la pantalla de venta'))],
+            left: [
+              B.field('Efectivo contado', c.efec, F('cierre', 'efec'), '$ 0', true),
+              B.info('Si vendiste o sacaste plata después, corregilo antes de confirmar.'),
+              B.field('MP contado (según la app de Mercado Pago)', c.mp, F('cierre', 'mp'), '$ 0'),
+              B.field('Lata contada', c.lata, F('cierre', 'lata'), '$ 0'),
+              B.field('Nota (opcional)', c.nota, F('cierre', 'nota'), 'Ej: faltó cambio')
+            ],
+            right: [
+              B.hero('Debería haber', '$ ••••••', 'Se muestra después de confirmar el conteo.'),
+              B.btn('Confirmar conteo', () => { if (ok) patch('cierre', { stage: 'result' }); else toast('Falta el efectivo contado, el MP contado o la lata contada'); }, 'dark'),
+              B.btn('Descartar la venta abierta', () => toast('Se descartó la venta que estaba abierta')),
+              B.btn('Arqueo intermedio', () => openModal('arqueo'))
+            ]
+          };
+        }
+        if (c.stage === 'closed') {
+          return {
+            title: 'Caja cerrada', sub: 'El turno quedó cerrado. Podés reabrirlo si te olvidaste de algo.', actions: [],
+            left: [B.hero('Todo guardado', 'Caja cerrada', 'El cierre ya está en el historial.')],
+            right: [B.btn('Reabrir', () => openModal('reabrir'), 'dark'), B.btn('Ir al historial', () => go('detalle'))]
+          };
+        }
+        const de = num(c.efec) - EXP.ef, dm = num(c.mp) - EXP.mp, dl = num(c.lata) - EXP.lata;
+        return {
+          title: 'Cierre de caja', sub: 'Así quedó el conteo contra lo esperado.', actions: [act('Corregir conteo', () => patch('cierre', { stage: 'count' }))],
+          left: [
+            B.section('Efectivo · lo que tiene que haber en el cajón'),
+            B.kv('Ventas en efectivo', fmt(EXP.ventasEf)), B.kv('Fondo inicial', fmt(30000)), B.kv('Debería haber', fmt(EXP.ef)),
+            B.kv('Contaste en el cajón (se puede corregir)', fmt(num(c.efec))), B.kv('Diferencia', diffTxt(de), diffTone(de)),
+            B.section('Mercado Pago'),
+            B.kv('Esperado', fmt(EXP.mp)), B.kv('MP contado', fmt(num(c.mp))), B.kv('Diferencia', diffTxt(dm), dm === 0 ? 'good' : 'warn'),
+            B.info('Casi nunca da cero: es la comisión que Mercado Pago descuenta, no un descuadre.'),
+            B.section('Cigarrillos · a la lata'),
+            B.kv('Lata esperada', fmt(EXP.lata)), B.kv('Lata contada', fmt(num(c.lata))), B.kv('Diferencia', diffTxt(dl), diffTone(dl))
+          ],
+          right: [
+            B.hero(de === 0 && dm === 0 && dl === 0 ? 'Todo cuadró' : 'Revisá antes de cerrar', diffTxt(de), 'Diferencia en efectivo'),
+            B.section('A separar'),
+            B.kv('A separar a la lata', fmt(EXP.lata)), B.kv('Redondeo acumulado', fmt(350)), B.kv('Vendido sin costo cargado', fmt(8400), 'warn'), B.kv('Reserva diaria de fijos', fmt(21800)),
+            B.btn('Cerrar caja', () => { patch('cierre', { stage: 'closed' }); toast('Caja cerrada'); }, 'dark'),
+            B.btn('Cancelar', () => patch('cierre', { stage: 'count' }))
+          ]
+        };
+      }
+      if (sc === 'sep') {
+        const all = s.sepVista === 'Qué separar';
+        const q = norm(s.sepQ.trim());
+        const list = SEP.filter((r) => !q || norm(r[0]).includes(q));
+        const tot = SEP.reduce((a, r) => a + r[1], 0);
+        const ef = SEP.filter((r) => r[2] === 'ef').reduce((a, r) => a + r[1], 0);
+        const done = SEP.filter((r) => s.sepDone[r[0]]).length;
+        const k = s.sepPer === 'Hoy' ? 1 : 6;
+        return {
+          title: 'Separaciones', sub: all ? 'Lo que hay que apartar hoy para pagarle a cada proveedor.' : 'Lo vendido, lo que cuesta reponerlo y lo que ganaste.',
+          actions: [act('Ver sin costo', () => openModal('sincosto')), act('Retirar ganancia', () => openModal('retirar'), true)],
+          left: [
+            B.chips('Vista', [['Qué separar'], ['Lo vendido']].map(([v]) => ({ label: v, on: s.sepVista === v, pick: () => this.setState({ sepVista: v }) }))),
+            B.chips('Período', ['Hoy', 'Semana'].map((v) => ({ label: v, on: s.sepPer === v, pick: () => this.setState({ sepPer: v }) }))),
+            B.field('Buscar un proveedor…', s.sepQ, (e) => this.setState({ sepQ: e.target.value }), 'Buscar un proveedor…')
+          ].concat(all
+            ? list.map((r) => B.check(r[0], r[2] === 'ef' ? 'De efectivo' : 'De Mercado Pago', fmt(r[1] * k), Boolean(s.sepDone[r[0]]), () => this.setState({ sepDone: { ...s.sepDone, [r[0]]: !s.sepDone[r[0]] } })))
+            : [B.table('2fr 1fr 1fr 1fr', ['Proveedor', 'Vendido', 'Costo', 'Ganancia'], list.map((r) => B.trow([r[0], fmt(r[1] * k * 1.4), fmt(r[1] * k), [fmt(r[3] * k), 'color:#0b7a5e;font-weight:600']], () => openModal('gananprov', { prov: r[0] }))))]),
+          right: all ? [
+            B.hero('Separar para proveedores · ' + s.sepPer.toLowerCase(), fmt(tot * k), 'Cobrado ' + fmt(482300 * k) + ' · Te queda ' + fmt((482300 - tot) * k)),
+            B.kv('De efectivo', fmt(ef * k)), B.kv('De Mercado Pago', fmt((tot - ef) * k)), B.kv('Se lleva la lata', fmt(42000)),
+            B.progress(done + ' de ' + SEP.length + ' separados', (done / SEP.length) * 100, done === SEP.length ? 'Separado — ya pagado' : 'Falta separar'),
+            B.btn('Marcar todo', () => this.setState({ sepDone: Object.fromEntries(SEP.map((r) => [r[0], true])) }), 'dark'),
+            B.btn('Desmarcar todo', () => this.setState({ sepDone: {} }))
+          ] : [
+            B.stats([['Vendido', fmt(482300 * k)], ['Reposición (costo)', fmt(tot * k)], ['Ganancia', fmt(168900 * k), 'good']]),
+            B.info('La lata de cigarrillos no suma a la reposición ni a la ganancia.')
+          ]
+        };
+      }
+      if (sc === 'equilibrio') {
+        const fijosTot = s.fijos.reduce((a, f) => a + f.monto, 0);
+        const pagados = s.fijos.filter((f) => f.pagado).reduce((a, f) => a + f.monto, 0);
+        const gan = 3412000;
+        const falta = Math.max(0, fijosTot - gan);
+        const sueldo = num(s.sueldo);
+        const resultado = gan - fijosTot - 120000;
+        return {
+          title: 'Equilibrio', sub: 'Cuánto tenés que vender para cubrir los fijos y llevarte tu sueldo.',
+          actions: [act('Agregar sueldo del dueño', () => toast('Cargá el sueldo objetivo abajo')), act('+ Nuevo concepto fijo', () => openModal('nuevofijo'), true)],
+          left: [
+            B.hero('Ganancia bruta del mes', fmt(gan), falta > 0 ? 'Falta para cubrir los fijos ' + fmt(falta) : 'Fijos cubiertos'),
+            B.progress('Fijos cubiertos', Math.min(100, (gan / Math.max(fijosTot, 1)) * 100), fmt(gan) + ' de ' + fmt(fijosTot)),
+            B.kv('Venta diaria de equilibrio', fmt(Math.round(fijosTot / 0.35 / 30))),
+            B.section('Fijos pendientes de pago')
+          ].concat(s.fijos.map((f) => B.row(f.name, f.pagado ? 'Pagado' : f.monto ? 'Pendiente' : 'Sin monto cargado', f.monto ? fmt(f.monto) : 'Cargar monto', () => (f.monto ? (f.pagado ? toast('Ya está pagado') : openModal('pagofijo', { id: f.id, monto: String(f.monto) })) : openModal('montofijo', { id: f.id, monto: '' })), false))),
+          right: [
+            B.section('Estado de resultados del mes'),
+            B.kv('Ventas', fmt(9850000)), B.kv('Costo de la mercadería', fmt(-6438000)), B.kv('Gastos fijos', fmt(-fijosTot)), B.kv('Gastos variables', fmt(-120000)),
+            B.kv('Resultado del negocio', fmt(resultado), resultado >= 0 ? 'good' : 'bad'),
+            B.field('Sueldo objetivo del dueño', s.sueldo, (e) => this.setState({ sueldo: e.target.value }), '$ 0'),
+            B.kv('Queda para el negocio', fmt(resultado - sueldo), resultado - sueldo >= 0 ? 'good' : 'bad'),
+            B.kv('Ya retirado este mes', fmt(180000)), B.kv('Retirable hoy', fmt(Math.max(0, Math.min(resultado - sueldo, 95000)))),
+            B.section('Margen necesario'),
+            B.field('Venta que querés hacer en el mes', s.ventaMeta, (e) => this.setState({ ventaMeta: e.target.value }), '$ 0'),
+            B.kv('Margen que tenés hoy', '34,6 %'),
+            s.ventaMeta ? B.kv('Tu margen alcanza', num(s.ventaMeta) * 0.346 >= fijosTot + sueldo ? 'Sí' : 'No', num(s.ventaMeta) * 0.346 >= fijosTot + sueldo ? 'good' : 'bad') : B.info('Cargá la venta que esperás hacer en el mes para ver el margen que necesitás.')
+          ]
+        };
+      }
+      if (sc === 'comparar') {
+        const q = norm(s.cmpQ.trim());
+        const list = P.filter((p) => (s.cmpProv === 'Todos' || p.prov === s.cmpProv) && (!q || norm(p.name).includes(q)));
+        const best = (p) => (p.sup.length ? Math.min(...p.sup.map((x) => x[1])) : 0);
+        const rel = (p) => { const b = best(p); if (!b) return ['Sin datos en los súper', 'color:#7b8494']; const d = Math.round(((p.price - b) / b) * 100); return d > 3 ? ['+' + d + ' % más caro', 'color:#b3261e;font-weight:600'] : d < -3 ? [d + ' % más barato', 'color:#0b7a5e;font-weight:600'] : ['Parecido', 'color:#566070']; };
+        const sel = byId[s.cmpSel];
+        return {
+          title: 'Comparar precios', sub: 'Tu precio al lado del de los súper, para ver qué quedó muy caro o muy barato.',
+          actions: [act(s.cmpFresh ? 'Actualizado hace un momento' : 'Actualizar ahora', () => { this.setState({ cmpFresh: true }); toast('Precios de los súper actualizados'); }, !s.cmpFresh)],
+          left: [
+            B.chips('Proveedores', ['Todos'].concat(PROVS).map((v) => ({ label: v, on: s.cmpProv === v, pick: () => this.setState({ cmpProv: v }) }))),
+            B.field('Buscar producto', s.cmpQ, (e) => this.setState({ cmpQ: e.target.value }), 'Buscar producto'),
+            B.table('2.2fr 1fr 1fr 1.5fr', ['Producto', 'Mi precio', 'Mejor súper', 'Contra el mío'], list.map((p) => B.trow([[p.name, 'font-weight:500;color:#121317'], fmt(p.price), best(p) ? fmt(best(p)) : '—', rel(p)], () => this.setState({ cmpSel: p.id })))),
+            B.info('Cruzado por nombre (los pesables no tienen código): puede ser aproximado.')
+          ],
+          right: sel ? [
+            B.hero(sel.name, fmt(sel.price), 'Mi precio · costo ' + fmt(sel.costo)),
+            B.section('Comercio · precio · contra el mío')
+          ].concat(sel.sup.length ? sel.sup.map((x) => B.row(x[0], x[1] > sel.price ? 'Más caro que vos' : 'Más barato que vos', fmt(x[1]), null, false)) : [B.info('No apareció en ningún comercio.')])
+            .concat([B.kv('Margen con tu costo', Math.round(((sel.price - sel.costo) / sel.price) * 100) + ' %', 'good')]) : []
+        };
+      }
+      if (sc === 'stock') {
+        const q = norm(s.stQ.trim());
+        const val = (p) => (s.stVals[p.id] !== undefined ? s.stVals[p.id] : null);
+        const diff = (p) => (val(p) === null ? null : val(p) - p.stock);
+        let list = P.filter((p) => p.prov === s.stProv && (!q || norm(p.name).includes(q)));
+        if (s.stFilter === 'Con diferencia') list = list.filter((p) => diff(p) !== null && diff(p) !== 0);
+        if (s.stFilter === 'Sin contar') list = list.filter((p) => val(p) === null);
+        const all = P.filter((p) => p.prov === s.stProv);
+        const counted = all.filter((p) => val(p) !== null).length;
+        const withDiff = all.filter((p) => diff(p) !== null && diff(p) !== 0);
+        const faltaCosto = withDiff.filter((p) => diff(p) < 0).reduce((a, p) => a + (p.kg ? (-diff(p) * p.costo) / 1000 : -diff(p) * p.costo), 0);
+        const stp = (p) => (p.kg ? 100 : 1);
+        const disp = (p, v) => (p.kg ? v + ' g' : String(v));
+        return {
+          title: 'Conteo de stock', sub: 'Contá lo que hay en el local y compará con el sistema.',
+          actions: [act('Bajar planilla', () => toast('Planilla guardada')), act('Aplicar ajustes', () => {
+            if (!withDiff.length) { toast('Todo coincide'); return; }
+            const ns = { ...s.stocks }; withDiff.forEach((p) => { ns[p.id] = val(p); });
+            this.setState({ stocks: ns, stVals: {} });
+            toast('Se ajustó ' + withDiff.length + (withDiff.length === 1 ? ' producto' : ' productos'));
+          }, true)],
+          left: [
+            B.chips('Proveedores', PROVS.map((v) => ({ label: v, on: s.stProv === v, pick: () => this.setState({ stProv: v, stVals: {} }) }))),
+            B.field('Buscar o escanear producto', s.stQ, (e) => this.setState({ stQ: e.target.value }), 'Buscar o escanear producto'),
+            B.chips('Filtro', ['Todos', 'Con diferencia', 'Sin contar'].map((v) => ({ label: v, on: s.stFilter === v, pick: () => this.setState({ stFilter: v }) }))),
+            B.table('2.2fr 1fr 1fr 1fr 130px', ['Producto', 'En el sistema', 'Contado', 'Diferencia', ''], list.map((p) => B.trow([[p.name, 'font-weight:500;color:#121317'], disp(p, p.stock), val(p) === null ? 'Sin contar' : disp(p, val(p)), diff(p) === null ? '—' : diff(p) === 0 ? ['Justo', 'color:#0b7a5e;font-weight:600'] : [(diff(p) > 0 ? 'Sobran ' : 'Faltan ') + disp(p, Math.abs(diff(p))), 'color:#b3261e;font-weight:600']].map((c) => c), null,
+              [() => this.setState({ stVals: { ...s.stVals, [p.id]: Math.max(0, (val(p) === null ? p.stock : val(p)) - stp(p)) } }), () => this.setState({ stVals: { ...s.stVals, [p.id]: (val(p) === null ? p.stock : val(p)) + stp(p) } })])))
+          ].concat(list.length ? [] : [B.info('No hay productos con este filtro.')]),
+          right: [
+            B.stats([['Contados', counted + ' / ' + all.length], ['Con diferencia', String(withDiff.length), withDiff.length ? 'bad' : 'good']]),
+            B.hero(withDiff.length ? 'Costo de lo que falta' : 'Todo coincide', fmt(faltaCosto), 'A precio de costo'),
+            B.info('Los ajustes no se aplican hasta que toques "Aplicar ajustes".')
+          ]
+        };
+      }
+      if (sc === 'historica') {
+        const n = s.newday;
+        const q = norm(n.q.trim());
+        const found = q ? P.filter((p) => norm(p.name).includes(q)).slice(0, 4) : [];
+        const tot = n.items.reduce((a, it) => a + (byId[it.id].kg ? (byId[it.id].price * it.qty) / 1000 : byId[it.id].price * it.qty), 0);
+        const DAYS = ['Lun 29 sep', 'Dom 28 sep', 'Sáb 27 sep', 'Vie 26 sep', 'Jue 25 sep'];
+        return {
+          title: 'Días históricos', sub: 'Cargá los días anteriores para tener los números completos.', actions: [],
+          left: [B.table('1.4fr 1fr 1fr 1fr', ['Día', 'Ventas', 'Vendido', 'Ganancia'], s.days.map((d) => B.trow([[d.fecha, 'font-weight:500;color:#121317'], String(d.n), fmt(d.vendido), [fmt(d.ganancia), 'color:#0b7a5e;font-weight:600']], () => openModal('borrardia', { id: d.id }))))]
+            .concat(s.days.length ? [B.info('Tocá un día para borrarlo.')] : [B.info('Todavía no cargaste ningún día — armá uno a la derecha.')]),
+          right: [
+            B.section('Nuevo día histórico'),
+            B.chips('Elegir la fecha de este día', DAYS.map((d) => ({ label: d, on: n.fecha === d, pick: () => patch('newday', { fecha: d }) }))),
+            B.chips('Medio de pago', ['Efectivo', 'Mercado Pago', 'Mixto'].map((v) => ({ label: v, on: n.medio === v, pick: () => patch('newday', { medio: v }) }))),
+            B.field('Buscá y tocá los productos de esta venta', n.q, F('newday', 'q'), 'Buscar producto vendido ese día')
+          ].concat(found.map((p) => B.row(p.name, 'Tocá para agregar', fmt(p.price), () => patch('newday', { items: n.items.concat([{ id: p.id, qty: p.kg ? 250 : 1 }]), q: '' }), false)))
+            .concat(n.items.length ? n.items.map((it, i) => B.row(byId[it.id].name, 'Tocá para quitar', byId[it.id].kg ? it.qty + ' g' : '× ' + it.qty, () => patch('newday', { items: n.items.filter((_, j) => j !== i) }), false)) : [B.info('Sin ventas — "Agregar más" para cargar')])
+            .concat([B.kv('Vendido', fmt(tot)), B.btn('Guardar día', () => {
+              if (!n.items.length) { toast('Agregá al menos un producto'); return; }
+              this.setState({ days: [{ id: 'd' + (s.days.length + 3), fecha: n.fecha, vendido: tot, ganancia: Math.round(tot * 0.32), n: n.items.length }].concat(s.days), newday: { fecha: 'Lun 29 sep', medio: 'Efectivo', q: '', items: [] } });
+              toast('Día guardado');
+            }, 'dark')])
+        };
+      }
+      if (sc === 'impresion') {
+        const i = s.imp;
+        return {
+          title: 'Impresión', sub: 'Terminal, carpeta de tickets y reimpresión de ventas.', actions: [act('Ticket de prueba', () => openModal('imprimir', { venta: 'prueba' }), true)],
+          left: [
+            B.section('Terminal que imprime · Configurada'),
+            B.field('Access Token de MercadoPago', i.token, F('imp', 'token'), 'APP_USR-…'),
+            B.field('Terminal ID', i.term, F('imp', 'term'), 'MODELO__SERIAL'),
+            B.info('Formato "MODELO__SERIAL" (ej. NEWLAND_N950__N950NCC503383252), no el serial solo — distinto del campo de arriba aunque sea la misma terminal.'),
+            B.section('Terminal que cobra'),
+            B.field('Terminal ID (cobro)', i.termCobro, F('imp', 'termCobro'), 'MODELO__SERIAL'),
+            B.section('Carpeta de tickets (PDF)'),
+            B.row(i.carpeta || 'Sin carpeta configurada', 'Acá se guardan los PDF', 'Elegir', () => patch('imp', { carpeta: i.carpeta ? '' : 'C:\\NodoSur\\Tickets' }), false)
+          ],
+          right: [
+            B.section('Reimprimir una venta'),
+            B.field('N° de venta', i.venta, F('imp', 'venta'), 'Ej: 0143'),
+            B.row('#0143 · 20:12', 'Efectivo', fmt(12700), () => patch('imp', { venta: '0143' }), i.venta === '0143'),
+            B.row('#0142 · 19:48', 'QR', fmt(11400), () => patch('imp', { venta: '0142' }), i.venta === '0142'),
+            B.btn('Enviar a posnet', () => { if (i.venta) toast('Ticket #' + i.venta + ' enviado al posnet'); else toast('Elegí una venta primero'); }, 'dark'),
+            B.btn('Guardar PDF', () => { if (i.venta) openModal('imprimir', { venta: i.venta }); else toast('Elegí una venta primero'); }),
+            B.section('Así sale'),
+            B.paper([['Nodo Sur', 'c'], ['CUIT 20-30456789-1', 'c'], ['—', 'c'], ['Cerveza lata × 2', fmt(4200)], ['Gaseosa cola × 1', fmt(2900)], ['Pan francés × 1', fmt(1500)], ['Redondeo', fmt(0)], ['TOTAL', fmt(8600), 'b'], ['Vendedor: Ana', 'c'], ['Gracias por su compra', 'c']])
+          ]
+        };
+      }
+      if (sc === 'respaldo') {
+        const r = s.resp;
+        return {
+          title: 'Respaldo', sub: 'Copias de tu base de datos, por si pasa algo con la PC.', actions: [act(r.hecho ? 'Respaldo hecho ✓' : 'Respaldar ahora', () => { this.setState({ resp: { ...r, hecho: true, lista: [['Hoy · ahora mismo', '14,3 MB']].concat(r.lista) } }); toast('Respaldo guardado'); }, !r.hecho)],
+          left: [
+            B.section('Base de datos'),
+            B.row(r.carpeta || 'Sin carpeta configurada', 'Dónde se guarda', 'Elegir carpeta', () => patch('resp', { carpeta: r.carpeta ? '' : 'D:\\Respaldos\\NodoSur' }), false),
+            B.chips('Copias a conservar', ['5', '10', '20', '30'].map((v) => ({ label: v, on: r.copias === v, pick: () => patch('resp', { copias: v }) }))),
+            B.section('Importar una base'),
+            B.info('Sirve el archivo .sqlite o la copia comprimida (.gz) que baja de tu cuenta.'),
+            B.btn('Importar desde un archivo…', () => openModal('restaurar', { cuando: 'archivo importado' }))
+          ],
+          right: [
+            B.hero('Respaldo', r.hecho ? 'Al día' : 'Al día', 'Último: ' + r.lista[0][0]),
+            B.section('Últimos respaldos')
+          ].concat(r.lista.map((x) => B.row(x[0], x[1], 'Restaurar', () => openModal('restaurar', { cuando: x[0] }), false)))
+            .concat([B.info('Hay una caja abierta: cerrala para poder restaurar un respaldo.', 'warn')])
+        };
+      }
+      if (sc === 'detalle') {
+        const SALES = [
+          ['0143', '20:12', 'Cerveza ×2, Jamón 250 g, Facturas', 'Efectivo', 12700], ['0142', '19:48', 'Yerba, Yogur ×2', 'QR', 9000],
+          ['0141', '19:20', 'Gaseosa, Agua ×2', 'Débito', 5300], ['0140', '18:55', 'Leche ×2, Facturas', 'Efectivo', 9700],
+          ['0139', '18:31', 'Queso 300 g, Papel', 'Mixto', 6440], ['0138', '17:40', 'Cerveza ×6', 'QR', 12600]
+        ];
+        const valid = SALES.filter((x) => !s.voided[x[0]]);
+        return {
+          title: 'Detalle del día', sub: 'Hoy · caja abierta', actions: [act('Generar PDF', () => toast('PDF del día generado')), act('Cierres de caja', () => go('cierre'))],
+          left: [B.table('70px 1.9fr 1fr 1fr 1.1fr', ['Hora', 'Detalle', 'Medio', 'Total', ''], SALES.map((x) => B.trow([[x[1], 'text-align:left;font-weight:600;color:#121317'], [x[2], 'text-align:left;color:#566070'], x[3], s.voided[x[0]] ? ['Anulada', 'color:#b3261e;font-weight:600'] : fmt(x[4]), ['Editar', 'color:#2748b8;font-weight:600']], () => this.setState({ editSale: x[0], scr: 'editor', editLines: null }))))],
+          right: [
+            B.stats([['Vendido', fmt(valid.reduce((a, x) => a + x[4], 0))], ['Ganancia', fmt(168900), 'good']]),
+            B.kv('Efectivo', fmt(231500)), B.kv('Mercado Pago', fmt(250800)),
+            B.section('Vendido por proveedor'),
+            B.row('Distribuidora Del Sur', '34 ventas', fmt(212400), null, false), B.row('Panadería La Espiga', '19 ventas', fmt(78600), null, false), B.row('Fiambres Don Julio', '11 ventas', fmt(96300), null, false),
+            B.btn('Reimprimir último ticket', () => openModal('imprimir', { venta: '0143' }))
+          ]
+        };
+      }
+      if (sc === 'editor') {
+        const base = { '0143': [['cerveza', 'Cerveza lata 473 ml', 2100, 2], ['jamon', 'Jamón cocido (250 g)', 3650, 1], ['facturas', 'Facturas (docena)', 6500, 1]] }[s.editSale] || [['cerveza', 'Cerveza lata 473 ml', 2100, 2]];
+        const lines = s.editLines || base.map((l) => ({ id: l[0], name: l[1], price: l[2], qty: l[3] }));
+        const total = lines.reduce((a, l) => a + l.price * l.qty, 0);
+        const orig = base.reduce((a, l) => a + l[2] * l[3], 0);
+        const setL = (v) => this.setState({ editLines: v });
+        return {
+          title: 'Editar venta #' + s.editSale, sub: 'Editando: no se guarda hasta que confirmes.', actions: [act('Volver', () => go('detalle'))],
+          left: [B.section('Productos de la venta')].concat(lines.map((l, i) => B.table('2fr 1fr 150px', [], [B.trow([[l.name + ' × ' + l.qty, 'font-weight:500;text-align:left;color:#121317'], fmt(l.price * l.qty)], null, [() => setL(lines.map((x, j) => (j === i ? { ...x, qty: x.qty - 1 } : x)).filter((x) => x.qty > 0)), () => setL(lines.map((x, j) => (j === i ? { ...x, qty: x.qty + 1 } : x)))])])))
+            .concat(lines.length ? [] : [B.info('La venta quedó sin productos', 'warn')])
+            .concat([B.btn('Agregar un producto a esta venta', () => setL(lines.concat([{ id: 'agua', name: 'Agua mineral 1,5 L', price: 1200, qty: 1 }]))), B.btn('+ Renglón libre', () => openModal('renglon', {}))]),
+          right: [
+            B.hero('Total nuevo', fmt(total), 'Antes ' + fmt(orig)),
+            B.chips('Medio de pago', ['Efectivo', 'Mercado Pago', 'Mixto'].map((v) => ({ label: v, on: s.editMedio === v, pick: () => this.setState({ editMedio: v }) }))),
+            B.section('Qué se va a ajustar'),
+            total === orig ? B.info('Nada todavía: cambiá una cantidad o agregá un producto.') : B.kv('Diferencia en caja', (total > orig ? '+' : '−') + fmt(Math.abs(total - orig)), total > orig ? 'good' : 'bad'),
+            B.kv('Ganancia de la venta', fmt(Math.round(total * 0.31)), 'good'),
+            B.btn('Guardar cambios', () => openModal('motivoedit', { motivo: '' }), 'dark'),
+            B.btn('Anular venta', () => openModal('anular', { motivo: '' }), 'danger')
+          ]
+        };
+      }
+      if (sc === 'dialogos') {
+        const D = (g, items) => [B.section(g)].concat(items.map(([t, d, id]) => B.row(t, d, 'Abrir', () => openModal(id, {}), false)));
+        return {
+          title: 'Diálogos', sub: 'Todas las ventanas emergentes de la app de PC, en un solo lugar.', actions: [],
+          left: [].concat(
+            D('Venta y caja', [['Apertura de caja', 'Fondo inicial al empezar', 'apertura'], ['Cobro mixto', 'Dividir entre efectivo y Mercado Pago', 'mixto'], ['Movimiento rápido', 'Gasto o ingreso al vuelo', 'movimiento'], ['Editar cantidad', 'Cambiar cuánto lleva', 'cantidad'], ['Monto varios', 'Vender algo sin producto', 'varios'], ['Cobro con posnet', 'Esperando la terminal', 'posnet'], ['Arqueo intermedio', 'Contar la caja sin cerrar', 'arqueo'], ['Reabrir sesión', 'Volver a un turno cerrado', 'reabrir']]),
+            D('Separaciones y equilibrio', [['Retirar ganancia', 'Sacar plata del negocio', 'retirar'], ['Ganancia por proveedor', 'Detalle de un proveedor', 'gananprov'], ['Vendido sin costo', 'Productos que no tienen costo', 'sincosto'], ['Nuevo concepto fijo', 'Alquiler, luz, sueldos…', 'nuevofijo'], ['Registrar pago de un fijo', 'Marcar como pagado', 'pagofijo'], ['Cargar monto de un fijo', 'Cuando todavía no tiene', 'montofijo']])
+          ),
+          right: [].concat(
+            D('Proveedores y productos', [['Nuevo proveedor', 'Nombre y contacto', 'nuevoprov'], ['Ajustes avanzados', 'Días de entrega, cuenta corriente', 'avanzado'], ['Cuenta corriente', 'Lo que se le debe', 'ctacte'], ['Pagar a un proveedor', 'Registrar un pago', 'pagarprov'], ['Editar producto', 'Ficha completa', 'editarprod'], ['Edición masiva', 'Cambiar varios a la vez', 'masiva'], ['Promos', 'Combos y 2×1', 'promos'], ['Importar CSV', 'Cargar una planilla', 'csv']]),
+            D('Ajustes e impresión', [['Datos del comercio', 'Nombre, CUIT, dirección', 'comercio'], ['Confirmar restaurar', 'Volver a un respaldo', 'restaurar'], ['Imprimir ticket', 'Reimprimir o guardar PDF', 'imprimir']])
+          )
+        };
+      }
+      return { title: '', sub: '', actions: [], left: [], right: [] };
+    };
+
+    // ------------------------------------------------ modales
+    const modalDef = () => {
+      const t = s.modal;
+      const ok = (label, fn, okv) => prim(label, fn, okv);
+      const done = (msg) => () => { closeModal(); toast(msg); };
+      if (t === 'apertura') return { title: 'Abrir caja', text: 'No hay caja abierta ahora mismo.', blocks: [B.field('Fondo inicial (caja normal)', m.fondo === undefined ? '30000' : m.fondo, setM('fondo'), '$ 0', true), B.field('Fondo de la lata de cigarrillos', m.lata === undefined ? '40000' : m.lata, setM('lata'), '$ 0')], buttons: [ok('Abrir caja', done('Caja abierta')), cancel()] };
+      if (t === 'mixto') { const tot = 12700; const ef = num(m.ef); return { title: 'Cobro mixto', text: 'Total a cobrar ' + fmt(tot), blocks: [B.field('Parte en efectivo', m.ef || '', setM('ef'), '$ 0', true), B.kv('El resto va por Mercado Pago', fmt(Math.max(0, tot - ef)))], buttons: [ok('Confirmar cobro', done('Cobro mixto registrado'), ef > 0 && ef < tot), cancel()] }; }
+      if (t === 'movimiento') return { title: 'Movimiento rápido', text: '', blocks: [B.chips('Tipo', ['Gasto', 'Ingreso'].map((v) => ({ label: v, on: (m.tipo || 'Gasto') === v, pick: () => this.setState({ m: { ...m, tipo: v } }) }))), B.chips('De dónde sale', ['Cajón normal', 'Mercado Pago', 'Lata cigarrillos'].map((v) => ({ label: v, on: (m.caja || 'Cajón normal') === v, pick: () => this.setState({ m: { ...m, caja: v } }) }))), B.field('Monto', m.monto || '', setM('monto'), '$ 0', true), B.field('Motivo (opcional)', m.motivo || '', setM('motivo'), 'Ej: bolsas')], buttons: [ok('Guardar', done('Movimiento registrado'), num(m.monto) > 0), cancel()] };
+      if (t === 'cantidad') return { title: 'Editar cantidad', text: 'Cerveza lata 473 ml', blocks: [B.field('Cantidad', m.q === undefined ? '2' : m.q, setM('q'), '1', true)], buttons: [ok('Listo', done('Cantidad actualizada')), cancel()] };
+      if (t === 'varios') return { title: 'Monto varios', text: 'Para cobrar algo que no está cargado como producto.', blocks: [B.field('Monto', m.monto || '', setM('monto'), '$ 0', true), B.field('Detalle (opcional)', m.det || '', setM('det'), 'Ej: bolsa de hielo')], buttons: [ok('Agregar a la venta', done('Renglón agregado'), num(m.monto) > 0), cancel()] };
+      if (t === 'posnet') {
+        if (m.fail) return { title: 'El pago no se aprobó', text: 'El pago no se aprobó en la terminal. Cancelala a mano en la terminal si sigue esperando el pago.', blocks: [B.info('No se cobró nada todavía.', 'warn')], buttons: [ok('Reintentar', () => this.setState({ m: {} })), sec2('Cobrar a mano', done('Cobro registrado a mano')), cancel()] };
+        return { title: 'Cobrando en la terminal', text: 'Esperando la confirmación de Mercado Pago…', blocks: [B.hero('Total a cobrar', fmt(12700), 'Esperando el pago')], buttons: [ok('Simular aprobado', done('Pago aprobado')), sec2('Simular rechazo', () => this.setState({ m: { fail: true } })), cancel('Cancelar cobro')] };
+      }
+      if (t === 'arqueo') { const ef = num(m.ef); return { title: 'Arqueo obligatorio', text: 'Contá el efectivo del cajón, cigarrillos incluidos. Lo que cuentes queda precargado en el cierre.', blocks: [B.kv('Caja esperada', fmt(EXP.ef)), B.field('Efectivo contado', m.ef || '', setM('ef'), '$ 0', true), B.field('MP contado (según la app de Mercado Pago)', m.mp || '', setM('mp'), '$ 0'), B.field('Lata contada', m.lata || '', setM('lata'), '$ 0')].concat(m.ef ? [B.kv('Diferencia', diffTxt(ef - EXP.ef), diffTone(ef - EXP.ef))] : []), buttons: [ok('Confirmar arqueo', () => { if (!m.ef || !m.mp || !m.lata) { toast('Contá el efectivo y anotalo antes de confirmar'); return; } this.setState({ cierre: { ...s.cierre, efec: m.ef, mp: m.mp, lata: m.lata }, modal: '' }); toast('Arqueo guardado'); }), cancel()] }; }
+      if (t === 'reabrir') return { title: 'Reabrir sesión', text: 'Vuelve a abrir el turno que ya cerraste. Queda registrado quién lo reabrió.', blocks: [B.field('Motivo', m.motivo || '', setM('motivo'), 'Ej: faltó cargar una venta')], buttons: [ok('Reabrir', () => { this.setState({ cierre: { stage: 'count', efec: '', mp: '', lata: '', nota: '' }, modal: '' }); toast('Sesión reabierta'); }, Boolean((m.motivo || '').trim())), cancel()] };
+      if (t === 'retirar') return { title: 'Retirar ganancia', text: 'Disponible para retirar hoy: ' + fmt(95000), blocks: [B.field('Monto a retirar', m.monto || '', setM('monto'), '$ 0', true), B.chips('De dónde', ['Efectivo', 'Mercado Pago'].map((v) => ({ label: v, on: (m.de || 'Efectivo') === v, pick: () => this.setState({ m: { ...m, de: v } }) }))), B.field('Nota (opcional)', m.nota || '', setM('nota'), '')], buttons: [ok('Retirar', done('Retiro registrado'), num(m.monto) > 0 && num(m.monto) <= 95000), cancel()] };
+      if (t === 'gananprov') return { title: 'Ganancia · ' + (m.prov || 'Distribuidora Del Sur'), text: '', blocks: [B.stats([['Vendido', fmt(118400)], ['Costo', fmt(84200)], ['Ganancia', fmt(34200), 'good']]), B.kv('Margen', '28,9 %'), B.kv('Producto que más dejó', 'Cerveza lata 473 ml')], buttons: [ok('Cerrar', closeModal)] };
+      if (t === 'sincosto') return { title: 'Vendido sin costo cargado', text: 'Estos productos no suman a la reposición ni a la ganancia hasta que les cargues el costo.', blocks: [B.row('Alfajor triple', 'Vendió 18 u.', fmt(21600), null, false), B.row('Pan francés', 'Vendió 12 u.', fmt(18000), null, false), B.row('Chocolate 100 g', 'Vendió 4 u.', fmt(11200), null, false)], buttons: [ok('Cargar costos', done('Abriría Proveedores y productos')), cancel('Cerrar')] };
+      if (t === 'nuevofijo') return { title: 'Nuevo concepto fijo', text: '', blocks: [B.field('Nombre', m.name || '', setM('name'), 'Ej: Alquiler', true), B.field('Monto mensual', m.monto || '', setM('monto'), '$ 0')], buttons: [ok('Agregar', () => { if (!(m.name || '').trim()) { toast('Escribí un nombre'); return; } this.setState({ fijos: s.fijos.concat([{ id: 'f' + (s.fijos.length + 1), name: m.name.trim(), monto: num(m.monto), pagado: false }]), modal: '' }); }), cancel()] };
+      if (t === 'pagofijo') { const f = s.fijos.find((x) => x.id === m.id); return { title: 'Registrar pago', text: f ? f.name : '', blocks: [B.field('Monto pagado', m.monto || '', setM('monto'), '$ 0', true), B.chips('Desde', ['Efectivo', 'Mercado Pago'].map((v) => ({ label: v, on: (m.de || 'Efectivo') === v, pick: () => this.setState({ m: { ...m, de: v } }) })))], buttons: [ok('Registrar pago', () => { this.setState({ fijos: s.fijos.map((x) => (x.id === m.id ? { ...x, monto: num(m.monto) || x.monto, pagado: true } : x)), modal: '' }); toast('Pago registrado'); }), cancel()] }; }
+      if (t === 'montofijo') { const f = s.fijos.find((x) => x.id === m.id); return { title: 'Cargar monto', text: f ? f.name + ' · todavía no tiene monto este mes' : 'Elegí un concepto desde Equilibrio', blocks: [B.field('Monto de este mes', m.monto || '', setM('monto'), '$ 0', true)], buttons: [ok('Guardar', () => { if (f) this.setState({ fijos: s.fijos.map((x) => (x.id === m.id ? { ...x, monto: num(m.monto) } : x)), modal: '' }); else closeModal(); }, num(m.monto) > 0), cancel()] }; }
+      if (t === 'nuevoprov') return { title: 'Nuevo proveedor', text: '', blocks: [B.field('Nombre', m.name || '', setM('name'), 'Ej: Distribuidora Norte', true), B.field('Contacto', m.contacto || '', setM('contacto'), 'Nombre y teléfono'), B.field('Días de entrega', m.dias || '', setM('dias'), 'Ej: martes y viernes')], buttons: [ok('Crear proveedor', done('Proveedor creado'), Boolean((m.name || '').trim())), cancel()] };
+      if (t === 'avanzado') return { title: 'Ajustes avanzados', text: 'Distribuidora Del Sur', blocks: [B.toggle('Controla cuenta corriente', 'Lleva lo que se le debe', m.cc !== false, () => this.setState({ m: { ...m, cc: m.cc === false } })), B.toggle('Pedir factura al recibir', 'Pide el comprobante en cada pedido', Boolean(m.fac), () => this.setState({ m: { ...m, fac: !m.fac } })), B.field('Descuento por pronto pago (%)', m.desc || '', setM('desc'), '0')], buttons: [ok('Guardar', done('Ajustes guardados')), cancel()] };
+      if (t === 'ctacte') return { title: 'Cuenta corriente', text: 'Distribuidora Del Sur', blocks: [B.hero('Se le debe', fmt(184500), 'Desde el 12 de septiembre'), B.row('Pedido 24/09', 'Factura A-0231', fmt(112000), null, false), B.row('Pedido 17/09', 'Factura A-0218', fmt(98500), null, false), B.row('Pago 20/09', 'Transferencia', '− ' + fmt(26000), null, false)], buttons: [ok('Pagar', () => openModal('pagarprov', {})), cancel('Cerrar')] };
+      if (t === 'pagarprov') return { title: 'Pagar a un proveedor', text: 'Distribuidora Del Sur · debés ' + fmt(184500), blocks: [B.field('Monto', m.monto || '', setM('monto'), '$ 0', true), B.chips('Cómo se paga', ['Efectivo', 'Mercado Pago', 'Transferencia'].map((v) => ({ label: v, on: (m.como || 'Efectivo') === v, pick: () => this.setState({ m: { ...m, como: v } }) })))], buttons: [ok('Registrar pago', done('Pago registrado'), num(m.monto) > 0), cancel()] };
+      if (t === 'editarprod') return { title: 'Editar producto', text: 'Cerveza lata 473 ml', blocks: [B.field('Nombre', m.name === undefined ? 'Cerveza lata 473 ml' : m.name, setM('name'), ''), B.field('Precio', m.price === undefined ? '2100' : m.price, setM('price'), '$ 0', true), B.field('Costo', m.cost === undefined ? '1500' : m.cost, setM('cost'), '$ 0'), B.toggle('Se vende pesado (por kilo)', 'Precio y stock por kilo', Boolean(m.peso), () => this.setState({ m: { ...m, peso: !m.peso } })), B.toggle('Activo (se puede vender)', 'Aparece en la venta', m.activo !== false, () => this.setState({ m: { ...m, activo: m.activo === false } }))].concat(num(m.cost === undefined ? '1500' : m.cost) > num(m.price === undefined ? '2100' : m.price) ? [B.info('El precio no cubre el costo', 'warn')] : []), buttons: [ok('Guardar cambios', done('Producto actualizado')), cancel()] };
+      if (t === 'masiva') return { title: 'Edición masiva', text: '12 productos seleccionados', blocks: [B.chips('¿Qué querés hacer?', ['Subió el precio', 'Subió el costo', 'Recibí un pedido', 'Asignar categoría', 'Asignar proveedor'].map((v) => ({ label: v, on: (m.op || 'Subió el precio') === v, pick: () => this.setState({ m: { ...m, op: v } }) }))), B.chips('Cómo', ['Sumar %', 'Restar %', 'Sumar monto', 'Restar monto'].map((v) => ({ label: v, on: (m.modo || 'Sumar %') === v, pick: () => this.setState({ m: { ...m, modo: v } }) }))), B.field('Valor', m.val || '', setM('val'), '0', true), B.info('Se aplica al precio de venta de cada producto marcado.')], buttons: [ok('Revisar', () => openModal('masivaok', { op: m.op || 'Subió el precio', modo: m.modo || 'Sumar %', val: m.val || '0' }), num(m.val) > 0), cancel()] };
+      if (t === 'masivaok') return { title: 'Vas a aplicar esto:', text: '', blocks: [B.hero('12 productos', (m.modo || '') + ' ' + (m.val || '0') + (String(m.modo).includes('%') ? ' %' : ''), m.op)], buttons: [ok('Sí, aplicar', done('Cambios aplicados a 12 productos')), sec2('Volver', () => openModal('masiva', {}))] };
+      if (t === 'promos') return { title: 'Promos', text: 'Combos y descuentos por cantidad.', blocks: [B.row('2 × 1 en alfajores', 'Todos los días', 'Activa', null, false), B.row('Combo merienda', 'Leche + facturas', fmt(7600), null, false), B.row('3 cervezas', 'Llevando 3 o más', fmt(5700), null, false), B.btn('+ Nueva promo', () => toast('Se abre el armado de la promo'))], buttons: [ok('Cerrar', closeModal)] };
+      if (t === 'csv') return { title: 'Importar CSV', text: 'Cargá una planilla con tus productos. Las columnas: nombre, precio, costo, stock, proveedor.', blocks: [B.row('productos-septiembre.csv', '128 filas · 2 con errores', 'Cambiar', null, false), B.kv('Productos nuevos', '96', 'good'), B.kv('Actualiza precio', '30'), B.kv('Con errores', '2', 'bad')], buttons: [ok('Importar 126 productos', done('Importación lista')), cancel()] };
+      if (t === 'comercio') return { title: 'Datos del comercio', text: 'Salen impresos en el ticket.', blocks: [B.field('Nombre del negocio', m.n === undefined ? 'Kiosco Nodo Sur' : m.n, setM('n'), ''), B.field('CUIT', m.c === undefined ? '20-30456789-1' : m.c, setM('c'), ''), B.field('Dirección', m.d === undefined ? 'Av. Rivadavia 4120, CABA' : m.d, setM('d'), ''), B.field('Teléfono', m.t === undefined ? '11 5555-0100' : m.t, setM('t'), '')], buttons: [ok('Guardar', done('Datos guardados')), cancel()] };
+      if (t === 'restaurar') return { title: '¿Restaurar este respaldo?', text: m.cuando || '', blocks: [B.info('Se reemplaza toda la base actual por la del respaldo. Lo que cargaste después se pierde.', 'warn'), B.info('Antes de restaurar se hace una copia de la base actual, por las dudas.')], buttons: [ok('Restaurar', done('Base restaurada')), cancel()] };
+      if (t === 'imprimir') return { title: 'Imprimir ticket', text: m.venta === 'prueba' ? 'Ticket de prueba' : 'Venta #' + (m.venta || '0143'), blocks: [B.paper([['Nodo Sur', 'c'], ['Cerveza lata × 2', fmt(4200)], ['Pan francés × 1', fmt(1500)], ['TOTAL', fmt(5700), 'b'], ['Gracias por su compra', 'c']])], buttons: [ok('Enviar a posnet', done('Ticket enviado al posnet')), sec2('Guardar PDF', done('PDF guardado en la carpeta de tickets')), cancel('Cerrar')] };
+      if (t === 'borrardia') { const d = s.days.find((x) => x.id === m.id); return { title: 'Borrar día completo', text: d ? '¿Borrar el ' + d.fecha + ' con sus ' + d.n + ' ventas? No se puede deshacer.' : '', blocks: [], buttons: [sec2('Borrar día completo', () => { this.setState({ days: s.days.filter((x) => x.id !== m.id), modal: '' }); toast('Día borrado'); }, true), cancel()] }; }
+      if (t === 'motivoedit') return { title: '¿Por qué se edita esta venta?', text: '', blocks: [B.field('Motivo', m.motivo || '', setM('motivo'), 'Ej: el cliente devolvió uno')], buttons: [ok('Confirmar', () => { this.setState({ modal: '', scr: 'detalle' }); toast('Venta editada'); }, Boolean((m.motivo || '').trim())), cancel()] };
+      if (t === 'anular') return { title: '¿Anular esta venta?', text: 'Se descuenta de la caja y el stock vuelve.', blocks: [B.field('Motivo', m.motivo || '', setM('motivo'), 'Ej: error de carga')], buttons: [sec2('Anular', () => { this.setState({ voided: { ...s.voided, [s.editSale]: true }, modal: '', scr: 'detalle' }); toast('Venta anulada'); }, true), cancel()] };
+      if (t === 'renglon') return { title: 'Renglón libre', text: '', blocks: [B.field('Detalle', m.det || '', setM('det'), 'Ej: envío'), B.field('Monto', m.monto || '', setM('monto'), '$ 0', true)], buttons: [ok('Agregar', () => { const lines = s.editLines || [{ id: 'cerveza', name: 'Cerveza lata 473 ml', price: 2100, qty: 2 }, { id: 'jamon', name: 'Jamón cocido (250 g)', price: 3650, qty: 1 }, { id: 'facturas', name: 'Facturas (docena)', price: 6500, qty: 1 }]; this.setState({ editLines: lines.concat([{ id: 'libre' + lines.length, name: m.det || 'Renglón libre', price: num(m.monto), qty: 1 }]), modal: '' }); }, num(m.monto) > 0), cancel()] };
+      return { title: '', text: '', blocks: [], buttons: [] };
+    };
+
+    const sd = screen();
+    const md = s.modal ? modalDef() : { title: '', text: '', blocks: [], buttons: [] };
+    const NAV = [['cierre', 'Cierre'], ['sep', 'Separaciones'], ['equilibrio', 'Equilibrio'], ['comparar', 'Comparar'], ['stock', 'Stock'], ['historica', 'Histórico'], ['detalle', 'Detalle del día'], ['impresion', 'Impresión'], ['respaldo', 'Respaldo'], ['dialogos', 'Diálogos']];
+    const nav = NAV.map(([id, label]) => ({
+      label,
+      style: 'height:40px;padding:0 14px;border-radius:999px;border:0;font-size:14px;font-weight:500;flex-shrink:0;' + ((s.scr === id || (id === 'detalle' && s.scr === 'editor')) ? 'background:#f3f4f7;color:#121317' : 'background:transparent;color:#566070'),
+      pick: () => go(id)
+    }));
+    return {
+      nav, title: sd.title, sub: sd.sub, actions: sd.actions, left: sd.left, right: sd.right, hasRight: sd.right.length > 0,
+      mTitle: md.title, mText: md.text, hasMText: Boolean(md.text), mBlocks: md.blocks, mButtons: md.buttons, hasModal: Boolean(s.modal), closeModal,
+      hasToast: Boolean(s.toast), toastTxt: s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>
