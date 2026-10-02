@@ -197,6 +197,25 @@ await t('/api/downloads: la beta la ve solo un administrador o una cuenta eximid
   const r = await download.onRequestGet({ request: req('/api/download?platform=windows&channel=beta', { cookie: await sess(solo, 'admin@x.com', 'a') }), env: solo });
   assert.equal(await r.text(), 'BETA');
 });
+await t('rollback: administradores y cuentas eximidas ven el historial y bajan una versión puntual; un cliente no', async () => {
+  const env = mkEnv(); addUser(env, 'admin@x.com', 'a'); addUser(env, 'ana@x.com', 's1');
+  await publish(env, '1.0.0+2101', {}, 'S2101'); await publish(env, '1.0.0+2102', {}, 'S2102'); await publish(env, '1.0.0+2103', { channel: 'beta' }, 'B2103'); await publish(env, '1.0.0+2100', {}, 'S2100');
+  SUBS = [sub('ana@x.com', 'authorized')]; mockMP();
+  const go = (qs, cookie) => download.onRequestGet({ request: req('/api/download?' + qs, { cookie }), env });
+  const admin = await sess(env, 'admin@x.com', 'a'); const ana = await sess(env, 'ana@x.com', 's1');
+  const h = (await (await downloads.onRequestGet({ request: req('/api/downloads', { cookie: admin }), env })).json()).historial;
+  assert.deepEqual(h.map((r) => r.channel + ':' + r.version), ['stable:1.0.0+2102', 'stable:1.0.0+2101', 'stable:1.0.0+2100', 'beta:1.0.0+2103']);
+  assert.ok(!('file_key' in h[0]) && !('key' in h[0]));
+  assert.equal(await (await go('platform=windows&version=1.0.0%2B2101', admin)).text(), 'S2101'); // volver a una estable anterior
+  assert.equal(await (await go('platform=windows&channel=beta&version=1.0.0%2B2103', admin)).text(), 'B2103');
+  assert.equal(await (await go('platform=windows&version=1.0.0%2B2103', admin)).status, 302); // esa versión no existe en estable
+  // Un cliente no recibe una versión vieja aunque la pida: se le entrega la estable vigente.
+  assert.equal(await (await go('platform=windows&version=1.0.0%2B2100', ana)).text(), 'S2102');
+  assert.equal('historial' in (await (await downloads.onRequestGet({ request: req('/api/downloads', { cookie: ana }), env })).json()), false);
+  // Una versión bloqueada (mala) no se ofrece ni siquiera para volver atrás.
+  env.DB.raw.prepare("UPDATE releases SET blocked = 1 WHERE version = '1.0.0+2101'").run();
+  assert.equal((await go('platform=windows&version=1.0.0%2B2101', admin)).status, 302);
+});
 await t('sin ninguna versión publicada ni tablas: todo responde vacío sin fallar', async () => {
   const env = mkEnv(); addUser(env, 'admin@x.com', 'a');
   assert.deepEqual(await (await latest.onRequestGet({ request: req('/api/update/latest.json?platform=windows'), env })).json(), { update: false });
