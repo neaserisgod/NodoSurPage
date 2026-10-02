@@ -12,10 +12,12 @@
     self: 'No podés transferirte el negocio a vos mismo.', stale: 'La propuesta ya no es válida: el negocio cambió de dueño.', not_member: 'Esa persona ya no es parte del negocio.',
     expired: 'La propuesta venció.', accepted: 'Esa propuesta ya se resolvió.', declined: 'Esa propuesta ya se resolvió.', cancelled: 'Esa propuesta ya se resolvió.',
     no_subscription: 'Tu mail no tiene una suscripción vigente. Suscribite primero.', mp_error: 'No pudimos consultar Mercado Pago. Probá de nuevo en unos minutos.', not_configured: 'La facturación todavía no está disponible.',
-    mp_no_conectado: 'Primero conectá tu cuenta de Mercado Pago.', mp_no_configurado: 'La conexión con Mercado Pago todavía no está configurada.', terminal_desconocida: 'Esa terminal no es de tu cuenta de Mercado Pago.', bad_branch: 'Esa sucursal ya no existe.',
+    mp_no_conectado: 'Primero conectá tu cuenta de Mercado Pago.', mp_sin_terminal: 'Esa sucursal todavía no tiene una terminal elegida.', mp_rechazo: 'Mercado Pago rechazó el pedido.', mp_error: 'No pudimos consultar Mercado Pago. Probá de nuevo en unos minutos.', mp_no_configurado: 'La conexión con Mercado Pago todavía no está configurada.', terminal_desconocida: 'Esa terminal no es de tu cuenta de Mercado Pago.', bad_branch: 'Esa sucursal ya no existe.',
     not_found: 'Ya no existe: recargá la página.', forbidden: 'No tenés permiso para hacer esto.', no_session: 'Tu sesión venció. Volvé a ingresar.'
   };
-  var msgError = function (j) { return (j && ERR[j.error]) || 'No se pudo completar. Probá de nuevo.'; };
+  var msgError = function (j) { return (j && ERR[j.error]) || ('No se pudo completar' + (j && j.error ? ' (' + j.error + ')' : '') + '. Probá de nuevo.'); };
+  // Lo que respondió Mercado Pago tal cual (código y motivo), para que un rechazo se pueda diagnosticar en vez de ser un "no se pudo".
+  var msgMp = function (j) { return j && j.mensaje ? 'Mercado Pago respondió' + (j.status ? ' (' + j.status + ')' : '') + ': ' + j.mensaje : msgError(j); };
   var dt = function (s) { if (!s) return '—'; return new Date(s * 1000).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' }); };
   var ago = function (s) { if (!s) return 'nunca'; var d = Math.floor((Date.now() / 1000 - s) / 86400); return d <= 0 ? 'hoy' : d === 1 ? 'ayer' : 'hace ' + d + ' días'; };
   var size = function (n) { return n >= 1048576 ? (n / 1048576).toFixed(1) + ' MB' : Math.max(1, Math.round(n / 1024)) + ' KB'; };
@@ -217,7 +219,7 @@
         li.appendChild(n); var ac = el('span', 'acts');
         if (b.terminalId) ac.appendChild(lnk('Probar cobro de $1', function () {
           msg.textContent = ''; api('POST', '/api/mp/probar', { orgId: o.id, branchId: b.id }).then(function (x) {
-            if (!x.ok) { msg.textContent = x.j && x.j.mensaje ? 'Mercado Pago respondió: ' + x.j.mensaje : msgError(x.j); return; }
+            if (!x.ok) { msg.textContent = msgMp(x.j); return; }
             abrir({ titulo: 'Cobro de prueba enviado', cuerpo: note('Mirá la terminal de «' + b.name + '»: tendría que mostrar un cobro de $1,00. Si querés, pagalo para ver que todo anda; si no, cancelalo ahora.'),
               boton: 'Cancelar la prueba', accion: function () { return api('POST', '/api/mp/probar/cancelar', { orgId: o.id, id: x.j.id }).then(function (y) { return y.ok ? {} : { error: 'No se pudo cancelar desde acá: cancelalo en la terminal.' }; }); } });
           });

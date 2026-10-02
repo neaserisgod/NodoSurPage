@@ -164,12 +164,26 @@ export async function elegirTerminal(env, orgId, branchId, terminalId, t = now()
   if (!elegida) return { error: 'terminal_desconocida' };
   if (elegida.mode !== 'PDV') {
     const r = await mpFetch(env, orgId, '/terminals/v1/setup', { method: 'PATCH', body: JSON.stringify({ terminals: [{ id: terminalId, operating_mode: 'PDV' }] }) });
-    if (r.status !== 200) return { error: 'mp_error', status: r.status, detalle: r.j && (r.j.message || r.j.error) };
+    if (r.status !== 200) return { error: 'mp_error', status: r.status, detalle: detalleError(r.j) };
   }
   await env.DB.prepare(
     'INSERT INTO mp_terminales (org_id, branch_id, terminal_id, updated_at) VALUES (?1, ?2, ?3, ?4) ON CONFLICT(org_id, branch_id) DO UPDATE SET terminal_id = ?3, updated_at = ?4'
   ).bind(orgId, branchId, terminalId, t).run();
   return { ok: true };
+}
+
+// El motivo con que Mercado Pago rechazó algo, tal cual lo dice: sus APIs usan formatos distintos (`message`, `error`, `cause[]`, o
+// `errors[]` con código y detalle en las órdenes). Sin esto el dueño ve solo "no se pudo" y no hay forma de arreglarlo.
+export function detalleError(j) {
+  if (!j || typeof j !== 'object') return null;
+  const e = Array.isArray(j.errors) && j.errors[0];
+  const c = Array.isArray(j.cause) && j.cause[0];
+  const partes = [
+    (e && e.code) || (c && c.code) || null,
+    (e && e.message) || (c && c.description) || j.message || (typeof j.error === 'string' ? j.error : null),
+    e && Array.isArray(e.details) && e.details.length ? e.details.join('; ') : null,
+  ].filter(Boolean).map((x) => String(x).slice(0, 200));
+  return partes.length ? partes.join(' · ') : null;
 }
 
 // --- órdenes Point (mismo cuerpo que ya armaba la app de la PC: `cobro_posnet.dart`)

@@ -6,7 +6,7 @@ import { upsertDevice, signDeviceToken } from '../functions/_lib/devices.js';
 import { sha256b64u } from '../functions/_lib/util.js';
 import * as conexion from '../functions/api/mp/conexion.js';
 import * as orden from '../functions/api/mp/orden.js';
-import { tokenDe } from '../functions/_lib/mp_conexion.js';
+import { tokenDe, detalleError } from '../functions/_lib/mp_conexion.js';
 import { mkEnv, addUser, sess, req, web, mp, mpSub, mockMP, nowS } from './helpers-nube.mjs';
 
 let pass = 0; const t = async (n, f) => { await f(); pass++; console.log('ok  ', n); };
@@ -35,6 +35,7 @@ function simular() {
     if (m.respuesta401Una && u.pathname.startsWith('/v1/orders')) { m.respuesta401Una = false; return r({ message: 'invalid access token' }, 401); }
     if (u.pathname === '/terminals/v1/list') return r({ data: { terminals: m.terminales }, paging: { total: m.terminales.length } });
     if (u.pathname === '/terminals/v1/setup') return r({ terminals: cuerpo.terminals.map((x) => ({ id: x.id, operating_mode: x.operating_mode })) });
+    if (u.pathname === '/v1/orders' && init.method === 'POST' && m.rechazarOrden) return r(m.rechazarOrden, 400);
     if (u.pathname === '/v1/orders' && init.method === 'POST') { const id = 'ORD' + (m.ordenes.size + 1); m.ordenes.set(id, 'created'); return r({ id, status: 'created', secreto_interno: 'no-se-filtra' }, 201); }
     const g = /^\/v1\/orders\/([^/]+)(\/cancel)?$/.exec(u.pathname);
     if (g && m.ordenes.has(g[1])) { if (g[2]) m.ordenes.set(g[1], 'canceled'); return r({ id: g[1], status: m.ordenes.get(g[1]), status_detail: g[2] ? 'canceled' : 'created' }); }
@@ -223,5 +224,19 @@ await t('probar: el dueño manda un cobro de $1 a la terminal de una sucursal y 
   miembro(env, n, 'emp@x.com', 'sm', 'employee', { branches: [n.a] });
   assert.equal((await post(conexion.onRequestProbar, env, '/api/mp/probar', await sess(env, 'emp@x.com', 'sm'), { orgId: n.org.id, branchId: n.a })).status, 403, 'un empleado no manda cobros de prueba');
   assert.equal((await post(conexion.onRequestProbar, env, '/api/mp/probar', cookie, { orgId: n.org.id, branchId: 99999 })).status, 400);
+});
+await t('un rechazo de Mercado Pago llega con su código y su motivo, en cualquiera de sus formatos (no un "no se pudo" mudo)', async () => {
+  assert.equal(detalleError({ errors: [{ code: 'terminal_not_found', message: 'Terminal not found', details: ['terminal_id: x'] }] }), 'terminal_not_found · Terminal not found · terminal_id: x');
+  assert.equal(detalleError({ message: 'invalid access token' }), 'invalid access token');
+  assert.equal(detalleError({ cause: [{ code: 2000, description: 'Falta algo' }] }), '2000 · Falta algo');
+  assert.equal(detalleError({}), null); assert.equal(detalleError(null), null);
+  const env = mkEnv(MP_ENV); const n = await negocio(env); const m = simular(); const cookie = await sess(env, 'duena@x.com', 'sd'); await conectar(env, n, m, cookie);
+  await post(conexion.onRequestElegirTerminal, env, '/api/mp/terminal', cookie, { orgId: n.org.id, branchId: n.a, terminalId: 'PAX_A910__SERIE2' });
+  m.rechazarOrden = { errors: [{ code: 'terminal_not_found', message: 'Terminal not found for this user' }] };
+  const r = await post(conexion.onRequestProbar, env, '/api/mp/probar', cookie, { orgId: n.org.id, branchId: n.a });
+  assert.equal(r.status, 502); const j = await r.json(); assert.equal(j.error, 'mp_rechazo'); assert.equal(j.status, 400); assert.equal(j.mensaje, 'terminal_not_found · Terminal not found for this user');
+  const cel = await celular(env, n, n.a, 'sd', 'duena@x.com', 'cel-dueno-0123456789abcdefg');
+  const o = await post(orden.onRequestPost, env, '/api/mp/orden', null, { externalReference: 'v-1', idempotencyKey: 'clave-idem-0001', montoCentavos: 5000, canal: 'qr' }, cel);
+  assert.equal((await o.json()).mensaje, 'terminal_not_found · Terminal not found for this user', 'también por el camino que usan la PC y el celular');
 });
 console.log(`\n${pass} pruebas OK (Mercado Pago por negocio)`);
