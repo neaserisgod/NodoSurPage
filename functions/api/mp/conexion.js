@@ -4,7 +4,7 @@ import { currentUser } from '../../_lib/auth.js';
 import { hasDB } from '../../_lib/db.js';
 import { guard, readJson } from '../../_lib/miembros.js';
 import { listBranches } from '../../_lib/orgs.js';
-import { mpConfigurado, ensureMpTables, iniciarConexion, completarConexion, estadoConexion, desconectar, terminalesDe, terminalDeSucursal, elegirTerminal, crearOrden, cancelarOrden, detalleError } from '../../_lib/mp_conexion.js';
+import { mpConfigurado, ensureMpTables, iniciarConexion, completarConexion, estadoConexion, desconectar, terminalesDe, terminalDeSucursal, elegirTerminal, crearOrden, cancelarOrden, actividadDe, detalleError } from '../../_lib/mp_conexion.js';
 import { randomHex } from '../../_lib/util.js';
 
 const noConfig = () => json({ error: 'mp_no_configurado' }, 503);
@@ -108,4 +108,16 @@ export async function onRequestProbarCancelar({ request, env }) {
   if (typeof b.id !== 'string' || !/^[\w-]{1,64}$/.test(b.id)) return json({ error: 'bad_request' }, 400);
   const r = await cancelarOrden(env, g.org.id, b.id);
   return r.status >= 200 && r.status < 300 ? json({ ok: true, status: (r.j && r.j.status) || null }) : json({ error: 'mp_rechazo', status: r.status, mensaje: detalleError(r.j) }, 502);
+}
+
+// Lo que el servidor hizo por el negocio con la terminal (cobros, cancelaciones, impresiones): para comprobar de dónde salió cada
+// cobro. Solo el dueño (`?org=ID`, `?limit=`); sin secretos.
+export async function onRequestActividad({ request, env }) {
+  const g = await guard(request, env, { orgId: orgDe(request), accion: 'mercadopago' });
+  if (g.error) return g.error;
+  await ensureMpTables(env);
+  const filas = await actividadDe(env, g.org.id, new URL(request.url).searchParams.get('limit'));
+  const ramas = new Map((await listBranches(env, g.org.id)).map((b) => [b.id, b.name]));
+  return json({ items: filas.map((f) => ({ id: f.id, at: f.creado, action: f.accion, channel: f.canal, amountCents: f.monto_centavos, reference: f.referencia, mpId: f.mp_id,
+    httpStatus: f.http_status, result: f.resultado, detail: f.detalle, device: f.device_name, branch: ramas.get(f.branch_id) || null })) });
 }

@@ -23,6 +23,10 @@ const DDL = [
      expires_at INTEGER NOT NULL, scope TEXT, live_mode INTEGER NOT NULL DEFAULT 1, connected_by TEXT NOT NULL,
      connected_at INTEGER NOT NULL, updated_at INTEGER NOT NULL, needs_reconnect INTEGER NOT NULL DEFAULT 0)`,
   `CREATE TABLE IF NOT EXISTS mp_oauth_pendientes (nonce TEXT PRIMARY KEY, org_id INTEGER NOT NULL, sub TEXT NOT NULL, verifier TEXT NOT NULL, exp INTEGER NOT NULL)`,
+  `CREATE TABLE IF NOT EXISTS mp_actividad (
+     id INTEGER PRIMARY KEY AUTOINCREMENT, org_id INTEGER NOT NULL, branch_id INTEGER, device_id TEXT, device_name TEXT, accion TEXT NOT NULL,
+     canal TEXT, monto_centavos INTEGER, referencia TEXT, mp_id TEXT, http_status INTEGER, resultado TEXT NOT NULL, detalle TEXT, creado INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS idx_mp_actividad_org ON mp_actividad(org_id, id)`,
   `CREATE TABLE IF NOT EXISTS mp_terminales (org_id INTEGER NOT NULL, branch_id INTEGER NOT NULL, terminal_id TEXT NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY (org_id, branch_id))`,
 ];
 export const ensureMpTables = (env) => once(env, 'mp_conexion', async () => { for (const sql of DDL) await env.DB.prepare(sql).run(); });
@@ -212,3 +216,24 @@ export async function imprimirTicket(env, orgId, branchId, { externalReference, 
     body: JSON.stringify({ type: 'print', external_reference: externalReference, config: { point: { terminal_id: terminal, subtype: 'custom' } }, content: contenido }),
   });
 }
+
+// --- registro de lo que el servidor hizo por el negocio (cobros, cancelaciones e impresiones). Sin secretos: ni el token ni el
+// contenido del ticket. Sirve para comprobar de dónde salió cada cobro (PC, celular, por el servidor o no) y para ver rechazos.
+// Registrar NUNCA rompe un cobro: si falla, se ignora. Quedan los últimos MAX_ACTIVIDAD de cada negocio.
+export const MAX_ACTIVIDAD = 500;
+export async function registrarActividad(env, w, { accion, canal = null, montoCentavos = null, referencia = null, r }, t = now()) {
+  try {
+    const ok = r && r.status >= 200 && r.status < 300;
+    const detalle = ok ? (r.j && (r.j.status_detail || r.j.status) ? String(r.j.status_detail || r.j.status).slice(0, 80) : null)
+      : String((r && r.j && (r.j.error || detalleError(r.j))) || 'sin_respuesta').slice(0, 200);
+    await env.DB.prepare(
+      `INSERT INTO mp_actividad (org_id, branch_id, device_id, device_name, accion, canal, monto_centavos, referencia, mp_id, http_status, resultado, detalle, creado)
+       VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?10, ?11, ?12, ?13)`
+    ).bind(w.orgId, w.branchId ?? null, w.deviceId ?? null, w.deviceName ?? null, accion, canal, montoCentavos, referencia, ok && r.j && r.j.id ? String(r.j.id) : null,
+      r ? r.status : null, ok ? 'ok' : 'rechazado', detalle, t).run();
+    await env.DB.prepare('DELETE FROM mp_actividad WHERE org_id = ?1 AND id <= (SELECT id FROM mp_actividad WHERE org_id = ?1 ORDER BY id DESC LIMIT 1 OFFSET ?2)').bind(w.orgId, MAX_ACTIVIDAD).run();
+  } catch { /* el registro no puede frenar un cobro */ }
+}
+export const actividadDe = async (env, orgId, limite = 50) => (await env.DB.prepare(
+  `SELECT id, branch_id, device_name, accion, canal, monto_centavos, referencia, mp_id, http_status, resultado, detalle, creado
+   FROM mp_actividad WHERE org_id = ?1 ORDER BY id DESC LIMIT ?2`).bind(orgId, Math.min(Math.max(Number(limite) || 50, 1), 200)).all()).results;

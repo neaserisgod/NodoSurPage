@@ -243,6 +243,25 @@
           function () { return api('POST', '/api/mp/desconectar', { orgId: o.id }).then(function (y) { return y.ok ? {} : { error: msgError(y.j) }; }); }, function () { refrescarMp(o, c); });
       }, true));
       c.appendChild(fin); c.appendChild(msg);
+      actividadMp(o, c);
+    });
+  }
+  // Últimos cobros, cancelaciones e impresiones que el servidor hizo con la terminal: así se ve de dónde salió cada uno.
+  function actividadMp(o, c) {
+    var box = el('div'); box.appendChild(el('h3', null, 'Últimos movimientos por el servidor')); c.appendChild(box);
+    var ACC = { orden: 'Cobro', cancelar: 'Cancelación', imprimir: 'Ticket' }, CAN = { qr: 'QR', debit_card: 'Débito' };
+    api('GET', '/api/mp/actividad?org=' + o.id + '&limit=20').then(function (r) {
+      if (!r.ok) { box.appendChild(note('No pudimos cargar el registro.')); return; }
+      if (!r.j.items.length) { box.appendChild(note('Todavía no hay movimientos: aparecen acá cuando un dispositivo cobra o imprime por Nodo Sur.')); return; }
+      var ul = el('ul', 'pays');
+      r.j.items.forEach(function (i) {
+        var li = el('li'), t = (ACC[i.action] || i.action) + (i.channel ? ' ' + (CAN[i.channel] || i.channel) : '') + (i.amountCents != null ? ' · $' + (i.amountCents / 100).toLocaleString('es-AR') : '');
+        li.appendChild(el('span', null, new Date(i.at * 1000).toLocaleString('es-AR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) + ' · ' + t + (i.device ? ' · ' + i.device : '')));
+        li.appendChild(chip(i.result === 'ok' ? 'Aceptado' : 'Rechazado', i.result === 'ok' ? 'ok' : 'bad'));
+        if (i.result !== 'ok' && i.detail) li.appendChild(el('span', null, i.detail));
+        ul.appendChild(li);
+      });
+      box.appendChild(ul);
     });
   }
 

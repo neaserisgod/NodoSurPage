@@ -6,7 +6,7 @@ import { upsertDevice, signDeviceToken } from '../functions/_lib/devices.js';
 import { sha256b64u } from '../functions/_lib/util.js';
 import * as conexion from '../functions/api/mp/conexion.js';
 import * as orden from '../functions/api/mp/orden.js';
-import { tokenDe, detalleError } from '../functions/_lib/mp_conexion.js';
+import { tokenDe, detalleError, registrarActividad, ensureMpTables } from '../functions/_lib/mp_conexion.js';
 import { mkEnv, addUser, sess, req, web, mp, mpSub, mockMP, nowS } from './helpers-nube.mjs';
 
 let pass = 0; const t = async (n, f) => { await f(); pass++; console.log('ok  ', n); };
@@ -256,5 +256,29 @@ await t('imprimir: el celular de quien opera manda el ticket a la terminal de su
   m.rechazarImpresion = true;
   const r = await post(orden.onRequestImprimir, env, '/api/mp/imprimir', null, { ...cuerpo, idempotencyKey: 'clave-imp-0002' }, cel); const j = await r.json();
   assert.equal(r.status, 502); assert.equal(j.error, 'mp_rechazo'); assert.match(j.mensaje, /property_value/);
+});
+await t('registro: cada cobro, cancelación e impresión por el servidor queda anotado (sin secretos) y solo el dueño lo ve', async () => {
+  const env = mkEnv(MP_ENV); const n = await negocio(env); const m = simular(); const cookie = await sess(env, 'duena@x.com', 'sd'); await conectar(env, n, m, cookie);
+  await post(conexion.onRequestElegirTerminal, env, '/api/mp/terminal', cookie, { orgId: n.org.id, branchId: n.b, terminalId: 'PAX_A910__SERIE1' });
+  miembro(env, n, 'emp@x.com', 'sm', 'employee', { branches: [n.b] }); const cel = await celular(env, n, n.b, 'sm', 'emp@x.com', 'cel-emp-0123456789abcdefghi');
+  await post(orden.onRequestPost, env, '/api/mp/orden', null, { externalReference: 'venta-1', idempotencyKey: 'clave-idem-0001', montoCentavos: 450000, canal: 'qr' }, cel);
+  await post(orden.onRequestImprimir, env, '/api/mp/imprimir', null, { externalReference: 'ticket-1', idempotencyKey: 'clave-imp-0001', contenido: 'SECRETO-DEL-TICKET' }, cel);
+  await post(orden.onRequestCancelar, env, '/api/mp/orden/cancelar', null, { id: 'ORD1' }, cel);
+  m.rechazarOrden = { errors: [{ code: 'bad_request', message: 'terminal no disponible' }] };
+  await post(orden.onRequestPost, env, '/api/mp/orden', null, { externalReference: 'venta-2', idempotencyKey: 'clave-idem-0002', montoCentavos: 5000, canal: 'debit_card' }, cel);
+  const r = await get(conexion.onRequestActividad, env, `/api/mp/actividad?org=${n.org.id}`, { cookie }); assert.equal(r.status, 200);
+  const items = (await r.json()).items;
+  assert.deepEqual(items.map((i) => [i.action, i.result]), [['orden', 'rechazado'], ['cancelar', 'ok'], ['imprimir', 'ok'], ['orden', 'ok']], 'lo más nuevo primero');
+  const cobro = items[3]; assert.equal(cobro.amountCents, 450000); assert.equal(cobro.channel, 'qr'); assert.equal(cobro.mpId, 'ORD1'); assert.equal(cobro.device, 'Cel'); assert.equal(cobro.httpStatus, 201);
+  assert.match(items[0].detail, /terminal no disponible/);
+  assert.ok(!JSON.stringify(items).includes('SECRETO-DEL-TICKET') && !JSON.stringify(items).includes('token-falso'), 'ni el contenido del ticket ni el token');
+  assert.equal((await get(conexion.onRequestActividad, env, `/api/mp/actividad?org=${n.org.id}`, {})).status, 401, 'sin sesión');
+  const sesEmp = await sess(env, 'emp@x.com', 'sm'); assert.equal((await get(conexion.onRequestActividad, env, `/api/mp/actividad?org=${n.org.id}`, { cookie: sesEmp })).status, 403, 'un empleado no lo ve');
+});
+await t('registro: se guardan solo los últimos 500 por negocio y un fallo al anotar no frena el cobro', async () => {
+  const env = mkEnv(MP_ENV); const n = await negocio(env); await ensureMpTables(env);
+  for (let i = 0; i < 503; i++) await registrarActividad(env, { orgId: n.org.id, branchId: n.a }, { accion: 'orden', r: { status: 201, j: { id: 'X' + i } } });
+  assert.equal(one(env, 'SELECT COUNT(*) c FROM mp_actividad').c, 500); assert.equal(one(env, 'SELECT MIN(mp_id) m FROM mp_actividad WHERE mp_id = ?', 'X0')?.m ?? null, null, 'lo más viejo se fue');
+  env.DB.raw.exec('DROP TABLE mp_actividad'); await registrarActividad(env, { orgId: n.org.id }, { accion: 'orden', r: { status: 201, j: {} } }); // no tira
 });
 console.log(`\n${pass} pruebas OK (Mercado Pago por negocio)`);
