@@ -134,7 +134,7 @@
   /* botón fijo de WhatsApp en celulares (solo en las páginas comerciales) */
   (function(){
     var path=location.pathname.replace(/\/+$/,'')||'/';
-    var skip=['/pagar','/ingresar','/cuenta','/admin','/privacidad'];
+    var skip=['/pagar','/ingresar','/cuenta','/admin','/privacidad','/descargar','/vincular'];
     if(skip.indexOf(path)>-1||!matchMedia('(max-width:719px)').matches)return;
     var a=d.createElement('a');a.className='sticky-cta';
     a.href='https://wa.me/5492944796044?text='+encodeURIComponent('Hola, quiero probar el sistema');

@@ -27,9 +27,19 @@
     }
     var betas = d.beta || [];
     if (!d.releases.length && !betas.length) { c = card(MSG.no_disponible[0]); note(c, MSG.no_disponible[1]); root.appendChild(c); return; }
-    if (d.releases.length) {
+    var dev = window.NS_DEVICE || { id: 'other', name: '' };
+    var mine = null;
+    d.releases.forEach(function (r) { if (!mine && r.platform === dev.id) mine = r; });
+    var rest = d.releases.filter(function (r) { return r !== mine; });
+    if (mine) {
+      root.appendChild(heroCard(mine, dev));
+    } else if (dev.id !== 'other' && d.releases.length) {
+      root.appendChild(el('p', 'dl-detect', 'Estás en ' + dev.name + ' y todavía no hay una versión para ese dispositivo. Estas son las disponibles:'));
+    }
+    if (rest.length) {
+      if (mine) root.appendChild(el('p', 'dl-sep', 'Para otros dispositivos'));
       var grid = el('div', 'dl-grid');
-      d.releases.forEach(function (r) { grid.appendChild(releaseCard(r, false)); });
+      rest.forEach(function (r) { grid.appendChild(releaseCard(r, false)); });
       root.appendChild(grid);
     }
     if (betas.length) {
@@ -47,6 +57,27 @@
     macos: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>',
     linux: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3M13 15h4"/></svg>'
   };
+
+  // Tarjeta grande para el dispositivo de quien visita (detectado por el navegador).
+  function heroCard(r, dev) {
+    var n = NAMES[r.platform] || [r.platform, ''];
+    var c = el('article', 'dl-hero');
+    c.appendChild(el('p', 'dl-detect on', 'Detectamos tu dispositivo: ' + dev.name));
+    c.appendChild(el('h2', null, 'Descargar para ' + n[0]));
+    var meta = el('div', 'dl-meta');
+    meta.appendChild(el('span', null, 'Versión ' + r.version.split('+')[0]));
+    meta.appendChild(el('span', null, mb(r.size)));
+    meta.appendChild(el('span', null, 'Publicada el ' + date(r.publishedAt)));
+    c.appendChild(meta);
+    var a = el('a', 'btn', 'Descargar para ' + n[0]);
+    a.href = '/api/download?platform=' + r.platform;
+    c.appendChild(a);
+    if (r.platform === 'android') c.appendChild(el('p', 'dl-hint', 'Al abrir el archivo, Android puede pedirte permiso para instalar desde este navegador: aceptalo y seguí.'));
+    var det = el('details'); det.appendChild(el('summary', null, 'Verificar la descarga'));
+    var p = el('p', 'acc-note', 'SHA-256: '); var code = el('code', null, r.sha256); code.style.overflowWrap = 'anywhere'; p.appendChild(code); det.appendChild(p);
+    c.appendChild(det);
+    return c;
+  }
 
   // Una tarjeta por versión. La de prueba (beta) solo la reciben las cuentas de administrador.
   function releaseCard(r, beta) {
