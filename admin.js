@@ -69,6 +69,7 @@
     var cf = el('div', 'acc-actions');
     cf.appendChild(chip('Mercado Pago: ' + (cfg.mp ? 'conectado' : 'sin conexión'), cfg.mp ? 'ok' : 'bad'));
     cf.appendChild(chip('Avisos por mail: ' + (cfg.notifier ? 'activos' : 'sin configurar'), cfg.notifier ? 'ok' : 'wait'));
+    cf.appendChild(chip('Avisos de borrado: ' + (cfg.deletionNotices ? 'ACTIVADOS' : 'apagados'), cfg.deletionNotices ? 'bad' : 'ok'));
     cf.appendChild(chip('Borrado automático: ' + (cfg.autoDelete ? 'ACTIVADO' : 'apagado (solo simula)'), cfg.autoDelete ? 'bad' : 'wait'));
     root.appendChild(cf);
     if (d.mpStale) cf.after(el('p', 'acc-note', 'Mercado Pago pidió esperar: los datos de suscripciones son de hace unos minutos.'));
@@ -169,9 +170,10 @@
         sb.disabled = false; out.textContent = '';
         if (!x.ok || !x.j.ok) { out.appendChild(el('p', 'login-err', 'No se pudo simular (¿Mercado Pago sin conexión?).')); return; }
         if (!x.j.actions.length) { out.appendChild(el('p', 'acc-note', 'Nada para hacer: ninguna cuenta cumple las reglas.')); return; }
-        var L = { send_notice: 'Se le enviaría el aviso', needs_notice: 'Cumple las reglas pero NO hay servicio de mail: no se le puede avisar (no se borra)', waiting: 'Avisada, esperando los 3 días', delete: 'Se eliminaría', clear_notice: 'Se le quitaría el aviso (volvió a estar al día)' };
+        var L = { send_notice: 'Se le enviaría el aviso', needs_notice: 'Cumple las reglas pero no se le puede avisar (no se borra)', waiting: 'Avisada, esperando los 3 días', delete: 'Se eliminaría', clear_notice: 'Se le quitaría el aviso (volvió a estar al día)' };
         var u2 = el('ul', 'pays');
-        x.j.actions.forEach(function (a) { var li = el('li'); li.appendChild(el('span', null, a.email)); li.appendChild(el('span', null, L[a.action] || a.action)); li.appendChild(el('strong', null, '')); u2.appendChild(li); });
+        var WHY = { notices_off: ' — los avisos de borrado están apagados', no_mail: ' — falta el servicio de mail' };
+        x.j.actions.forEach(function (a) { var li = el('li'); li.appendChild(el('span', null, a.email)); li.appendChild(el('span', null, (L[a.action] || a.action) + (a.reason ? (WHY[a.reason] || '') : ''))); li.appendChild(el('strong', null, '')); u2.appendChild(li); });
         out.appendChild(u2);
       });
     });

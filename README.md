@@ -108,7 +108,8 @@ La PC con el POS se **vincula a la cuenta de Google** del dueño y sube copias d
 | `RELEASE_TOKEN` | (para publicar versiones del POS desde scripts/CI) texto aleatorio de 24+ caracteres |
 | `ADMIN_EMAILS` | (opcional) mails admin separados por coma; por defecto `gtalovergamer@gmail.com` |
 | `AUTO_DELETE` | (opcional) `on` habilita el borrado real; por defecto apagado |
-| `RESEND_API_KEY`, `MAIL_FROM` | (opcionales) para enviar el aviso previo al borrado |
+| `RESEND_API_KEY`, `MAIL_FROM` | (opcionales) mails de **invitaciones** a un negocio y **propuestas de transferencia**. `MAIL_FROM` tiene que ser de un dominio verificado en Resend (ej.: `Nodo Sur <hola@avisos.horsepos.com>`); con el remitente de prueba `onboarding@resend.dev` Resend solo entrega a la cuenta dueña. Sin esto, la invitación devuelve el link para copiar. |
+| `AVISOS_BORRADO` | (opcional) `on` permite que la limpieza diaria mande el aviso «tu cuenta se eliminará en 3 días». **Apagado por defecto, a propósito**: configurar Resend NO alcanza para activarlo, porque es un mail a gente real que no se puede desmandar. Antes de encenderlo, revisá `/admin/` → «Simular limpieza ahora». Sin aviso no hay borrado. |
 
 `wrangler.jsonc` tiene `keep_vars: true`, así que los deploys no borran lo cargado desde el panel.
 

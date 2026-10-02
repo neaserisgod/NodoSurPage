@@ -2,7 +2,7 @@ import { json, now, isAdminEmail } from '../../_lib/util.js';
 import { requireAdmin } from '../../_lib/auth.js';
 import { hasDB, listUsers, getPromo } from '../../_lib/db.js';
 import { listAllSubscribers } from '../../_lib/mp.js';
-import { notifierReady } from '../../_lib/notify.js';
+import { notifierReady, deletionNoticesReady } from '../../_lib/notify.js';
 import { RULES } from '../../_lib/sweep.js';
 import { listOrgsOverview } from '../../_lib/orgs.js';
 import { softCap } from '../../_lib/miembros.js';
@@ -60,7 +60,7 @@ export async function onRequestGet({ request, env }) {
     users: rows,
     orgs,
     subscribersWithoutAccount: subs.filter((s) => !emails.has(s.payerEmail)).map((s) => ({ id: s.id, email: s.payerEmail, plan: s.plan, status: s.status, amount: s.amount })),
-    config: { db: true, mp: !mpError, autoDelete: env.AUTO_DELETE === 'on', notifier: notifierReady(env) },
+    config: { db: true, mp: !mpError, autoDelete: env.AUTO_DELETE === 'on', notifier: notifierReady(env), deletionNotices: deletionNoticesReady(env) },
     mpError,
     mpStale,
     mpDetail,

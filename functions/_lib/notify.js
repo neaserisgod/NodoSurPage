@@ -2,6 +2,11 @@
 // Requiere RESEND_API_KEY y MAIL_FROM (dominio verificado en Resend). Sin eso => no hay aviso => no hay borrado.
 export const notifierReady = (env) => Boolean(env.RESEND_API_KEY && env.MAIL_FROM);
 
+// Los avisos de BORRADO son opt-in aparte (AVISOS_BORRADO=on): tener Resend configurado alcanza para las invitaciones y
+// las transferencias, pero NO para que el cron mande "tu cuenta se eliminará en 3 días" a cuentas inactivas. Es un mail
+// que le llega a gente real y no se puede desmandar, así que no se activa solo. Solo vale el valor exacto "on" (igual que AUTO_DELETE).
+export const deletionNoticesReady = (env) => notifierReady(env) && env.AVISOS_BORRADO === 'on';
+
 export async function sendDeletionNotice(env, user, deleteAtEpoch) {
   if (!notifierReady(env)) return false;
   const site = (env.SITE_URL || 'https://horsepos.com').replace(/\/$/, '');

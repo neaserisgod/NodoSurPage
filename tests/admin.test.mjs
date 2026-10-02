@@ -11,6 +11,7 @@ import * as adminSweep from '../functions/api/admin/sweep.js';
 import * as promoPub from '../functions/api/promo.js';
 import * as adminPromo from '../functions/api/admin/promo.js';
 import { sweep } from '../functions/_lib/sweep.js';
+import { sendInvitation, sendTransferNotice } from '../functions/_lib/notify.js';
 import { clearMpCache } from '../functions/_lib/mp.js';
 
 const DAY = 86400, nowS = () => Math.floor(Date.now() / 1000);
@@ -127,8 +128,43 @@ await t('admin/user: eximir, quitar aviso, eliminar; protege al dueño; exige CS
 });
 
 // ---------- limpieza
-const setup = (extra = {}) => { const env = mkEnv(extra); mockNet(); resendOk = true; resendCalls = []; mpFail = false; SUBS = []; return env; };
+// Los avisos de borrado ahora son opt-in (AVISOS_BORRADO=on): estos tests, que ejercitan el aviso, lo declaran encendido.
+const setup = (extra = {}) => { const env = mkEnv({ AVISOS_BORRADO: 'on', ...extra }); mockNet(); resendOk = true; resendCalls = []; mpFail = false; SUBS = []; return env; };
 const OLD = (t0) => ({ created: t0 - 90 * DAY, lastSeen: t0 - 45 * DAY });
+// ───────── interruptor de los avisos de borrado (AVISOS_BORRADO=on)
+// Resend sirve para invitaciones y transferencias sin que el cron mande "tu cuenta se eliminará" a nadie.
+await t('avisos de borrado APAGADOS (por defecto): con Resend configurado el cron no manda ni un mail, no agenda ni borra', async () => {
+  for (const flag of [undefined, 'off', 'ON', 'true', '1', '']) {
+    const env = setup({ RESEND_API_KEY: 'k', MAIL_FROM: 'Nodo Sur <hola@avisos.horsepos.com>', AUTO_DELETE: 'on', AVISOS_BORRADO: flag }); const t0 = nowS(); addUser(env, { sub: 'x', email: 'x@x.com', ...OLD(t0) });
+    const dry = await sweep(env, { apply: false, t: t0 }); const r = await sweep(env, { apply: true, t: t0 });
+    for (const x of [dry, r]) { assert.deepEqual(x.actions.map((a) => [a.action, a.reason]), [['needs_notice', 'notices_off']], String(flag)); assert.equal(x.deletionNotices, false); assert.equal(x.notifier, true, 'Resend sí está configurado'); }
+    assert.equal(resendCalls.length, 0, `flag=${flag}: ningún mail`); assert.equal(row(env, 'x@x.com').delete_after, null, 'no se agenda'); assert.ok(row(env, 'x@x.com'), 'no se borra');
+  }
+});
+await t('avisos de borrado encendidos pero sin Resend: sigue sin avisar ni borrar, y dice que falta el mail', async () => {
+  const env = setup({ AUTO_DELETE: 'on', AVISOS_BORRADO: 'on' }); const t0 = nowS(); addUser(env, { sub: 'x', email: 'x@x.com', ...OLD(t0) });
+  const r = await sweep(env, { apply: true, t: t0 }); assert.deepEqual(r.actions.map((a) => [a.action, a.reason]), [['needs_notice', 'no_mail']]); assert.equal(r.deletionNotices, false); assert.ok(row(env, 'x@x.com'));
+});
+await t('avisos de borrado encendidos y con Resend: avisa (y recién después podría borrar)', async () => {
+  const env = setup({ RESEND_API_KEY: 'k', MAIL_FROM: 'a@b.c', AVISOS_BORRADO: 'on' }); const t0 = nowS(); addUser(env, { sub: 'x', email: 'x@x.com', ...OLD(t0) });
+  const r = await sweep(env, { apply: true, t: t0 }); assert.equal(r.deletionNotices, true); assert.equal(r.actions[0].action, 'send_notice'); assert.equal(resendCalls.length, 1);
+});
+await t('apagar los avisos no frena a quien ya fue avisado, y las invitaciones y transferencias salen igual con el interruptor apagado', async () => {
+  const env = setup({ RESEND_API_KEY: 'k', MAIL_FROM: 'a@b.c', AUTO_DELETE: 'on', AVISOS_BORRADO: 'off' }); const t0 = nowS();
+  addUser(env, { sub: 'x', email: 'x@x.com', ...OLD(t0), noticeAt: t0 - 4 * DAY, deleteAfter: t0 - DAY });
+  const r = await sweep(env, { apply: false, t: t0 }); assert.equal(r.actions[0].action, 'delete', 'ya había sido avisada de verdad: sigue su curso');
+  resendCalls = []; resendOk = true;
+  assert.equal(await sendInvitation(env, { to: 'emp@x.com', orgName: 'La Plazoleta', inviterName: 'Ana', link: 'https://horsepos.com/unirse/?t=x', role: 'employee' }), true);
+  assert.equal(await sendTransferNotice(env, { to: 'nuevo@x.com', orgName: 'La Plazoleta', fromName: 'Ana', site: 'https://horsepos.com' }), true); assert.equal(resendCalls.length, 2);
+});
+await t('el panel muestra el estado del interruptor (y no filtra ninguna clave)', async () => {
+  for (const [flag, esperado] of [[undefined, false], ['on', true]]) {
+    const env = setup({ RESEND_API_KEY: 're_secreta_123', MAIL_FROM: 'a@b.c', AVISOS_BORRADO: flag });
+    addUser(env, { sub: 'a', email: 'gtalovergamer@gmail.com', created: nowS(), lastSeen: nowS() });
+    const r = await overview.onRequestGet({ request: req(await sess(env, 'gtalovergamer@gmail.com', 'a')), env }); const d = await r.json();
+    assert.equal(d.config.notifier, true); assert.equal(d.config.deletionNotices, esperado); assert.ok(!JSON.stringify(d).includes('re_secreta_123'));
+  }
+});
 await t('sweep: sin servicio de mail NO borra ni avisa: queda "pendiente de aviso"', async () => {
   const env = setup({ AUTO_DELETE: 'on' }); const t0 = nowS(); addUser(env, { sub: 'x', email: 'x@x.com', ...OLD(t0) });
   const r = await sweep(env, { apply: true, t: t0 }); assert.deepEqual(r.actions.map((a) => a.action), ['needs_notice']); assert.ok(row(env, 'x@x.com')); assert.equal(row(env, 'x@x.com').delete_after, null);

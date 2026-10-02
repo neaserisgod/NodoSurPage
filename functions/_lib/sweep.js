@@ -1,7 +1,7 @@
 import { listAllSubscribers } from './mp.js';
 import { listUsers, markNotice, clearNotice, deleteUser } from './db.js';
 import { billingEmailsBySub } from './orgs.js';
-import { sendDeletionNotice, notifierReady } from './notify.js';
+import { sendDeletionNotice, notifierReady, deletionNoticesReady } from './notify.js';
 import { isAdminEmail, now as nowSec } from './util.js';
 
 export const RULES = { graceDays: 14, inactiveDays: 30, noticeDays: 3 };
@@ -33,7 +33,8 @@ export async function sweep(env, { apply = false, t = nowSec() } = {}) {
       continue;
     }
     if (!u.delete_after) {
-      if (!notifierReady(env)) { actions.push({ ...base, action: 'needs_notice' }); continue; }
+      // Sin aviso no hay borrado: si no hay mail, o los avisos de borrado están apagados, queda pendiente y no se toca nada.
+      if (!deletionNoticesReady(env)) { actions.push({ ...base, action: 'needs_notice', reason: notifierReady(env) ? 'notices_off' : 'no_mail' }); continue; }
       const deleteAt = t + RULES.noticeDays * DAY;
       let sent = false;
       if (apply) { sent = await sendDeletionNotice(env, u, deleteAt); if (sent) await markNotice(env, u.id, t, deleteAt); }
@@ -45,5 +46,5 @@ export async function sweep(env, { apply = false, t = nowSec() } = {}) {
       actions.push({ ...base, action: 'waiting', deleteAt: u.delete_after });
     }
   }
-  return { ok: true, actions, rules: RULES, autoDelete: env.AUTO_DELETE === 'on', notifier: notifierReady(env) };
+  return { ok: true, actions, rules: RULES, autoDelete: env.AUTO_DELETE === 'on', notifier: notifierReady(env), deletionNotices: deletionNoticesReady(env) };
 }

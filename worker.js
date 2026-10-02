@@ -119,6 +119,6 @@ export default {
     if (!env.MP_ACCESS_TOKEN) return;
     if (backupsReady(env)) ctx.waitUntil(listAllSubscribers(env, { fresh: true }).then((subs) => purgeBackups(env, subs)).then((ids) => ids.length && console.log(`backups_purgadas:${ids.length}`)).catch(() => { /* sin Mercado Pago no se borra nada */ }));
     ctx.waitUntil(sweep(env, { apply: true }).then((r) =>
-      console.log(JSON.stringify({ ok: r.ok, autoDelete: r.autoDelete, notifier: r.notifier, actions: (r.actions || []).map((a) => `${a.action}:${a.email}:${a.applied ?? ''}`) }))));
+      console.log(JSON.stringify({ ok: r.ok, autoDelete: r.autoDelete, notifier: r.notifier, deletionNotices: r.deletionNotices, actions: (r.actions || []).map((a) => `${a.action}:${a.email}:${a.applied ?? ''}`) }))));
   },
 };

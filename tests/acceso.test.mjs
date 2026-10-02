@@ -228,7 +228,7 @@ await t('limpieza de copias por negocio: se borran las de un negocio sin pagar (
 // ───────── barrido de cuentas inactivas
 const DAY = 86400;
 await t('barrido: un miembro de un negocio que paga no se marca para borrar aunque no tenga suscripción propia', async () => {
-  const env = mkEnv({ RESEND_API_KEY: 'k', MAIL_FROM: 'a@b.c' }); const n = await negocio(env, { billing: 'quien-pago@x.com' });
+  const env = mkEnv({ RESEND_API_KEY: 'k', MAIL_FROM: 'a@b.c', AVISOS_BORRADO: 'on' }); const n = await negocio(env, { billing: 'quien-pago@x.com' }); // avisos de borrado: opt-in
   miembro(env, n, 'emp@x.com', 'sm', 'employee', { branches: [n.a] }); addUser(env, 'suelto@x.com', 'sl');
   const viejo = nowS() - 90 * DAY; env.DB.raw.prepare('UPDATE users SET created_at = ?, last_seen = ?').run(viejo, viejo);
   mp.subs = [mpSub('quien-pago@x.com', 'authorized')]; mockMP();
