@@ -12,3 +12,5 @@ wrangler.jsonc
 README.md
 cuenta.js.map
 .wrangler
+mocks
+CONTEXTO.md

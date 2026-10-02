@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="es-AR">
+<head>
+<meta charset="utf-8">
+<title>Dashboard</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;font-family:'Figtree',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button{font-family:inherit;cursor:pointer}
+button:focus-visible{outline:3px solid #3b6cff;outline-offset:2px}
+</style>
+</helmet>
+<div style="position: relative; width: 1440px; height: 900px; display: flex; flex-direction: column; background: #ffffff; color: #121317; overflow: hidden; font-family: 'Figtree', system-ui, sans-serif">
+
+<!-- barra superior -->
+<div style="height: 72px; flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; padding: 0 40px">
+<div style="display: flex; align-items: center; gap: 32px">
+<div style="display: flex; align-items: center; gap: 12px; font-size: 19px; font-weight: 700; letter-spacing: -0.02em">
+<div style="width: 38px; height: 38px; border-radius: 12px; background: #121317; color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px">NS</div>
+Nodo Sur
+</div>
+<div style="display: flex; align-items: center; gap: 4px">
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="5">
+<button type="button" style="{{n.style}}">{{n.label}}</button>
+</sc-for>
+</div>
+</div>
+<button type="button" style="height: 44px; padding: 0 22px; border-radius: 999px; border: 0; background: #121317; font-size: 15px; font-weight: 600; color: #ffffff; display: flex; align-items: center; gap: 8px">
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+Nueva venta
+</button>
+</div>
+
+<div style="flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 0 40px 36px; gap: 22px">
+
+<!-- encabezado -->
+<div style="display: flex; align-items: flex-end; justify-content: space-between">
+<div>
+<div style="font-size: 15px; font-weight: 600; color: #566070; display: flex; align-items: center; gap: 8px"><span style="width: 8px; height: 8px; border-radius: 50%; background: #18a37f"></span>Caja abierta · Ana · desde las 8:30</div>
+<div style="font-size: 56px; line-height: 1.02; font-weight: 400; letter-spacing: -0.055em; margin-top: 8px">Buenas tardes, Ana</div>
+</div>
+<div style="display: flex; gap: 6px; padding: 5px; border-radius: 999px; background: #f3f4f7">
+<sc-for list="{{periods}}" as="p" hint-placeholder-count="3">
+<button type="button" onClick="{{p.pick}}" style="{{p.style}}">{{p.label}}</button>
+</sc-for>
+</div>
+</div>
+
+<!-- grilla -->
+<div style="flex: 1; min-height: 0; display: grid; grid-template-columns: 1.1fr 1.1fr 0.8fr; grid-template-rows: 1.12fr 1fr; gap: 16px">
+
+<!-- héroe: ventas -->
+<div style="grid-column: 1 / span 2; position: relative; overflow: hidden; border-radius: 40px; padding: 32px 36px; background: linear-gradient(150deg,#07080c,#14183a 130%); color: #fff; display: flex; flex-direction: column; justify-content: space-between">
+<svg width="100%" height="100%" viewBox="0 0 900 340" preserveAspectRatio="none" style="position: absolute; inset: 0" aria-hidden="true">
+<g stroke-linecap="round" stroke-width="2"><line x1="640" y1="40" x2="647" y2="44" stroke="#7da0ff" opacity="0.8"/><line x1="720" y1="70" x2="723" y2="71" stroke="#b59bff" opacity="0.8"/><line x1="800" y1="34" x2="807" y2="39" stroke="#7da0ff" opacity="0.6"/><line x1="700" y1="110" x2="703" y2="111" stroke="#4f7cff" opacity="0.8"/><line x1="850" y1="90" x2="857" y2="95" stroke="#b59bff" opacity="0.7"/><line x1="600" y1="80" x2="603" y2="81" stroke="#3a4a78" opacity="0.9"/><line x1="770" y1="140" x2="774" y2="143" stroke="#7da0ff" opacity="0.5"/></g>
+</svg>
+<div style="position: relative; display: flex; align-items: flex-start; justify-content: space-between">
+<div>
+<div style="font-size: 16px; font-weight: 600; color: rgba(255,255,255,0.7)">{{periodTitle}}</div>
+<div style="font-size: 96px; line-height: 1; font-weight: 400; letter-spacing: -0.06em; margin-top: 6px; font-variant-numeric: tabular-nums">{{total}}</div>
+</div>
+<div style="display: flex; flex-direction: column; align-items: flex-end; gap: 8px; padding-top: 6px">
+<span style="height: 34px; padding: 0 16px; border-radius: 999px; background: rgba(111,240,211,0.16); color: #6ff0d3; font-size: 15px; font-weight: 700; display: flex; align-items: center">{{delta}}</span>
+<span style="font-size: 14px; color: rgba(255,255,255,0.6)">{{vs}}</span>
+</div>
+</div>
+<div style="position: relative; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: flex-end; gap: 8px; height: 118px">
+<sc-for list="{{bars}}" as="b" hint-placeholder-count="14">
+<div style="{{b.col}}"><div style="{{b.bar}}"></div></div>
+</sc-for>
+</div>
+<div style="display: flex; gap: 8px">
+<sc-for list="{{bars}}" as="b" hint-placeholder-count="14">
+<div style="flex: 1; text-align: center; font-size: 12px; color: rgba(255,255,255,0.55)">{{b.label}}</div>
+</sc-for>
+</div>
+</div>
+</div>
+
+<!-- caja -->
+<div style="border-radius: 40px; background: #f3f4f7; padding: 28px; display: flex; flex-direction: column; justify-content: space-between">
+<div>
+<div style="font-size: 16px; font-weight: 600; color: #566070">Efectivo en caja</div>
+<div style="font-size: 56px; line-height: 1.05; font-weight: 400; letter-spacing: -0.055em; margin-top: 6px; font-variant-numeric: tabular-nums">$ 186.400</div>
+<div style="font-size: 15px; color: #566070; margin-top: 6px">Fondo inicial $ 30.000</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 10px">
+<button type="button" onClick="{{openArq}}" style="height: 56px; border-radius: 999px; border: 0; background: #121317; color: #fff; font-size: 17px; font-weight: 600">Cerrar caja</button>
+<button type="button" onClick="{{openMov}}" style="height: 56px; border-radius: 999px; border: 0; background: #ffffff; color: #121317; font-size: 17px; font-weight: 600">Retirar o ingresar dinero</button>
+</div>
+</div>
+
+<!-- cifras rápidas -->
+<div style="border-radius: 40px; background: #f3f4f7; padding: 28px; display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 20px; font-weight: 500; letter-spacing: -0.03em; margin-bottom: 10px">En números</div>
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="3">
+<div style="display: flex; align-items: baseline; justify-content: space-between; padding: 14px 0; border-top: 1px solid rgba(18,19,23,0.1)">
+<span style="font-size: 16px; color: #566070">{{k.label}}</span>
+<span style="font-size: 32px; font-weight: 400; letter-spacing: -0.045em; font-variant-numeric: tabular-nums">{{k.value}}</span>
+</div>
+</sc-for>
+</div>
+
+<!-- medios de pago -->
+<div style="border-radius: 40px; background: #f3f4f7; padding: 28px; display: flex; flex-direction: column; gap: 18px">
+<div style="font-size: 20px; font-weight: 500; letter-spacing: -0.03em">Cómo pagan</div>
+<div style="display: flex; height: 18px; border-radius: 999px; overflow: hidden; gap: 3px">
+<sc-for list="{{mix}}" as="m" hint-placeholder-count="4">
+<div style="{{m.seg}}"></div>
+</sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px">
+<sc-for list="{{mix}}" as="m" hint-placeholder-count="4">
+<div style="display: flex; align-items: center; justify-content: space-between; padding: 8px 0">
+<span style="display: flex; align-items: center; gap: 12px; font-size: 17px; font-weight: 500"><span style="{{m.dot}}"></span>{{m.label}}</span>
+<span style="font-size: 17px; color: #566070; font-variant-numeric: tabular-nums"><b style="color: #121317; font-weight: 600">{{m.pct}}</b> · {{m.amount}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+
+<!-- más vendidos -->
+<div style="border-radius: 40px; background: #f3f4f7; padding: 28px; display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 20px; font-weight: 500; letter-spacing: -0.03em; margin-bottom: 4px">Lo que más sale</div>
+<sc-for list="{{top}}" as="t" hint-placeholder-count="5">
+<div style="display: flex; align-items: center; gap: 14px">
+<span style="width: 30px; height: 30px; border-radius: 50%; background: #ffffff; display: flex; align-items: center; justify-content: center; font-size: 14px; font-weight: 700">{{t.n}}</span>
+<span style="flex: 1; min-width: 0">
+<span style="display: block; font-size: 17px; font-weight: 500; letter-spacing: -0.02em">{{t.name}}</span>
+<span style="display: block; height: 6px; border-radius: 3px; background: #ffffff; margin-top: 6px"><span style="{{t.bar}}"></span></span>
+</span>
+<span style="font-size: 16px; font-weight: 600; color: #566070; font-variant-numeric: tabular-nums">{{t.qty}}</span>
+</div>
+</sc-for>
+</div>
+
+<!-- stock bajo -->
+<div style="border-radius: 40px; background: #f3f4f7; padding: 28px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px">
+<div style="font-size: 20px; font-weight: 500; letter-spacing: -0.03em">Por reponer</div>
+<span style="height: 26px; padding: 0 12px; border-radius: 999px; background: #ffffff; font-size: 13px; font-weight: 700; display: flex; align-items: center">3</span>
+</div>
+<sc-for list="{{low}}" as="s" hint-placeholder-count="3">
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 12px 16px; border-radius: 22px; background: #ffffff">
+<span style="min-width: 0">
+<span style="display: block; font-size: 16px; font-weight: 500; letter-spacing: -0.02em">{{s.name}}</span>
+<span style="display: block; font-size: 13px; font-weight: 700; color: #9a4a06; margin-top: 2px">{{s.left}}</span>
+</span>
+</div>
+</sc-for>
+<button type="button" onClick="{{pedir}}" style="margin-top: auto; height: 46px; border-radius: 999px; border: 0; background: #121317; color: #fff; font-size: 15px; font-weight: 600">Pedir a proveedores</button>
+</div>
+
+</div>
+</div>
+<sc-if value="{{hasModal}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; inset: 0; z-index: 40; background: rgba(18,19,23,0.5); display: flex; align-items: center; justify-content: center">
+<div style="width: 620px; max-height: 84%; box-sizing: border-box; border-radius: 40px; background: #fff; padding: 30px 32px 28px; display: flex; flex-direction: column; gap: 14px; box-shadow: 0 40px 100px rgba(18,19,23,0.35)">
+<div style="font-size: 32px; line-height: 1.08; letter-spacing: -0.045em; flex-shrink: 0">{{mTitle}}</div>
+<sc-if value="{{hasMText}}" hint-placeholder-val="{{false}}"><div style="font-size: 16px; line-height: 1.45; color: #566070; flex-shrink: 0">{{mText}}</div></sc-if>
+<div style="min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{mBlocks}}" as="b" hint-placeholder-count="5">
+<sc-if value="{{b.isHero}}" hint-placeholder-val="{{false}}"><div style="position: relative; overflow: hidden; flex-shrink: 0; border-radius: 36px; padding: 26px 30px; background: linear-gradient(150deg,#07080c,#14183a 130%); color: #fff; display: flex; flex-direction: column; gap: 6px">
+<svg width="100%" height="100%" viewBox="0 0 600 200" preserveAspectRatio="none" style="position: absolute; inset: 0" aria-hidden="true"><g stroke-linecap="round" stroke-width="2"><line x1="400" y1="30" x2="407" y2="34" stroke="#7da0ff" opacity="0.8"/><line x1="480" y1="70" x2="483" y2="71" stroke="#b59bff" opacity="0.8"/><line x1="560" y1="34" x2="567" y2="39" stroke="#7da0ff" opacity="0.6"/><line x1="520" y1="130" x2="523" y2="131" stroke="#4f7cff" opacity="0.8"/><line x1="440" y1="110" x2="443" y2="111" stroke="#3a4a78" opacity="0.9"/></g></svg>
+<div style="position: relative; font-size: 15px; font-weight: 600; color: rgba(255,255,255,0.7)">{{b.label}}</div>
+<div style="position: relative; font-size: 56px; line-height: 1.02; font-weight: 400; letter-spacing: -0.06em; font-variant-numeric: tabular-nums">{{b.big}}</div>
+<div style="position: relative; font-size: 15px; line-height: 1.4; color: rgba(255,255,255,0.72)">{{b.sub}}</div>
+</div></sc-if>
+<sc-if value="{{b.isStats}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; gap: 12px"><sc-for list="{{b.items}}" as="i" hint-placeholder-count="3"><div style="flex: 1; min-width: 0; padding: 18px 22px; border-radius: 30px; background: #f3f4f7; display: flex; flex-direction: column; gap: 6px"><span style="font-size: 14px; color: #566070">{{i.k}}</span><span style="{{i.vs}}">{{i.v}}</span></div></sc-for></div></sc-if>
+<sc-if value="{{b.isSection}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; margin-top: 10px; font-size: 13px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase; color: #7b8494">{{b.text}}</div></sc-if>
+<sc-if value="{{b.isInfo}}" hint-placeholder-val="{{false}}"><div style="{{b.istyle}}; flex-shrink: 0">{{b.text}}</div></sc-if>
+<sc-if value="{{b.isKv}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; align-items: baseline; justify-content: space-between; gap: 16px; padding: 13px 6px; border-bottom: 1px solid rgba(18,19,23,0.08)"><span style="font-size: 16px; color: #566070">{{b.k}}</span><span style="{{b.vstyle}}">{{b.v}}</span></div></sc-if>
+<sc-if value="{{b.isField}}" hint-placeholder-val="{{false}}"><label style="flex-shrink: 0; display: flex; flex-direction: column; gap: 4px; padding: 14px 24px 16px; border-radius: 28px; background: #f3f4f7"><span style="font-size: 13px; font-weight: 600; color: #7b8494">{{b.label}}</span><input type="text" value="{{b.value}}" onChange="{{b.onChange}}" placeholder="{{b.ph}}" aria-label="{{b.label}}" style="{{b.fstyle}}"></label></sc-if>
+<sc-if value="{{b.isToggle}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{b.pick}}" style="flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 14px; width: 100%; padding: 14px 24px; box-sizing: border-box; border: 0; border-radius: 999px; background: #f3f4f7; color: #121317; text-align: left"><span style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 17px; font-weight: 500; letter-spacing: -0.02em">{{b.label}}</span><span style="font-size: 13px; color: #566070">{{b.desc}}</span></span><span style="{{b.track}}"><span style="{{b.knob}}"></span></span></button></sc-if>
+<sc-if value="{{b.isChips}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; flex-direction: column; gap: 8px"><span style="font-size: 14px; font-weight: 600; color: #566070">{{b.label}}</span><div style="display: flex; gap: 8px; flex-wrap: wrap"><sc-for list="{{b.opts}}" as="o" hint-placeholder-count="3"><button type="button" onClick="{{o.pick}}" style="{{o.style}}">{{o.label}}</button></sc-for></div></div></sc-if>
+<sc-if value="{{b.isRow}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{b.pick}}" style="{{b.rstyle}}"><span style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-size: 18px; font-weight: 500; letter-spacing: -0.02em">{{b.name}}</span><span style="font-size: 13px; opacity: 0.65; line-height: 1.3">{{b.meta}}</span></span><span style="font-size: 19px; font-weight: 500; letter-spacing: -0.03em; white-space: nowrap; font-variant-numeric: tabular-nums">{{b.right}}</span></button></sc-if>
+<sc-if value="{{b.isCheck}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{b.pick}}" style="{{b.rstyle}}"><span style="{{b.cstyle}}">{{b.mark}}</span><span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 19px; font-weight: 500; letter-spacing: -0.02em">{{b.name}}</span><span style="font-size: 13px; color: #566070">{{b.meta}}</span></span><span style="font-size: 24px; letter-spacing: -0.04em; font-variant-numeric: tabular-nums">{{b.right}}</span></button></sc-if>
+<sc-if value="{{b.isProgress}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; flex-direction: column; gap: 8px; padding: 6px 4px"><div style="display: flex; justify-content: space-between; font-size: 15px"><span style="font-weight: 600">{{b.label}}</span><span style="color: #566070">{{b.text}}</span></div><div style="height: 10px; border-radius: 5px; background: #e6e8ee"><span style="{{b.bar}}"></span></div></div></sc-if>
+<sc-if value="{{b.isPaper}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; padding: 22px 26px; border-radius: 22px; background: #fff; box-shadow: 0 10px 34px rgba(18,19,23,0.12), 0 0 0 1px rgba(18,19,23,0.06); display: flex; flex-direction: column; gap: 5px"><sc-for list="{{b.plines}}" as="l" hint-placeholder-count="6"><div style="{{l.ls}}"><span>{{l.a}}</span><span>{{l.b}}</span></div></sc-for></div></sc-if>
+<sc-if value="{{b.isBtn}}" hint-placeholder-val="{{false}}"><button type="button" onClick="{{b.pick}}" style="{{b.bstyle}}">{{b.label}}</button></sc-if>
+<sc-if value="{{b.isTable}}" hint-placeholder-val="{{false}}"><div style="flex-shrink: 0; display: flex; flex-direction: column; gap: 6px">
+<sc-if value="{{b.hasHead}}" hint-placeholder-val="{{false}}"><div style="display: grid; {{b.cols}}; gap: 12px; padding: 0 22px 4px; font-size: 13px; font-weight: 600; color: #7b8494"><sc-for list="{{b.head}}" as="h" hint-placeholder-count="4"><span style="{{h.s}}">{{h.t}}</span></sc-for></div></sc-if>
+<sc-for list="{{b.rows}}" as="r" hint-placeholder-count="5"><div onClick="{{r.pick}}" style="display: grid; {{b.cols}}; gap: 12px; align-items: center; padding: 14px 22px; border-radius: 26px; background: #f3f4f7; font-size: 16px; color: #121317; cursor: pointer"><sc-for list="{{r.cells}}" as="c" hint-placeholder-count="4"><span style="{{c.s}}">{{c.t}}</span></sc-for>
+<sc-if value="{{r.step}}" hint-placeholder-val="{{false}}"><span style="display: flex; align-items: center; justify-content: flex-end; gap: 6px"><button type="button" onClick="{{r.minus}}" aria-label="Menos" style="width: 36px; height: 36px; border-radius: 50%; border: 0; background: #fff; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#121317" stroke-width="2.6" stroke-linecap="round"><path d="M5 12h14"/></svg></button><button type="button" onClick="{{r.plus}}" aria-label="Más" style="width: 36px; height: 36px; border-radius: 50%; border: 0; background: #fff; display: flex; align-items: center; justify-content: center"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#121317" stroke-width="2.6" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></button></span></sc-if></div></sc-for></div></sc-if>
+</sc-for>
+</div>
+<div style="display: flex; gap: 10px; flex-shrink: 0; margin-top: 6px">
+<sc-for list="{{mButtons}}" as="b" hint-placeholder-count="2"><button type="button" onClick="{{b.pick}}" style="{{b.style}}">{{b.label}}</button></sc-for>
+</div>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{hasToast}}" hint-placeholder-val="{{false}}">
+<div style="position: absolute; left: 50%; bottom: 36px; transform: translateX(-50%); z-index: 60; padding: 16px 30px; border-radius: 999px; background: #121317; color: #fff; font-size: 16px; font-weight: 600; box-shadow: 0 18px 40px rgba(18,19,23,0.3)">{{toastTxt}}</div>
+</sc-if>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+  state = {
+    modal: '', m: {}, toast: '', period: 'hoy' };
+
+    openM(modal, init) { this.setState({ modal, m: init || {} }); }
+  toastM(msg) { this.setState({ toast: msg }); setTimeout(() => this.setState({ toast: '' }), 2600); }
+  mx(o) {
+    const s = this.state;
+    const m = s.m || {};
+    const fmt = (n) => '$ ' + Math.round(n).toLocaleString('es-AR');
+    const num = (v) => parseInt(String(v).replace(/\D/g, ''), 10) || 0;
+    const closeModal = () => this.setState({ modal: '' });
+    const toast = (msg) => this.toastM(msg);
+    const openModal = (id, init) => this.openM(id, init);
+    const setM = (k) => (e) => this.setState({ m: { ...this.state.m, [k]: e.target.value } });
+    const pill = (on) => 'height:42px;padding:0 18px;border-radius:999px;border:0;font-size:15px;font-weight:600;flex-shrink:0;white-space:nowrap;' + (on ? 'background:#121317;color:#fff' : 'background:#f3f4f7;color:#121317');
+    const track = (on) => 'width:56px;height:32px;border-radius:999px;flex-shrink:0;padding:3px;box-sizing:border-box;display:flex;align-items:center;justify-content:' + (on ? 'flex-end' : 'flex-start') + ';background:' + (on ? '#121317' : '#d3d7df');
+    const tone = (t) => (t === 'good' ? '#0b7a5e' : t === 'bad' ? '#b3261e' : t === 'warn' ? '#9a4a06' : '#121317');
+    const B = {
+      hero: (label, big, sub) => ({ isHero: true, label, big, sub }),
+      stats: (items) => ({ isStats: true, items: items.map(([k, v, t]) => ({ k, v, vs: 'font-size:30px;line-height:1.05;font-weight:400;letter-spacing:-0.05em;font-variant-numeric:tabular-nums;color:' + tone(t) })) }),
+      kv: (k, v, t) => ({ isKv: true, k, v, vstyle: 'font-size:19px;font-weight:500;letter-spacing:-0.03em;font-variant-numeric:tabular-nums;color:' + tone(t) }),
+      info: (text, t) => ({ isInfo: true, text, istyle: 'padding:14px 18px;border-radius:22px;font-size:14px;line-height:1.45;' + (t === 'warn' ? 'background:#fdecd6;color:#9a4a06' : t === 'good' ? 'background:#e3f6ef;color:#0b7a5e' : 'background:#f3f4f7;color:#566070') }),
+      field: (label, value, onChange, ph, big) => ({ isField: true, label, value, onChange, ph: ph || '', fstyle: 'height:' + (big ? '54px' : '32px') + ';border:0;padding:0;background:transparent;color:#121317;font-size:' + (big ? '40px' : '20px') + ';font-weight:' + (big ? '400' : '500') + ';letter-spacing:' + (big ? '-0.05em' : '-0.02em') }),
+      toggle: (label, desc, on, pick) => ({ isToggle: true, label, desc, track: track(on), knob: 'width:26px;height:26px;border-radius:50%;background:#fff', pick }),
+      chips: (label, opts) => ({ isChips: true, label, opts: opts.map((x) => ({ label: x.label, style: pill(x.on), pick: x.pick })) }),
+      row: (name, meta, right) => ({ isRow: true, name, meta, right, pick: () => {}, rstyle: 'display:flex;align-items:center;justify-content:space-between;gap:14px;width:100%;flex-shrink:0;padding:16px 24px;box-sizing:border-box;border:0;border-radius:30px;text-align:left;background:#f3f4f7;color:#121317' }),
+      btn: (label, pick) => ({ isBtn: true, label, pick, bstyle: 'flex-shrink:0;height:54px;border-radius:999px;border:0;font-size:16px;font-weight:600;background:#f3f4f7;color:#121317' }),
+      paper: (lines) => ({ isPaper: true, plines: lines.map((l) => ({ a: l[0], b: l[1] === 'c' ? '' : l[1], ls: 'display:flex;justify-content:' + (l[1] === 'c' ? 'center' : 'space-between') + ';gap:12px;font-family:ui-monospace,Menlo,monospace;color:#121317;' + (l[2] === 'b' ? 'font-weight:700;font-size:17px;padding-top:6px;border-top:1px dashed #c4c9d4;margin-top:4px;' : 'font-size:14px;') })) })
+    };
+    const prim = (label, pick, ok) => ({ label, pick, style: 'height:56px;padding:0 28px;border-radius:999px;border:0;font-size:16px;font-weight:600;flex:1;' + (ok === false ? 'background:#f3f4f7;color:#9aa1ae;cursor:default' : 'background:#121317;color:#fff') });
+    const sec2 = (label, pick, danger) => ({ label, pick, style: 'height:56px;padding:0 28px;border-radius:999px;border:0;font-size:16px;font-weight:600;flex:1;' + (danger ? 'background:#fbe0de;color:#b3261e' : 'background:#f3f4f7;color:#121317') });
+    const cancel = (label) => sec2(label || 'Cancelar', closeModal);
+    const ok = (label, fn, v) => prim(label, fn, v);
+    const done = (msg) => () => { closeModal(); toast(msg); };
+    const EXP = { ef: 186400 };
+    const diffTxt = (d) => (d === 0 ? 'Cuadra justo' : d > 0 ? 'Sobran ' + fmt(d) : 'Faltan ' + fmt(-d));
+    const tot = (o && o.total) || 12700;
+
+    const modalDef = () => {
+      const t = s.modal;
+      if (t === 'apertura') return { title: 'Abrir caja', text: 'No hay caja abierta ahora mismo.', blocks: [B.field('Fondo inicial (caja normal)', m.fondo === undefined ? '30000' : m.fondo, setM('fondo'), '$ 0', true), B.field('Fondo de la lata de cigarrillos', m.lata === undefined ? '40000' : m.lata, setM('lata'), '$ 0')], buttons: [ok('Abrir caja', done('Caja abierta')), cancel()] };
+      if (t === 'mixto') { const ef = num(m.ef); return { title: 'Cobro mixto', text: 'Total a cobrar ' + fmt(tot), blocks: [B.field('Parte en efectivo', m.ef || '', setM('ef'), '$ 0', true), B.kv('El resto va por Mercado Pago', fmt(Math.max(0, tot - ef)))], buttons: [ok('Confirmar cobro', () => { closeModal(); if (o && o.onPaid) o.onPaid(); }, ef > 0 && ef < tot), cancel()] }; }
+      if (t === 'movimiento') return { title: 'Movimiento rápido', text: '', blocks: [B.chips('Tipo', ['Gasto', 'Ingreso'].map((v) => ({ label: v, on: (m.tipo || 'Gasto') === v, pick: () => this.setState({ m: { ...m, tipo: v } }) }))), B.chips('De dónde sale', ['Cajón normal', 'Mercado Pago', 'Lata cigarrillos'].map((v) => ({ label: v, on: (m.caja || 'Cajón normal') === v, pick: () => this.setState({ m: { ...m, caja: v } }) }))), B.field('Monto', m.monto || '', setM('monto'), '$ 0', true), B.field('Motivo (opcional)', m.motivo || '', setM('motivo'), 'Ej: bolsas')], buttons: [ok('Guardar', done('Movimiento registrado'), num(m.monto) > 0), cancel()] };
+      if (t === 'cantidad') return { title: 'Editar cantidad', text: m.name || '', blocks: [B.field('Cantidad', m.q === undefined ? '1' : m.q, setM('q'), '1', true)], buttons: [ok('Listo', () => { closeModal(); if (o && o.onQty) o.onQty(m.id, num(m.q)); }), cancel()] };
+      if (t === 'varios') return { title: 'Monto varios', text: 'Para cobrar algo que no está cargado como producto.', blocks: [B.field('Monto', m.monto || '', setM('monto'), '$ 0', true), B.field('Detalle (opcional)', m.det || '', setM('det'), 'Ej: bolsa de hielo')], buttons: [ok('Agregar a la venta', () => { closeModal(); if (o && o.onVarios) o.onVarios(num(m.monto), m.det); else toast('Renglón agregado'); }, num(m.monto) > 0), cancel()] };
+      if (t === 'posnet') {
+        if (m.fail) return { title: 'El pago no se aprobó', text: 'El pago no se aprobó en la terminal. Cancelala a mano en la terminal si sigue esperando el pago.', blocks: [B.info('No se cobró nada todavía.', 'warn')], buttons: [ok('Reintentar', () => this.setState({ m: {} })), sec2('Cobrar a mano', () => { closeModal(); if (o && o.onPaid) o.onPaid(); }), cancel()] };
+        return { title: 'Cobrando en la terminal', text: 'Esperando la confirmación de Mercado Pago…', blocks: [B.hero('Total a cobrar', fmt(tot), 'Esperando el pago')], buttons: [ok('Simular aprobado', () => { closeModal(); if (o && o.onPaid) o.onPaid(); }), sec2('Simular rechazo', () => this.setState({ m: { fail: true } })), cancel('Cancelar cobro')] };
+      }
+      if (t === 'arqueo') { const ef = num(m.ef); return { title: 'Arqueo obligatorio', text: 'Contá el efectivo del cajón, cigarrillos incluidos. Lo que cuentes queda precargado en el cierre.', blocks: [B.kv('Caja esperada', fmt(EXP.ef)), B.field('Efectivo contado', m.ef || '', setM('ef'), '$ 0', true), B.field('MP contado (según la app de Mercado Pago)', m.mp || '', setM('mp'), '$ 0'), B.field('Lata contada', m.lata || '', setM('lata'), '$ 0')].concat(m.ef ? [B.kv('Diferencia', diffTxt(ef - EXP.ef), ef === EXP.ef ? 'good' : 'bad')] : []), buttons: [ok('Confirmar arqueo', () => { if (!m.ef || !m.mp || !m.lata) { toast('Contá el efectivo y anotalo antes de confirmar'); return; } closeModal(); toast('Arqueo guardado'); }), cancel()] }; }
+      if (t === 'retirar') return { title: 'Retirar ganancia', text: 'Disponible para retirar hoy: ' + fmt(95000), blocks: [B.field('Monto a retirar', m.monto || '', setM('monto'), '$ 0', true), B.chips('De dónde', ['Efectivo', 'Mercado Pago'].map((v) => ({ label: v, on: (m.de || 'Efectivo') === v, pick: () => this.setState({ m: { ...m, de: v } }) })))], buttons: [ok('Retirar', done('Retiro registrado'), num(m.monto) > 0 && num(m.monto) <= 95000), cancel()] };
+      if (t === 'nuevoprov') return { title: 'Nuevo proveedor', text: '', blocks: [B.field('Nombre', m.name || '', setM('name'), 'Ej: Distribuidora Norte', true), B.field('Contacto', m.contacto || '', setM('contacto'), 'Nombre y teléfono'), B.field('Días de entrega', m.dias || '', setM('dias'), 'Ej: martes y viernes')], buttons: [ok('Crear proveedor', done('Proveedor creado'), Boolean((m.name || '').trim())), cancel()] };
+      if (t === 'avanzado') return { title: 'Ajustes avanzados', text: m.prov || '', blocks: [B.toggle('Controla cuenta corriente', 'Lleva lo que se le debe', m.cc !== false, () => this.setState({ m: { ...m, cc: m.cc === false } })), B.toggle('Pedir factura al recibir', 'Pide el comprobante en cada pedido', Boolean(m.fac), () => this.setState({ m: { ...m, fac: !m.fac } })), B.field('Descuento por pronto pago (%)', m.desc || '', setM('desc'), '0')], buttons: [ok('Guardar', done('Ajustes guardados')), cancel()] };
+      if (t === 'ctacte') return { title: 'Cuenta corriente', text: m.prov || '', blocks: [B.hero('Se le debe', fmt(184500), 'Desde el 12 de septiembre'), B.row('Pedido 24/09', 'Factura A-0231', fmt(112000)), B.row('Pedido 17/09', 'Factura A-0218', fmt(98500)), B.row('Pago 20/09', 'Transferencia', '− ' + fmt(26000))], buttons: [ok('Pagar', () => openModal('pagarprov', { prov: m.prov })), cancel('Cerrar')] };
+      if (t === 'pagarprov') return { title: 'Pagar a un proveedor', text: (m.prov || '') + ' · debés ' + fmt(184500), blocks: [B.field('Monto', m.monto || '', setM('monto'), '$ 0', true), B.chips('Cómo se paga', ['Efectivo', 'Mercado Pago', 'Transferencia'].map((v) => ({ label: v, on: (m.como || 'Efectivo') === v, pick: () => this.setState({ m: { ...m, como: v } }) })))], buttons: [ok('Registrar pago', done('Pago registrado'), num(m.monto) > 0), cancel()] };
+      if (t === 'editarprod') { const price = m.price === undefined ? '2100' : m.price; const cost = m.cost === undefined ? '1500' : m.cost; return { title: 'Editar producto', text: m.title || '', blocks: [B.field('Nombre', m.name === undefined ? '' : m.name, setM('name'), ''), B.field('Precio', price, setM('price'), '$ 0', true), B.field('Costo', cost, setM('cost'), '$ 0'), B.toggle('Se vende pesado (por kilo)', 'Precio y stock por kilo', Boolean(m.peso), () => this.setState({ m: { ...m, peso: !m.peso } })), B.toggle('Activo (se puede vender)', 'Aparece en la venta', m.activo !== false, () => this.setState({ m: { ...m, activo: m.activo === false } }))].concat(num(cost) > num(price) ? [B.info('El precio no cubre el costo', 'warn')] : []), buttons: [ok('Guardar cambios', done('Producto actualizado')), cancel()] }; }
+      if (t === 'masiva') return { title: 'Edición masiva', text: 'Productos marcados', blocks: [B.chips('¿Qué querés hacer?', ['Subió el precio', 'Subió el costo', 'Recibí un pedido', 'Asignar categoría', 'Asignar proveedor'].map((v) => ({ label: v, on: (m.op || 'Subió el precio') === v, pick: () => this.setState({ m: { ...m, op: v } }) }))), B.chips('Cómo', ['Sumar %', 'Restar %', 'Sumar monto', 'Restar monto'].map((v) => ({ label: v, on: (m.modo || 'Sumar %') === v, pick: () => this.setState({ m: { ...m, modo: v } }) }))), B.field('Valor', m.val || '', setM('val'), '0', true), B.info('Se aplica al precio de venta de cada producto marcado.')], buttons: [ok('Revisar', () => openModal('masivaok', { op: m.op || 'Subió el precio', modo: m.modo || 'Sumar %', val: m.val || '0' }), num(m.val) > 0), cancel()] };
+      if (t === 'masivaok') return { title: 'Vas a aplicar esto:', text: '', blocks: [B.hero('Productos marcados', (m.modo || '') + ' ' + (m.val || '0') + (String(m.modo).includes('%') ? ' %' : ''), m.op)], buttons: [ok('Sí, aplicar', done('Cambios aplicados')), sec2('Volver', () => openModal('masiva', {}))] };
+      if (t === 'promos') return { title: 'Promos', text: 'Combos y descuentos por cantidad.', blocks: [B.row('2 × 1 en alfajores', 'Todos los días', 'Activa'), B.row('Combo merienda', 'Leche + facturas', fmt(7600)), B.row('3 cervezas', 'Llevando 3 o más', fmt(5700)), B.btn('+ Nueva promo', () => toast('Se abre el armado de la promo'))], buttons: [ok('Cerrar', closeModal)] };
+      if (t === 'csv') return { title: 'Importar CSV', text: 'Cargá una planilla con tus productos. Columnas: nombre, precio, costo, stock, proveedor.', blocks: [B.row('productos-septiembre.csv', '128 filas · 2 con errores', 'Cambiar'), B.kv('Productos nuevos', '96', 'good'), B.kv('Actualiza precio', '30'), B.kv('Con errores', '2', 'bad')], buttons: [ok('Importar 126 productos', done('Importación lista')), cancel()] };
+      if (t === 'comercio') return { title: 'Datos del comercio', text: 'Salen impresos en el ticket.', blocks: [B.field('Nombre del negocio', m.n === undefined ? 'Kiosco Nodo Sur' : m.n, setM('n'), ''), B.field('CUIT', m.c === undefined ? '20-30456789-1' : m.c, setM('c'), ''), B.field('Dirección', m.d === undefined ? 'Av. Rivadavia 4120, CABA' : m.d, setM('d'), ''), B.field('Teléfono', m.t === undefined ? '11 5555-0100' : m.t, setM('t'), '')], buttons: [ok('Guardar', done('Datos guardados')), cancel()] };
+      if (t === 'imprimir') return { title: 'Imprimir ticket', text: m.venta ? 'Venta #' + m.venta : '', blocks: [B.paper([['Nodo Sur', 'c'], ['Cerveza lata × 2', fmt(4200)], ['Pan francés × 1', fmt(1500)], ['TOTAL', fmt(5700), 'b'], ['Gracias por su compra', 'c']])], buttons: [ok('Enviar a posnet', done('Ticket enviado al posnet')), sec2('Guardar PDF', done('PDF guardado en la carpeta de tickets')), cancel('Cerrar')] };
+      if (t === 'anular') return { title: '¿Anular esta venta?', text: 'Se descuenta de la caja y el stock vuelve.', blocks: [B.field('Motivo', m.motivo || '', setM('motivo'), 'Ej: error de carga')], buttons: [sec2('Anular', () => { closeModal(); if (o && o.onAnular) o.onAnular(); toast('Venta anulada'); }, true), cancel()] };
+      if (t === 'motivoedit') return { title: '¿Por qué se edita esta venta?', text: '', blocks: [B.field('Motivo', m.motivo || '', setM('motivo'), 'Ej: el cliente devolvió uno')], buttons: [ok('Confirmar', done('Venta editada'), Boolean((m.motivo || '').trim())), cancel()] };
+      return { title: '', text: '', blocks: [], buttons: [] };
+    };
+    const md = s.modal ? modalDef() : { title: '', text: '', blocks: [], buttons: [] };
+    return { hasModal: Boolean(s.modal), mTitle: md.title, mText: md.text, hasMText: Boolean(md.text), mBlocks: md.blocks, mButtons: md.buttons, closeModal, hasToast: Boolean(s.toast), toastTxt: s.toast };
+  }
+renderVals() {
+    const v = this.baseVals();
+    return { ...v, ...this.mx(this.mxOpts(v)), ...this.extras(v) };
+  }
+  mxOpts(v) {
+    const s = this.state;
+    return { total: 0 };
+  }
+  extras(v) {
+    const s = this.state;
+    return { openArq: () => this.openM('arqueo'), openMov: () => this.openM('movimiento'), openRetirar: () => this.openM('retirar'), pedir: () => this.toastM('Pedido armado con los productos por reponer') };
+  }
+  baseVals() {
+    const s = this.state;
+    const fmt = (n) => '$ ' + Math.round(n).toLocaleString('es-AR');
+
+    const DATA = {
+      hoy: {
+        title: 'Vendiste hoy', total: 482300, delta: '+12 %', vs: 'que ayer a esta hora',
+        tickets: 61, avg: 7906, items: 214,
+        labels: ['8', '9', '10', '11', '12', '13', '14', '15', '16', '17', '18', '19', '20', '21'],
+        vals: [12, 28, 41, 52, 68, 74, 39, 31, 44, 63, 80, 92, 58, 26],
+        mix: [48, 27, 17, 8]
+      },
+      semana: {
+        title: 'Vendiste esta semana', total: 2874500, delta: '+6 %', vs: 'que la semana pasada',
+        tickets: 388, avg: 7409, items: 1342,
+        labels: ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb', 'Dom'],
+        vals: [62, 55, 60, 71, 88, 100, 46],
+        mix: [44, 29, 19, 8]
+      },
+      mes: {
+        title: 'Vendiste este mes', total: 11960000, delta: '+9 %', vs: 'que el mes pasado',
+        tickets: 1612, avg: 7419, items: 5603,
+        labels: ['1-3', '4-6', '7-9', '10-12', '13-15', '16-18', '19-21', '22-24', '25-27', '28-30'],
+        vals: [58, 64, 61, 70, 78, 74, 82, 77, 90, 96],
+        mix: [42, 30, 20, 8]
+      }
+    };
+    const d = DATA[s.period];
+    const max = Math.max(...d.vals);
+
+    const nav = ['Dashboard', 'Venta', 'Proveedores', 'Historial', 'Configuración'].map((n) => ({
+      label: n,
+      style: 'height:42px;padding:0 16px;border-radius:999px;border:0;font-size:15px;font-weight:500;' + (n === 'Dashboard' ? 'background:#f3f4f7;color:#121317' : 'background:transparent;color:#566070')
+    }));
+
+    const periods = [['hoy', 'Hoy'], ['semana', 'Semana'], ['mes', 'Mes']].map(([id, label]) => ({
+      label,
+      style: 'height:40px;padding:0 22px;border-radius:999px;border:0;font-size:15px;font-weight:600;' + (s.period === id ? 'background:#121317;color:#fff' : 'background:transparent;color:#121317'),
+      pick: () => this.setState({ period: id })
+    }));
+
+    const bars = d.vals.map((v, i) => ({
+      label: d.labels[i],
+      col: 'flex:1;height:100%;display:flex;align-items:flex-end',
+      bar: 'width:100%;border-radius:10px;height:' + Math.round((v / max) * 100) + '%;background:' + (v === max ? '#ffffff' : 'rgba(255,255,255,0.22)')
+    }));
+
+    const MIX = [
+      { label: 'Efectivo', color: '#f0a24a' },
+      { label: 'QR', color: '#4f7cff' },
+      { label: 'Débito', color: '#3fd1b0' },
+      { label: 'Mixto', color: '#b59bff' }
+    ];
+    const mix = MIX.map((m, i) => ({
+      label: m.label,
+      pct: d.mix[i] + ' %',
+      amount: fmt((d.total * d.mix[i]) / 100),
+      seg: 'height:100%;border-radius:999px;flex:' + d.mix[i] + ';background:' + m.color,
+      dot: 'width:12px;height:12px;border-radius:50%;background:' + m.color
+    }));
+
+    const TOP = [
+      ['Cerveza lata 473 ml', 1],
+      ['Alfajor triple', 0.82],
+      ['Gaseosa cola 2,25 L', 0.7],
+      ['Yerba 1 kg', 0.52],
+      ['Jamón cocido', 0.4]
+    ];
+    const unitsBase = { hoy: 1, semana: 6, mes: 24 }[s.period];
+    const topQty = [38, 31, 26, 19, 15];
+    const top = TOP.map(([name, w], i) => ({
+      n: String(i + 1),
+      name,
+      qty: i === 4 ? (topQty[i] * unitsBase * 0.25).toFixed(1).replace('.', ',') + ' kg' : topQty[i] * unitsBase + ' u.',
+      bar: 'display:block;height:100%;border-radius:3px;background:#121317;width:' + Math.round(w * 100) + '%'
+    }));
+
+    return {
+      nav,
+      periods,
+      periodTitle: d.title,
+      total: fmt(d.total),
+      delta: '↑ ' + d.delta,
+      vs: d.vs,
+      bars,
+      kpis: [
+        { label: 'Ventas', value: String(d.tickets) },
+        { label: 'Ticket promedio', value: fmt(d.avg) },
+        { label: 'Productos vendidos', value: d.items.toLocaleString('es-AR') }
+      ],
+      mix,
+      top,
+      low: [
+        { name: 'Gaseosa cola 2,25 L', left: 'Quedan 4' },
+        { name: 'Facturas (docena)', left: 'Quedan 9' },
+        { name: 'Aceite girasol 1,5 L', left: 'Quedan 12' }
+      ]
+    };
+  }
+}
+</script>
+</body>
+</html>
