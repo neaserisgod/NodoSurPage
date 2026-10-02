@@ -1,7 +1,7 @@
 import { json } from '../_lib/util.js';
 import { currentUser } from '../_lib/auth.js';
 import { downloadAccess } from '../_lib/access.js';
-import { PLATFORMS, hasR2, latestForInstall } from '../_lib/releases.js';
+import { PLATFORMS, hasR2, historyForInstall, latestForInstall } from '../_lib/releases.js';
 import { hasDB } from '../_lib/db.js';
 
 // Qué puede descargar esta persona (lo consulta /descargar/). Nunca expone claves internas del archivo.
@@ -13,6 +13,7 @@ export async function onRequestGet({ request, env }) {
   const pub = (platform, r) => ({ platform, version: r.version, size: r.size, sha256: r.sha256, notes: r.notes, publishedAt: r.published_at });
   const releases = [];
   const beta = [];
+  const historial = [];
   if (hasDB(env) && hasR2(env)) {
     for (const platform of PLATFORMS) {
       const r = await latestForInstall(env, platform, 'stable');
@@ -21,8 +22,10 @@ export async function onRequestGet({ request, env }) {
       if (acc.privileged) {
         const b = await latestForInstall(env, platform, 'beta');
         if (b) beta.push(pub(platform, b));
+        // Para volver atrás: las versiones anteriores de los dos canales (la más nueva de cada uno ya está arriba).
+        for (const channel of ['stable', 'beta']) for (const h of await historyForInstall(env, platform, channel)) historial.push({ ...pub(platform, h), channel });
       }
     }
   }
-  return json({ canDownload: true, privileged: Boolean(acc.privileged), releases, ...(acc.privileged ? { beta } : {}) });
+  return json({ canDownload: true, privileged: Boolean(acc.privileged), releases, ...(acc.privileged ? { beta, historial } : {}) });
 }

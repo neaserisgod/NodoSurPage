@@ -48,6 +48,31 @@
       betas.forEach(function (r) { g2.appendChild(releaseCard(r, true)); });
       root.appendChild(g2);
     }
+    if (d.historial && d.historial.length) root.appendChild(historyBlock(d.historial));
+  }
+
+  // Volver atrás: todas las versiones recientes de los dos canales, para reinstalar una anterior si una beta sale mal.
+  function historyBlock(h) {
+    var box = el('div', 'acc');
+    box.appendChild(el('h2', null, 'Volver a una versión anterior'));
+    box.appendChild(el('p', 'acc-note', 'Si una versión de prueba anda mal, instalá encima la estable que tenías. Ojo: una versión nueva puede haber cambiado la base de datos, y una más vieja no siempre la entiende. Antes de volver atrás, hacé una copia de seguridad y, si algo no abre, restaurala desde Configuración.'));
+    Object.keys(NAMES).forEach(function (pl) {
+      var rows = h.filter(function (r) { return r.platform === pl; });
+      if (!rows.length) return;
+      var det = el('details'); det.appendChild(el('summary', null, NAMES[pl][0] + ' (' + rows.length + ')'));
+      rows.forEach(function (r) {
+        var row = el('div', 'dl-meta');
+        row.appendChild(el('strong', null, r.version.split('+')[0]));
+        if (r.version.indexOf('+') > 0) row.appendChild(el('span', null, 'Compilación ' + r.version.split('+')[1]));
+        row.appendChild(el('span', 'chip ' + (r.channel === 'beta' ? 'wait' : 'ok'), r.channel === 'beta' ? 'Prueba' : 'Estable'));
+        row.appendChild(el('span', null, mb(r.size)));
+        row.appendChild(el('span', null, date(r.publishedAt)));
+        var a = el('a', 'btn btn-w', 'Descargar'); a.href = '/api/download?platform=' + r.platform + '&channel=' + r.channel + '&version=' + encodeURIComponent(r.version);
+        row.appendChild(a); det.appendChild(row);
+      });
+      box.appendChild(det);
+    });
+    return box;
   }
 
   // Íconos simples por plataforma (decorativos).

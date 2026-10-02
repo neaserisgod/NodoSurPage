@@ -66,6 +66,16 @@ export async function latestForInstall(env, platform, channel) {
   return newest((await candidates(env, platform, channel)).filter((r) => r.rollout >= 100));
 }
 
+// Historial para volver atrás (rollback): las últimas versiones activas y no bloqueadas de cada canal, de la más
+// nueva a la más vieja, con cualquier reparto. Solo lo consultan administradores y cuentas eximidas.
+export async function historyForInstall(env, platform, channel, limit = 10) {
+  return (await candidates(env, platform, channel)).sort((a, b) => cmpVersion(b.version, a.version)).slice(0, limit);
+}
+// Una versión puntual (la que eligió quien hace el rollback). Respeta activa/bloqueada igual que el resto.
+export async function exactForInstall(env, platform, channel, version) {
+  return (await candidates(env, platform, channel)).find((r) => r.version === version) || null;
+}
+
 // ¿Le toca esta versión a esta instalación? Reparto estable por instalación (cid) y versión.
 export async function eligible(release, cid) {
   if (release.rollout >= 100) return true;
