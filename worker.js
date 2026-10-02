@@ -21,6 +21,8 @@ import * as deviceAuthorize from './functions/api/device/authorize.js';
 import * as deviceToken from './functions/api/device/token.js';
 import * as devicePing from './functions/api/device/ping.js';
 import * as deviceMe from './functions/api/device/me.js';
+import * as mpConexion from './functions/api/mp/conexion.js';
+import * as mpOrden from './functions/api/mp/orden.js';
 import * as devices from './functions/api/devices.js';
 import * as backup from './functions/api/backup.js';
 import * as backups from './functions/api/backups.js';
@@ -81,6 +83,17 @@ const ROUTES = {
   'GET /api/org/billing': orgBilling.onRequestGet,
   'POST /api/org/billing': orgBilling.onRequestPost,
   'POST /api/admin/org': adminOrg.onRequestPost,
+  'GET /api/mp/estado': mpConexion.onRequestGet,
+  'POST /api/mp/conectar': mpConexion.onRequestConnect,
+  'GET /api/mp/callback': mpConexion.onRequestCallback,
+  'POST /api/mp/desconectar': mpConexion.onRequestDisconnect,
+  'GET /api/mp/terminales': mpConexion.onRequestTerminales,
+  'POST /api/mp/terminal': mpConexion.onRequestElegirTerminal,
+  'POST /api/mp/probar': mpConexion.onRequestProbar,
+  'POST /api/mp/probar/cancelar': mpConexion.onRequestProbarCancelar,
+  'POST /api/mp/orden': mpOrden.onRequestPost,
+  'GET /api/mp/orden': mpOrden.onRequestGet,
+  'POST /api/mp/orden/cancelar': mpOrden.onRequestCancelar,
   'POST /api/sync': sync.onRequestPost,
   'GET /api/sync': sync.onRequestGet,
   'GET /api/sync/escuchar': sync.onRequestEscuchar,

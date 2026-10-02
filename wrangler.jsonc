@@ -12,6 +12,8 @@
   },
   // Conserva las variables y secretos cargados desde el panel de Cloudflare.
   "keep_vars": true,
+  // ID de la aplicación de Mercado Pago "Nodo Sur POS" (no es secreto). El secreto va aparte: MP_CLIENT_SECRET, cargado en Cloudflare.
+  "vars": { "MP_CLIENT_ID": "7309232869105658" },
   "observability": { "enabled": true },
   // Limpieza diaria, 12:00 UTC (09:00 Argentina). Solo actúa si D1 y Mercado Pago están configurados.
   "triggers": { "crons": ["0 12 * * *"] },

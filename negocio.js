@@ -12,6 +12,7 @@
     self: 'No podés transferirte el negocio a vos mismo.', stale: 'La propuesta ya no es válida: el negocio cambió de dueño.', not_member: 'Esa persona ya no es parte del negocio.',
     expired: 'La propuesta venció.', accepted: 'Esa propuesta ya se resolvió.', declined: 'Esa propuesta ya se resolvió.', cancelled: 'Esa propuesta ya se resolvió.',
     no_subscription: 'Tu mail no tiene una suscripción vigente. Suscribite primero.', mp_error: 'No pudimos consultar Mercado Pago. Probá de nuevo en unos minutos.', not_configured: 'La facturación todavía no está disponible.',
+    mp_no_conectado: 'Primero conectá tu cuenta de Mercado Pago.', mp_no_configurado: 'La conexión con Mercado Pago todavía no está configurada.', terminal_desconocida: 'Esa terminal no es de tu cuenta de Mercado Pago.', bad_branch: 'Esa sucursal ya no existe.',
     not_found: 'Ya no existe: recargá la página.', forbidden: 'No tenés permiso para hacer esto.', no_session: 'Tu sesión venció. Volvé a ingresar.'
   };
   var msgError = function (j) { return (j && ERR[j.error]) || 'No se pudo completar. Probá de nuevo.'; };
@@ -164,10 +165,11 @@
     root.appendChild(c);
 
     if (o.can.facturacion) facturacion(o);
+    if (o.can.mercadopago) mercadopago(o);
     if (o.can.miembros) { owner(o); }
     else {
       var t = card('Tu lugar de trabajo');
-      t.appendChild(note(o.role === 'employee' ? 'Sos empleado de este negocio: operás el sistema POS en la PC del local. Si necesitás algo, hablá con el dueño.' : 'Sos encargado de este negocio.'));
+      t.appendChild(note(o.role === 'employee' ? 'Sos empleado de este negocio: operás el sistema POS en la PC del local o en tu celular, entrando con tu cuenta. Si necesitás algo, hablá con el dueño.' : 'Sos encargado de este negocio.'));
       t.appendChild(note('Tus sucursales: ' + (o.branches.length ? o.branches.map(function (b) { return b.name; }).join(', ') : 'ninguna asignada todavía') + '.'));
       root.appendChild(t);
     }
@@ -176,6 +178,70 @@
       var d = card('Descargá el sistema'); d.appendChild(note('Instalador para la PC del local y app del celular.'));
       var dl = el('a', 'btn', 'Ir a las descargas'); dl.href = '/descargar/'; dl.style.alignSelf = 'flex-start'; d.appendChild(dl); root.appendChild(d);
     }
+  }
+
+  // ---- dueño: cobros con SU cuenta de Mercado Pago (la conexión y el token viven en el servidor; acá solo se conecta y se elige la terminal)
+  var MP_AVISO = {
+    ok: ['ok', 'Listo: tu cuenta de Mercado Pago quedó conectada.'],
+    cancelado: ['wait', 'No se conectó: cancelaste la autorización en Mercado Pago.'],
+    sin_permiso: ['wait', 'No se conectó: Mercado Pago no dio el permiso para renovar la conexión solo. Probá de nuevo y aceptá todo lo que pide.'],
+    error: ['wait', 'No se pudo completar la conexión (el enlace venció o no era tuyo). Probá de nuevo.'],
+    sin_sesion: ['wait', 'Tu sesión venció antes de volver de Mercado Pago. Ingresá de nuevo y reintentá.'],
+    no_configurado: ['wait', 'La conexión con Mercado Pago todavía no está configurada en el servidor.']
+  };
+  var avisoMp = (function () { var v = new URLSearchParams(location.search).get('mp'); if (v && MP_AVISO[v]) { try { history.replaceState(null, '', location.pathname); } catch (e) { /* sin historial */ } return MP_AVISO[v]; } return null; })();
+  function mercadopago(o) {
+    var c = card('Cobros con Mercado Pago'); c.appendChild(note('Cargando…')); root.appendChild(c); refrescarMp(o, c);
+  }
+  function refrescarMp(o, c) {
+    return api('GET', '/api/mp/estado?org=' + o.id).then(function (r) {
+      if (orgId !== o.id) return;
+      c.textContent = ''; c.appendChild(el('h2', null, 'Cobros con Mercado Pago'));
+      if (avisoMp) { var a = note(avisoMp[1]); a.setAttribute('role', 'status'); c.appendChild(a); avisoMp = null; }
+      if (r.status === 503) { c.appendChild(note('La conexión con Mercado Pago todavía no está configurada en el servidor.')); return; }
+      if (!r.ok) { c.appendChild(note('No pudimos consultar el estado. Recargá la página.')); return; }
+      var e = r.j, msg = el('p', 'login-err'); msg.setAttribute('role', 'alert');
+      var conectar = function (txt) { return button(txt, 'btn', function () {
+        msg.textContent = ''; api('POST', '/api/mp/conectar', { orgId: o.id }).then(function (x) { if (x.ok && /^https:\/\/auth\.mercadopago\.com\//.test(x.j.url || '')) location.href = x.j.url; else msg.textContent = msgError(x.j); });
+      }); };
+      if (!e.connected) {
+        c.appendChild(note(e.needsReconnect ? 'La conexión con tu cuenta de Mercado Pago se cortó (la revocaste o venció). Reconectala para seguir cobrando con la terminal.'
+          : 'Conectá tu cuenta de Mercado Pago para cobrar con la terminal Point (QR y débito) desde la PC y el celular, sin depender de que la PC esté prendida. El dinero va a tu cuenta; no guardamos tu usuario ni tu contraseña.'));
+        c.appendChild(conectar(e.needsReconnect ? 'Reconectar Mercado Pago' : 'Conectar Mercado Pago')); c.appendChild(msg); return;
+      }
+      var t = el('p'); t.appendChild(chip('Conectada', 'ok')); t.appendChild(document.createTextNode(' Cuenta de Mercado Pago N° ' + e.mpUserId + ' · desde el ' + dt(e.connectedAt))); c.appendChild(t);
+      c.appendChild(note('Elegí qué terminal usa cada sucursal. Si la terminal todavía no está en modo PDV (el que permite cobrar desde el sistema) se la pasa; si ya lo estaba, no se le toca nada.'));
+      var ul = el('ul', 'pays');
+      (e.branches || []).forEach(function (b) {
+        var li = el('li'), n = el('span'); n.appendChild(el('strong', null, b.name)); n.appendChild(document.createTextNode(' · ' + (b.terminalId ? 'terminal ' + b.terminalId : 'sin terminal')));
+        li.appendChild(n); var ac = el('span', 'acts');
+        if (b.terminalId) ac.appendChild(lnk('Probar cobro de $1', function () {
+          msg.textContent = ''; api('POST', '/api/mp/probar', { orgId: o.id, branchId: b.id }).then(function (x) {
+            if (!x.ok) { msg.textContent = x.j && x.j.mensaje ? 'Mercado Pago respondió: ' + x.j.mensaje : msgError(x.j); return; }
+            abrir({ titulo: 'Cobro de prueba enviado', cuerpo: note('Mirá la terminal de «' + b.name + '»: tendría que mostrar un cobro de $1,00. Si querés, pagalo para ver que todo anda; si no, cancelalo ahora.'),
+              boton: 'Cancelar la prueba', accion: function () { return api('POST', '/api/mp/probar/cancelar', { orgId: o.id, id: x.j.id }).then(function (y) { return y.ok ? {} : { error: 'No se pudo cancelar desde acá: cancelalo en la terminal.' }; }); } });
+          });
+        }));
+        ac.appendChild(lnk(b.terminalId ? 'Cambiar terminal' : 'Elegir terminal', function () {
+          api('GET', '/api/mp/terminales?org=' + o.id).then(function (x) {
+            if (!x.ok) { msg.textContent = msgError(x.j); return; }
+            if (!x.j.terminals.length) { msg.textContent = 'No encontramos terminales Point en tu cuenta de Mercado Pago.'; return; }
+            var sel = el('select'); x.j.terminals.forEach(function (tt) { var op = el('option', null, tt.id + (tt.mode === 'PDV' ? ' (modo PDV)' : '')); op.value = tt.id; if (tt.id === b.terminalId) op.selected = true; sel.appendChild(op); });
+            var f = el('div', 'frm'); f.appendChild(campo('Terminal para «' + b.name + '»', sel));
+            abrir({ titulo: 'Elegir terminal', cuerpo: f, boton: 'Usar esta terminal', despues: function () { refrescarMp(o, c); }, accion: function () {
+              return api('POST', '/api/mp/terminal', { orgId: o.id, branchId: b.id, terminalId: sel.value }).then(function (y) { return y.ok ? {} : { error: msgError(y.j) }; }); } });
+          });
+        }));
+        li.appendChild(ac); ul.appendChild(li);
+      });
+      c.appendChild(ul);
+      var fin = el('div', 'acc-actions');
+      fin.appendChild(lnk('Desconectar Mercado Pago', function () {
+        confirmar('¿Desconectar Mercado Pago?', 'La PC y los celulares dejan de poder cobrar con la terminal hasta que vuelvas a conectar. No se toca nada de tu cuenta de Mercado Pago ni los cobros ya hechos.', 'Sí, desconectar',
+          function () { return api('POST', '/api/mp/desconectar', { orgId: o.id }).then(function (y) { return y.ok ? {} : { error: msgError(y.j) }; }); }, function () { refrescarMp(o, c); });
+      }, true));
+      c.appendChild(fin); c.appendChild(msg);
+    });
   }
 
   // ---- dueño: equipo, sucursales y PC

@@ -40,12 +40,12 @@ export async function downloadAccess(env, cu) {
 //  * Sesión web: el negocio donde su rol permite ver copias (`orgId` elige uno si tiene varios); un encargado
 //    ve solo sus sucursales, la dueña todas.
 //  * Sin negocio (cuentas anteriores): sus propias copias, como siempre.
-export async function backupScope(env, actor, { orgId } = {}) {
+export async function backupScope(env, actor, { orgId, accion = 'copias' } = {}) {
   const d = actor.device;
   if (d && d.owner_org) {
     const org = await getOrg(env, d.owner_org); const m = await getMembership(env, d.owner_org, actor.sub);
     if (!org || !m || m.status !== 'active') return { denied: true, allowed: false };
-    return { orgId: org.id, branchIds: [d.branch_id], billingEmail: org.billing_email, ownerSub: org.owner_sub, allowed: puede(m, 'copias', d.branch_id) };
+    return { orgId: org.id, branchIds: [d.branch_id], billingEmail: org.billing_email, ownerSub: org.owner_sub, allowed: puede(m, accion, d.branch_id) };
   }
   if (!d) {
     const candidatos = await orgsWith(env, actor.sub, 'copias');
