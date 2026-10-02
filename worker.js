@@ -95,6 +95,7 @@ const ROUTES = {
   'GET /api/mp/orden': mpOrden.onRequestGet,
   'POST /api/mp/orden/cancelar': mpOrden.onRequestCancelar,
   'POST /api/mp/imprimir': mpOrden.onRequestImprimir,
+  'GET /api/mp/actividad': mpConexion.onRequestActividad,
   'POST /api/sync': sync.onRequestPost,
   'GET /api/sync': sync.onRequestGet,
   'GET /api/sync/escuchar': sync.onRequestEscuchar,
