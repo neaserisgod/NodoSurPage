@@ -213,13 +213,13 @@ await t('desconectar: borra el token y las terminales elegidas, y los celulares 
   const cel = await celular(env, n, n.a, 'sd', 'duena@x.com', 'cel-dueno-0123456789abcdefg');
   assert.equal((await post(orden.onRequestPost, env, '/api/mp/orden', null, { externalReference: 'v-1', idempotencyKey: 'clave-idem-0001', montoCentavos: 5000, canal: 'qr' }, cel)).status, 409);
 });
-await t('probar: el dueño manda un cobro de $1 a la terminal de una sucursal y lo puede cancelar; nadie más', async () => {
+await t('probar: el dueño manda un cobro de $100 a la terminal de una sucursal y lo puede cancelar; nadie más', async () => {
   const env = mkEnv(MP_ENV); const n = await negocio(env); const m = simular(); const cookie = await sess(env, 'duena@x.com', 'sd'); await conectar(env, n, m, cookie);
   assert.equal((await post(conexion.onRequestProbar, env, '/api/mp/probar', cookie, { orgId: n.org.id, branchId: n.a })).status, 409, 'sin terminal elegida');
   await post(conexion.onRequestElegirTerminal, env, '/api/mp/terminal', cookie, { orgId: n.org.id, branchId: n.a, terminalId: 'PAX_A910__SERIE2' });
   const r = await post(conexion.onRequestProbar, env, '/api/mp/probar', cookie, { orgId: n.org.id, branchId: n.a }); assert.equal(r.status, 200); const j = await r.json();
   const pedido = m.llamadas.filter((x) => x.path === '/v1/orders' && x.metodo === 'POST').at(-1);
-  assert.equal(pedido.cuerpo.transactions.payments[0].amount, '1.00'); assert.match(pedido.cuerpo.external_reference, /^prueba-/); assert.equal(pedido.cuerpo.config.point.terminal_id, 'PAX_A910__SERIE2');
+  assert.equal(pedido.cuerpo.transactions.payments[0].amount, '100.00'); assert.match(pedido.cuerpo.external_reference, /^prueba-/); assert.equal(pedido.cuerpo.config.point.terminal_id, 'PAX_A910__SERIE2');
   assert.equal((await (await post(conexion.onRequestProbarCancelar, env, '/api/mp/probar/cancelar', cookie, { orgId: n.org.id, id: j.id })).json()).status, 'canceled');
   miembro(env, n, 'emp@x.com', 'sm', 'employee', { branches: [n.a] });
   assert.equal((await post(conexion.onRequestProbar, env, '/api/mp/probar', await sess(env, 'emp@x.com', 'sm'), { orgId: n.org.id, branchId: n.a })).status, 403, 'un empleado no manda cobros de prueba');

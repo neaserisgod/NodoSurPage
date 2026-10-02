@@ -217,10 +217,10 @@
       (e.branches || []).forEach(function (b) {
         var li = el('li'), n = el('span'); n.appendChild(el('strong', null, b.name)); n.appendChild(document.createTextNode(' · ' + (b.terminalId ? 'terminal ' + b.terminalId : 'sin terminal')));
         li.appendChild(n); var ac = el('span', 'acts');
-        if (b.terminalId) ac.appendChild(lnk('Probar cobro de $1', function () {
+        if (b.terminalId) ac.appendChild(lnk('Probar cobro de $100', function () {
           msg.textContent = ''; api('POST', '/api/mp/probar', { orgId: o.id, branchId: b.id }).then(function (x) {
             if (!x.ok) { msg.textContent = msgMp(x.j); return; }
-            abrir({ titulo: 'Cobro de prueba enviado', cuerpo: note('Mirá la terminal de «' + b.name + '»: tendría que mostrar un cobro de $1,00. Si querés, pagalo para ver que todo anda; si no, cancelalo ahora.'),
+            abrir({ titulo: 'Cobro de prueba enviado', cuerpo: note('Mirá la terminal de «' + b.name + '»: tendría que mostrar un cobro de $100,00. Si querés, pagalo para ver que todo anda; si no, cancelalo ahora.'),
               boton: 'Cancelar la prueba', accion: function () { return api('POST', '/api/mp/probar/cancelar', { orgId: o.id, id: x.j.id }).then(function (y) { return y.ok ? {} : { error: 'No se pudo cancelar desde acá: cancelalo en la terminal.' }; }); } });
           });
         }));

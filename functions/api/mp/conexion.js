@@ -83,7 +83,10 @@ export async function onRequestElegirTerminal({ request, env }) {
   return json({ error: r.error, detalle: r.detalle }, r.error === 'terminal_desconocida' ? 400 : r.error === 'mp_no_conectado' ? 409 : 502);
 }
 
-// Prueba de punta a punta (solo el dueño): manda UN cobro de $1 a la terminal de una sucursal para comprobar que la conexión y la
+// $1 queda por debajo del mínimo que acepta la terminal Point: la prueba cobra $100 (se puede cancelar sin pagar).
+const MONTO_PRUEBA_CENTAVOS = 10000;
+
+// Prueba de punta a punta (solo el dueño): manda UN cobro de $100 a la terminal de una sucursal para comprobar que la conexión y la
 // terminal andan, sin esperar a la app. Cuerpo: { orgId, branchId }. Queda como una orden común: se paga o se cancela con el botón
 // "Cancelar la prueba" (`/api/mp/probar/cancelar`).
 export async function onRequestProbar({ request, env }) {
@@ -92,7 +95,7 @@ export async function onRequestProbar({ request, env }) {
   if (g.error) return g.error;
   if (!mpConfigurado(env)) return noConfig();
   if (!Number.isInteger(b.branchId) || !(await listBranches(env, g.org.id)).some((x) => x.id === b.branchId && x.active)) return json({ error: 'bad_branch' }, 400);
-  const r = await crearOrden(env, g.org.id, b.branchId, { externalReference: `prueba-${randomHex(8)}`, idempotencyKey: randomHex(16), montoCentavos: 100, canal: 'qr' });
+  const r = await crearOrden(env, g.org.id, b.branchId, { externalReference: `prueba-${randomHex(8)}`, idempotencyKey: randomHex(16), montoCentavos: MONTO_PRUEBA_CENTAVOS, canal: 'qr' });
   if (r.status === 409) return json({ error: r.j.error }, 409);
   if (r.status < 200 || r.status >= 300 || !r.j || !r.j.id) return json({ error: 'mp_rechazo', status: r.status, mensaje: detalleError(r.j) }, 502);
   return json({ ok: true, id: String(r.j.id), status: r.j.status || null });
