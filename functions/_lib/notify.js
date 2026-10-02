@@ -19,3 +19,22 @@ export async function sendDeletionNotice(env, user, deleteAtEpoch) {
     return res.ok;
   } catch { return false; }
 }
+
+// Invitación a un negocio. Devuelve true solo si el mail realmente salió; si no, el dueño copia el link y se lo manda.
+export async function sendInvitation(env, { to, orgName, inviterName, link, role }) {
+  if (!notifierReady(env)) return false;
+  const quien = String(inviterName || '').trim() || 'El dueño';
+  const rol = role === 'manager' ? 'encargado' : 'empleado';
+  const text = `Hola,\n\n${quien} te invitó a sumarte como ${rol} a "${orgName}" en Nodo Sur.\n\n` +
+    `Para aceptar, ingresá con ESTE mismo mail (${to}) en: ${link}\n\n` +
+    `El link vence en 7 días. Si no esperabas esta invitación, ignorá este mail y no pasa nada.\n\nNodo Sur`;
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: env.MAIL_FROM, to: [to], subject: `Te invitaron a ${orgName} en Nodo Sur`, text }),
+    });
+    return res.ok;
+  } catch { return false; }
+}
+

@@ -18,7 +18,7 @@ El sitio se publica como **Worker con archivos estáticos** (`wrangler.jsonc`, n
 
 ### Negocios, sucursales y miembros (en construcción)
 
-Hoy todo cuelga del `sub` de una persona. El modelo nuevo agrega el **negocio** (el que paga) entre la persona y todo lo demás. Se implementa por fases; ya están el modelo (fase 1) y el acceso calculado por negocio (fase 2). Todavía no hay pantallas ni API de miembros e invitaciones.
+Hoy todo cuelga del `sub` de una persona. El modelo nuevo agrega el **negocio** (el que paga) entre la persona y todo lo demás. Se implementa por fases; ya están el modelo (fase 1), el acceso calculado por negocio (fase 2) y la API de miembros, invitaciones y sucursales (fase 3). Todavía no hay pantallas (`/negocio/`, `/unirse/`).
 
 - **`orgs`** (negocio, con `billing_email`), **`branches`** (sucursales), **`memberships`** (persona + rol + sucursales), **`invitations`**. Definición en `functions/_lib/orgs.js` (se crean solas) y `migrations/0005_orgs.sql` (opcional).
 - Todo negocio nace con una **"Sucursal principal"**; `devices` y `backups` ganan `owner_org` y `branch_id` (nullable). `backfillOrgs` convierte lo que ya existe, es idempotente y solo toca filas sin negocio.
@@ -30,6 +30,12 @@ Hoy todo cuelga del `sub` de una persona. El modelo nuevo agrega el **negocio** 
   - Vincular una PC (`/api/device/authorize`, opcionales `orgId` y `branchId`): solo el dueño. La primera vez crea su negocio y su "Sucursal principal" y pasa a ese negocio sus PC y copias anteriores. Una PC deja de valer si quien la vinculó deja de ser miembro activo.
   - Copias: cada una queda en la sucursal de su PC y se rotan **las últimas 5 por sucursal**. La web muestra todas al dueño y solo las asignadas a un encargado; un empleado no ve ninguna. Un id de otro negocio devuelve 404.
   - El barrido de cuentas inactivas no marca a quien está cubierto por la suscripción de su negocio. El cron diario corre `backfillOrgs` (idempotente) para completar lo anterior al modelo.
+- **Miembros, invitaciones y sucursales (fase 3)**: API en `functions/api/org/` (lógica en `functions/_lib/miembros.js`). Solo el dueño administra, solo por sesión web con mismo origen (nunca desde una PC).
+  - `POST /api/org/invite` `{orgId, email, role: manager|employee, branchIds | allBranches}` → link `/unirse/?t=<token>` (se manda por mail si `RESEND_API_KEY` y `MAIL_FROM` están cargados; si no, el dueño copia el link). Vence a los 7 días, reinvitar reemplaza la anterior, hasta 100 pendientes por negocio. En la base queda solo la huella SHA-256 del token.
+  - `GET /api/org/invitation?t=` (vista previa) y `POST /api/org/accept` `{token}`: se aceptan solo con el Google cuyo **mail verificado coincide** con el invitado; con otro mail, 403 sin mostrar a qué negocio era. El link sirve una sola vez; quien ya fue quitado se reactiva; un dueño no se degrada aceptando.
+  - `GET /api/org/members?org=`, `POST /api/org/member/update` y `/remove`: rol y sucursales; al dueño no se lo toca (la propiedad se transfiere aparte, fase 5). Quitar deja al miembro inactivo (las ventas viejas conservan su nombre) y sus PC dejan de valer.
+  - `GET /api/org/branches`, `POST /api/org/branch` y `/branch/update`: crear, renombrar, cerrar y reabrir. No se puede cerrar la última activa ni una con PC vinculadas.
+  - `MAX_MIEMBROS_SIN_COSTO` (por defecto 50): la lista de miembros devuelve `softCap` y `overSoftCap`; solo avisa, no bloquea.
 - Las ventas y la caja siguen siendo **locales por PC**: no hay reportes consolidados entre sucursales (exigirían subir las ventas a la nube).
 
 ### Pagar exige ingresar (y se recuerda el plan)
