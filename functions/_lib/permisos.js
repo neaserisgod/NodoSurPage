@@ -7,15 +7,16 @@
 //  * de sucursal (operar, descargar, copias): hay que indicar en cuál, y la persona tiene que tener esa
 //    sucursal asignada (o `all_branches`). Un empleado solo ve lo de su sucursal.
 export const ROLES = ['owner', 'manager', 'employee'];
-export const ACCIONES = ['facturacion', 'miembros', 'sucursales', 'vincular_pc', 'transferir', 'descargar', 'copias', 'operar'];
+export const ACCIONES = ['facturacion', 'miembros', 'sucursales', 'vincular_pc', 'transferir', 'descargar', 'copias', 'operar', 'vincular_celular'];
 
 const DE_NEGOCIO = new Set(['facturacion', 'miembros', 'sucursales', 'vincular_pc', 'transferir']);
 
 // Qué acciones permite cada rol. El dueño tiene todas.
 const POR_ROL = {
   owner: new Set(ACCIONES),
-  manager: new Set(['descargar', 'copias', 'operar']),
-  employee: new Set(['operar']),
+  manager: new Set(['descargar', 'copias', 'operar', 'vincular_celular']),
+  // El celular es personal: cada quien lo vincula con SU cuenta, en SU sucursal, y ahí queda su perfil (no hay selector).
+  employee: new Set(['operar', 'vincular_celular']),
 };
 
 // `miembro` = { role, all_branches, branches: [ids] } (lo que devuelve getMembership). `sucursalId` solo para

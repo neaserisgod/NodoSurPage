@@ -9,6 +9,8 @@ import { listAllSubscribers } from '../functions/_lib/mp.js';
 import { sweep } from '../functions/_lib/sweep.js';
 import * as authorize from '../functions/api/device/authorize.js';
 import * as token from '../functions/api/device/token.js';
+import * as deviceMe from '../functions/api/device/me.js';
+import * as whoami from '../functions/api/device/whoami.js';
 import * as backup from '../functions/api/backup.js';
 import * as backups from '../functions/api/backups.js';
 import * as devices from '../functions/api/devices.js';
@@ -125,6 +127,39 @@ await t('vincular: solo el dueño vincula PC; un encargado o un empleado no, ni 
   assert.equal((await vincular(env, await sess(env, 'duena@x.com', 'sd'), { orgId: ajeno.org.id })).r.status, 403);
 });
 
+await t('vincular un CELULAR: el empleado y el encargado lo vinculan con su cuenta, solo en sus sucursales; la PC sigue siendo del dueño', async () => {
+  const env = mkEnv(); const n = await negocio(env); const ajeno = await negocio(env, { duena: ['otro@x.com', 'so'] });
+  miembro(env, n, 'emp@x.com', 'sm', 'employee', { branches: [n.b] }); miembro(env, n, 'enc@x.com', 'se', 'manager', { branches: [n.a] });
+  const emp = await sess(env, 'emp@x.com', 'sm');
+  // Sin sucursal indicada: la suya (no la principal).
+  const ok = await vincular(env, emp, { tipo: 'celular', orgId: n.org.id }, 'cel-emp-0123456789abcdefgh'); assert.ok(ok.tok);
+  assert.equal(one(env, "SELECT branch_id b, owner_org o FROM devices WHERE id = 'cel-emp-0123456789abcdefgh'").b, n.b);
+  // Una sucursal donde no trabaja, o de otro negocio, no.
+  assert.equal((await vincular(env, emp, { tipo: 'celular', orgId: n.org.id, branchId: n.a }, 'cel-emp2-0123456789abcdefg')).r.status, 403);
+  assert.equal((await vincular(env, emp, { tipo: 'celular', orgId: ajeno.org.id }, 'cel-emp3-0123456789abcdefg')).r.status, 403);
+  // El encargado también, en la suya. Y como PC (sin `tipo`) ninguno de los dos.
+  assert.ok((await vincular(env, await sess(env, 'enc@x.com', 'se'), { tipo: 'celular', orgId: n.org.id, branchId: n.a }, 'cel-enc-0123456789abcdefgh')).tok);
+  assert.equal((await vincular(env, emp, { orgId: n.org.id, branchId: n.b }, 'pc-emp-0123456789abcdefghi')).r.status, 403, 'la PC es del dueño');
+});
+await t('/api/device/me: el celular sabe quién es (nombre, rol, sucursal) con su token; una PC sin nombre cae al mail', async () => {
+  const env = mkEnv(); const n = await negocio(env); miembro(env, n, 'emp@x.com', 'sm', 'employee', { branches: [n.b] });
+  const { tok } = await vincular(env, await sess(env, 'emp@x.com', 'sm', 'Marta Gómez'), { tipo: 'celular', orgId: n.org.id }, 'cel-me-0123456789abcdefghi'); assert.ok(tok);
+  const yo = async (token) => deviceMe.onRequestGet({ request: req('/api/device/me', { headers: token ? { Authorization: 'Bearer ' + token } : {} }), env });
+  const j = await (await yo(tok)).json();
+  assert.deepEqual(j, { email: 'emp@x.com', name: 'Marta Gómez', role: 'employee', orgId: n.org.id, branchId: n.b });
+  assert.equal((await yo(null)).status, 401);
+  env.DB.raw.prepare("UPDATE devices SET person_name = NULL").run();
+  assert.equal((await (await yo(tok)).json()).name, 'emp', 'sin nombre guardado: la parte del mail antes de la @');
+  // Quitado del negocio: el token deja de valer.
+  env.DB.raw.prepare("UPDATE memberships SET status = 'removed' WHERE user_sub = 'sm'").run();
+  assert.equal((await yo(tok)).status, 401);
+});
+await t('/api/device/whoami?tipo=celular: ofrece al empleado SUS sucursales; sin el parámetro (PC) no puede vincular', async () => {
+  const env = mkEnv(); const n = await negocio(env); miembro(env, n, 'emp@x.com', 'sm', 'employee', { branches: [n.b] });
+  const w = async (qs) => (await whoami.onRequestGet({ request: req('/api/device/whoami' + qs, { cookie: await sess(env, 'emp@x.com', 'sm') }), env })).json();
+  const cel = await w('?tipo=celular'); assert.equal(cel.canLink, true); assert.deepEqual(cel.orgs.map((o) => o.branches.map((b) => b.name)), [['Centro']]);
+  assert.equal((await w('')).canLink, false);
+});
 await t('vincular por primera vez adopta de inmediato las PC y copias viejas de la persona (no esperan al cron)', async () => {
   const env = mkEnv(); addUser(env, 'ana@x.com', 's1'); paga('ana@x.com');
   await upsertDevice(env, { id: 'vieja-pc-0123456789abcdefgh', sub: 's1', email: 'ana@x.com', name: 'PC vieja' }); // sin negocio

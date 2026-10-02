@@ -13,7 +13,7 @@ export async function onRequestPost({ request, env }) {
   if ((await sha256b64u(b.verifier)) !== c.challenge) return json({ error: 'invalid_code' }, 400);
   if (!(await consumeDeviceCode(env, c.jti))) return json({ error: 'invalid_code' }, 400); // ya usado
   const t = now();
-  await upsertDevice(env, { id: c.did, sub: c.sub, email: c.email, name: c.name, orgId: c.org, branchId: c.branch }, t);
+  await upsertDevice(env, { id: c.did, sub: c.sub, email: c.email, name: c.name, orgId: c.org, branchId: c.branch, personName: c.pname }, t);
   return json({ token: await signDeviceToken(env, { sub: c.sub, email: c.email, deviceId: c.did }, t),
     email: c.email, deviceId: c.did, expiresAt: t + DEVICE_TTL });
 }
