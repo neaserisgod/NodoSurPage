@@ -23,7 +23,7 @@ export const mkEnv = (extra = {}) => (clearMpCache(), {
   SESSION_SECRET: 'x'.repeat(48), SITE_URL: 'https://horsepos.com', MP_ACCESS_TOKEN: 'tok', ADMIN_EMAILS: 'admin@x.com',
   RELEASE_TOKEN: 'r'.repeat(40), BACKUP_KEY, DB: fakeD1(), RELEASES: fakeR2(), ...extra });
 export const addUser = (env, email, sub, exempt = 0) => env.DB.raw.prepare('INSERT INTO users (sub,email,name,created_at,last_seen,login_count,exempt) VALUES (?,?,?,?,?,1,?)').run(sub, email, email, nowS(), nowS(), exempt);
-export const sess = async (env, email, sub) => `ns_session=${await sign({ sub, email, name: 'X', iat: nowS(), exp: nowS() + 999 }, env.SESSION_SECRET)}`;
+export const sess = async (env, email, sub, name = 'X') => `ns_session=${await sign({ sub, email, name, iat: nowS(), exp: nowS() + 999 }, env.SESSION_SECRET)}`;
 export const req = (path, { method = 'GET', body, raw, cookie, headers = {} } = {}) => new Request('https://horsepos.com' + path, {
   method, body: raw !== undefined ? raw : body === undefined ? undefined : JSON.stringify(body), headers: { ...(cookie ? { Cookie: cookie } : {}), ...headers } });
 export const web = { Origin: 'https://horsepos.com', 'X-Requested-With': 'fetch' };

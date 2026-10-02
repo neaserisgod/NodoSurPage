@@ -34,18 +34,18 @@ const DDL = [
 // backfillOrgs las completa). Los dos lados las agregan solos: la tabla puede ser nueva o venir de producción.
 export const ensureDeviceTables = (env) => once(env, 'devices', async () => {
   for (const sql of DDL) await env.DB.prepare(sql).run();
-  await addColumn(env, 'devices', 'owner_org INTEGER'); await addColumn(env, 'devices', 'branch_id INTEGER');
+  await addColumn(env, 'devices', 'owner_org INTEGER'); await addColumn(env, 'devices', 'branch_id INTEGER'); await addColumn(env, 'devices', 'person_name TEXT');
   await env.DB.prepare('CREATE INDEX IF NOT EXISTS idx_devices_org ON devices(owner_org, branch_id)').run();
 });
 const safe = async (fn, fallback) => { try { return await fn(); } catch (e) { if (/no such table/i.test(String(e && e.message))) return fallback; throw e; } };
 
 // --- código de un solo uso (paso 3)
-export async function createDeviceCode(env, { sub, email, deviceId, name, challenge, orgId, branchId }, t = now()) {
+export async function createDeviceCode(env, { sub, email, deviceId, name, challenge, orgId, branchId, personName }, t = now()) {
   await ensureDeviceTables(env);
   const jti = randomHex(16);
   await env.DB.prepare('DELETE FROM device_codes WHERE exp < ?1').bind(t).run(); // limpieza oportunista
   await env.DB.prepare('INSERT INTO device_codes (jti, exp) VALUES (?1, ?2)').bind(jti, t + CODE_TTL).run();
-  return sign({ typ: 'devcode', sub, email, did: deviceId, name, challenge, org: orgId ?? null, branch: branchId ?? null, jti, exp: t + CODE_TTL }, secretCodigo(env));
+  return sign({ typ: 'devcode', sub, email, did: deviceId, name, challenge, org: orgId ?? null, branch: branchId ?? null, pname: personName ?? null, jti, exp: t + CODE_TTL }, secretCodigo(env));
 }
 export async function readDeviceCode(env, code) {
   const p = await verify(code, secretCodigo(env));
@@ -61,15 +61,15 @@ export async function consumeDeviceCode(env, jti) {
 export const signDeviceToken = (env, { sub, email, deviceId }, t = now()) =>
   sign({ typ: 'dev', sub, email, did: deviceId, exp: t + DEVICE_TTL }, secretDispositivo(env));
 
-export async function upsertDevice(env, { id, sub, email, name, cid, version, os, orgId, branchId }, t = now()) {
+export async function upsertDevice(env, { id, sub, email, name, cid, version, os, orgId, branchId, personName }, t = now()) {
   await ensureDeviceTables(env);
   // Vincular de nuevo una PC la deja en el negocio y la sucursal indicados (o sin ninguno si no se indican).
   await env.DB.prepare(
-    `INSERT INTO devices (id, owner_sub, owner_email, name, cid, app_version, os, created_at, last_seen, revoked, owner_org, branch_id)
-     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8, 0, ?9, ?10)
+    `INSERT INTO devices (id, owner_sub, owner_email, name, cid, app_version, os, created_at, last_seen, revoked, owner_org, branch_id, person_name)
+     VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?8, 0, ?9, ?10, ?11)
      ON CONFLICT(id) DO UPDATE SET owner_sub = ?2, owner_email = ?3, name = COALESCE(?4, name), cid = COALESCE(?5, cid),
-       app_version = COALESCE(?6, app_version), os = COALESCE(?7, os), last_seen = ?8, revoked = 0, owner_org = ?9, branch_id = ?10`
-  ).bind(id, sub, email, name ?? null, cid ?? null, version ?? null, os ?? null, t, orgId ?? null, branchId ?? null).run();
+       app_version = COALESCE(?6, app_version), os = COALESCE(?7, os), last_seen = ?8, revoked = 0, owner_org = ?9, branch_id = ?10, person_name = COALESCE(?11, person_name)`
+  ).bind(id, sub, email, name ?? null, cid ?? null, version ?? null, os ?? null, t, orgId ?? null, branchId ?? null, personName ?? null).run();
 }
 export const touchDevice = (env, id, { version, os, cid }, t = now()) => env.DB.prepare(
   'UPDATE devices SET last_seen = ?2, app_version = COALESCE(?3, app_version), os = COALESCE(?4, os), cid = COALESCE(?5, cid) WHERE id = ?1'

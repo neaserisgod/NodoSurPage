@@ -20,6 +20,7 @@ import * as deviceWhoami from './functions/api/device/whoami.js';
 import * as deviceAuthorize from './functions/api/device/authorize.js';
 import * as deviceToken from './functions/api/device/token.js';
 import * as devicePing from './functions/api/device/ping.js';
+import * as deviceMe from './functions/api/device/me.js';
 import * as devices from './functions/api/devices.js';
 import * as backup from './functions/api/backup.js';
 import * as backups from './functions/api/backups.js';
@@ -55,6 +56,7 @@ const ROUTES = {
   'POST /api/device/authorize': deviceAuthorize.onRequestPost,
   'POST /api/device/token': deviceToken.onRequestPost,
   'POST /api/device/ping': devicePing.onRequestPost,
+  'GET /api/device/me': deviceMe.onRequestGet,
   'POST /api/device/revoke': devices.onRequestRevoke,
   'GET /api/devices': devices.onRequestGet,
   'PUT /api/backup': backup.onRequestPut,
