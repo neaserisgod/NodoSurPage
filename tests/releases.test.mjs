@@ -125,7 +125,8 @@ await t('appcast (Sparkle/WinSparkle): versión nombre.build, firma, obligatoria
   assert.match(r.headers.get('Content-Type'), /application\/xml/);
   assert.match(x, /<sparkle:version>1\.0\.0\.2098<\/sparkle:version>/); assert.match(x, /<sparkle:shortVersionString>1\.0\.0<\/sparkle:shortVersionString>/);
   assert.match(x, /sparkle:edSignature="ABC="/); assert.match(x, /sparkle:os="windows"/); assert.match(x, /<sparkle:criticalUpdate>/); assert.match(x, /length="\d+"/);
-  assert.match(x, /enclosure url="https:\/\/horsepos\.com\/api\/update\/file\?id=1"/); assert.ok(!x.includes('Setup-1.0.0'));
+  // La dirección termina en un nombre con extensión: sin ella WinSparkle guarda "file" y Windows pregunta "Abrir con".
+  assert.match(x, /enclosure url="https:\/\/horsepos\.com\/api\/update\/file\/NodoSurPOS-Actualizacion\.[A-Za-z0-9]+\?id=1"/); assert.ok(!x.includes('Setup-1.0.0'));
   assert.ok(!/<b>/.test(x.replace(/<!\[CDATA\[[\s\S]*?\]\]>/g, '')));
   assert.equal((await (await appcast.onRequestGet({ request: req('/api/update/appcast.xml?platform=macos'), env })).text()).includes('<item>'), false);
   assert.equal((await appcast.onRequestGet({ request: req('/api/update/appcast.xml?platform=x'), env })).status, 400);

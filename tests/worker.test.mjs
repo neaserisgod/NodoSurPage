@@ -20,6 +20,11 @@ await t('método incorrecto => 405 y ruta inexistente => 404', async () => {
   assert.equal((await call('/api/auth/logout', 'GET')).status, 405);
   assert.equal((await call('/api/nada')).status, 404);
 });
+await t('el archivo de actualización también se sirve con un nombre al final (WinSparkle lo usa para guardar el .exe)', async () => {
+  const a = await call('/api/update/file?id=1'), b = await call('/api/update/file/NodoSurPOS-Actualizacion.exe?id=1');
+  assert.equal(b.status, a.status); assert.equal(await b.text(), await a.text()); // mismo manejador, no el 404 JSON de ruta inexistente
+  assert.equal((await call('/api/update/files')).status, 404);
+});
 await t('rutas de administración exigen sesión', async () => {
   assert.equal((await call('/api/admin/overview')).status, 401);
   assert.equal((await call('/api/admin/user', 'POST')).status, 403);
