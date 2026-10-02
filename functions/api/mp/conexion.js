@@ -4,7 +4,7 @@ import { currentUser } from '../../_lib/auth.js';
 import { hasDB } from '../../_lib/db.js';
 import { guard, readJson } from '../../_lib/miembros.js';
 import { listBranches } from '../../_lib/orgs.js';
-import { mpConfigurado, ensureMpTables, iniciarConexion, completarConexion, estadoConexion, desconectar, terminalesDe, terminalDeSucursal, elegirTerminal, crearOrden, cancelarOrden } from '../../_lib/mp_conexion.js';
+import { mpConfigurado, ensureMpTables, iniciarConexion, completarConexion, estadoConexion, desconectar, terminalesDe, terminalDeSucursal, elegirTerminal, crearOrden, cancelarOrden, detalleError } from '../../_lib/mp_conexion.js';
 import { randomHex } from '../../_lib/util.js';
 
 const noConfig = () => json({ error: 'mp_no_configurado' }, 503);
@@ -94,7 +94,7 @@ export async function onRequestProbar({ request, env }) {
   if (!Number.isInteger(b.branchId) || !(await listBranches(env, g.org.id)).some((x) => x.id === b.branchId && x.active)) return json({ error: 'bad_branch' }, 400);
   const r = await crearOrden(env, g.org.id, b.branchId, { externalReference: `prueba-${randomHex(8)}`, idempotencyKey: randomHex(16), montoCentavos: 100, canal: 'qr' });
   if (r.status === 409) return json({ error: r.j.error }, 409);
-  if (r.status < 200 || r.status >= 300 || !r.j || !r.j.id) return json({ error: 'mp_rechazo', status: r.status, mensaje: (r.j && (r.j.message || r.j.error)) || null }, 502);
+  if (r.status < 200 || r.status >= 300 || !r.j || !r.j.id) return json({ error: 'mp_rechazo', status: r.status, mensaje: detalleError(r.j) }, 502);
   return json({ ok: true, id: String(r.j.id), status: r.j.status || null });
 }
 export async function onRequestProbarCancelar({ request, env }) {
@@ -104,5 +104,5 @@ export async function onRequestProbarCancelar({ request, env }) {
   if (!mpConfigurado(env)) return noConfig();
   if (typeof b.id !== 'string' || !/^[\w-]{1,64}$/.test(b.id)) return json({ error: 'bad_request' }, 400);
   const r = await cancelarOrden(env, g.org.id, b.id);
-  return r.status >= 200 && r.status < 300 ? json({ ok: true, status: (r.j && r.j.status) || null }) : json({ error: 'mp_rechazo', status: r.status, mensaje: (r.j && (r.j.message || r.j.error)) || null }, 502);
+  return r.status >= 200 && r.status < 300 ? json({ ok: true, status: (r.j && r.j.status) || null }) : json({ error: 'mp_rechazo', status: r.status, mensaje: detalleError(r.j) }, 502);
 }

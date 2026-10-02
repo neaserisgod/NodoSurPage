@@ -3,7 +3,7 @@ import { actorOf } from '../../_lib/actor.js';
 import { hasDB } from '../../_lib/db.js';
 import { readJson } from '../../_lib/miembros.js';
 import { syncAccess } from '../../_lib/sync.js';
-import { mpConfigurado, ensureMpTables, crearOrden, consultarOrden, cancelarOrden } from '../../_lib/mp_conexion.js';
+import { mpConfigurado, ensureMpTables, crearOrden, consultarOrden, cancelarOrden, detalleError } from '../../_lib/mp_conexion.js';
 
 // Cobrar con la terminal Point DESDE EL SERVIDOR: la PC o el celular piden la orden acá y el sitio la crea con el token del
 // negocio (que nunca sale del servidor). Pueden quienes operan la sucursal del dispositivo con el negocio al día.
@@ -21,7 +21,7 @@ async function quien(request, env) {
 // Lo que se le devuelve a la app: solo lo que necesita para seguir la orden; nada del token ni de la cuenta.
 const salida = (r) => {
   if (r.status === 409 || !r.j) return json({ error: (r.j && r.j.error) || 'mp_error' }, r.status === 409 ? 409 : 502);
-  if (r.status < 200 || r.status >= 300) return json({ error: 'mp_rechazo', status: r.status, mensaje: r.j.message || r.j.error || null }, r.status === 404 ? 404 : 502);
+  if (r.status < 200 || r.status >= 300) return json({ error: 'mp_rechazo', status: r.status, mensaje: detalleError(r.j) }, r.status === 404 ? 404 : 502);
   return json({ id: r.j.id ? String(r.j.id) : null, status: r.j.status || null, statusDetail: r.j.status_detail || null });
 };
 
