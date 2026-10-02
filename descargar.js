@@ -27,18 +27,47 @@
     }
     var betas = d.beta || [];
     if (!d.releases.length && !betas.length) { c = card(MSG.no_disponible[0]); note(c, MSG.no_disponible[1]); root.appendChild(c); return; }
-    betas.forEach(function (r) { root.appendChild(releaseCard(r, true)); });
-    d.releases.forEach(function (r) { root.appendChild(releaseCard(r, false)); });
+    if (d.releases.length) {
+      var grid = el('div', 'dl-grid');
+      d.releases.forEach(function (r) { grid.appendChild(releaseCard(r, false)); });
+      root.appendChild(grid);
+    }
+    if (betas.length) {
+      root.appendChild(el('p', 'dl-sep', 'Versiones de prueba: solo las ves vos, como administrador, para probar antes de liberarlas a los clientes.'));
+      var g2 = el('div', 'dl-grid');
+      betas.forEach(function (r) { g2.appendChild(releaseCard(r, true)); });
+      root.appendChild(g2);
+    }
   }
+
+  // Íconos simples por plataforma (decorativos).
+  var ICON = {
+    windows: '<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M3 5.5 10.5 4.4v7.1H3zM11.5 4.3 21 3v8.5h-9.5zM3 12.5h7.5v7.1L3 18.5zM11.5 12.5H21V21l-9.5-1.3z"/></svg>',
+    android: '<svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M6 9.5h12v8a1.5 1.5 0 0 1-1.5 1.5H15v2.5a1.2 1.2 0 0 1-2.4 0V19h-1.2v2.5a1.2 1.2 0 0 1-2.4 0V19H7.5A1.5 1.5 0 0 1 6 17.5zM3.7 9.7a1.2 1.2 0 0 1 2.4 0v5.6a1.2 1.2 0 0 1-2.4 0zm14.2 0a1.2 1.2 0 0 1 2.4 0v5.6a1.2 1.2 0 0 1-2.4 0zM6.2 8.5a5.8 5.8 0 0 1 11.6 0zM9.6 6.3h.01M14.4 6.3h.01" stroke="currentColor" stroke-width=".01"/></svg>',
+    macos: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M8 20h8M12 16v4"/></svg>',
+    linux: '<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="m7 9 3 3-3 3M13 15h4"/></svg>'
+  };
 
   // Una tarjeta por versión. La de prueba (beta) solo la reciben las cuentas de administrador.
   function releaseCard(r, beta) {
-    var n = NAMES[r.platform] || [r.platform, ''], c;
-    c = card(beta ? n[0] + ' · versión de prueba (beta)' : n[0]);
-    if (beta) note(c, 'Solo la ves vos, como administrador: sirve para probar antes de liberarla a los clientes.');
-    note(c, n[1] + ' Versión ' + r.version.split('+')[0] + (r.version.indexOf('+') > 0 ? ' (compilación ' + r.version.split('+')[1] + ')' : '') + ' · ' + mb(r.size) + ' · publicada el ' + date(r.publishedAt) + '.');
+    var n = NAMES[r.platform] || [r.platform, ''];
+    var c = el('article', 'acc dl' + (beta ? ' beta' : ''));
+    var head = el('div', 'dl-h');
+    var ic = el('span', 'dl-ic'); ic.setAttribute('aria-hidden', 'true'); ic.innerHTML = ICON[r.platform] || ICON.linux;
+    head.appendChild(ic);
+    var t = el('div'); t.appendChild(el('h2', null, n[0])); t.appendChild(el('p', 'dl-sub', n[1])); head.appendChild(t);
+    if (beta) head.appendChild(el('span', 'chip wait', 'Versión de prueba'));
+    c.appendChild(head);
+    c.appendChild(el('p', 'dl-v', r.version.split('+')[0]));
+    var meta = el('div', 'dl-meta');
+    if (r.version.indexOf('+') > 0) meta.appendChild(el('span', null, 'Compilación ' + r.version.split('+')[1]));
+    meta.appendChild(el('span', null, mb(r.size)));
+    meta.appendChild(el('span', null, 'Publicada el ' + date(r.publishedAt)));
+    c.appendChild(meta);
     if (r.notes) c.appendChild(el('p', 'acc-note', r.notes));
-    var a = el('a', 'btn', beta ? 'Descargar la beta para ' + n[0] : 'Descargar para ' + n[0]); a.href = '/api/download?platform=' + r.platform + (beta ? '&channel=beta' : ''); a.style.alignSelf = 'flex-start'; c.appendChild(a);
+    var a = el('a', 'btn', beta ? 'Descargar la beta para ' + n[0] : 'Descargar para ' + n[0]);
+    a.href = '/api/download?platform=' + r.platform + (beta ? '&channel=beta' : '');
+    c.appendChild(a);
     var det = el('details'); det.appendChild(el('summary', null, 'Verificar la descarga'));
     var p = el('p', 'acc-note', 'SHA-256: '); var code = el('code', null, r.sha256); code.style.overflowWrap = 'anywhere'; p.appendChild(code); det.appendChild(p);
     c.appendChild(det);
