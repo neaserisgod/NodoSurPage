@@ -15,6 +15,7 @@ export function fakeR2() {
     async put(k, bytes) { files.set(k, Buffer.from(bytes)); },
     async delete(k) { files.delete(k); },
     async head(k) { return files.has(k) ? { size: files.get(k).length } : null; },
+    async list() { return { objects: [...files.keys()].map((key) => ({ key, uploaded: new Date(files.uploaded?.get(key) ?? 0) })), truncated: false }; },
     async get(k) { const b = files.get(k); if (!b) return null; return { size: b.length, httpEtag: '"e"', writeHttpMetadata() {}, body: new Blob([b]).stream(), async arrayBuffer() { return new Uint8Array(b).buffer; } }; },
   };
 }

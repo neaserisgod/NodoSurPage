@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { sign } from '../functions/_lib/util.js';
-import { cmpVersion, validVersion, validKey } from '../functions/_lib/releases.js';
+import { cmpVersion, validVersion, validKey, podarVersiones, ensureTables } from '../functions/_lib/releases.js';
 import { clearMpCache } from '../functions/_lib/mp.js';
 import * as adminRel from '../functions/api/admin/releases.js';
 import * as latest from '../functions/api/update/latest.js';
@@ -19,7 +19,9 @@ function fakeD1() {
 // R2 simulado: get con Range y If-None-Match, head, y contenido en memoria.
 function fakeR2() {
   const files = new Map();
-  return { files, put(k, txt) { files.set(k, Buffer.from(txt)); },
+  const subido = new Map();
+  return { files, subido, put(k, txt) { files.set(k, Buffer.from(txt)); subido.set(k, Date.now()); }, async delete(k) { files.delete(k); subido.delete(k); },
+    async list() { return { objects: [...files.keys()].map((key) => ({ key, uploaded: new Date(subido.get(key) ?? 0) })), truncated: false }; },
     async head(k) { return files.has(k) ? { size: files.get(k).length } : null; },
     async get(k, { range, onlyIf } = {}) {
       const buf = files.get(k); if (!buf) return null;
@@ -204,7 +206,8 @@ await t('rollback: administradores y cuentas eximidas ven el historial y bajan u
   const go = (qs, cookie) => download.onRequestGet({ request: req('/api/download?' + qs, { cookie }), env });
   const admin = await sess(env, 'admin@x.com', 'a'); const ana = await sess(env, 'ana@x.com', 's1');
   const h = (await (await downloads.onRequestGet({ request: req('/api/downloads', { cookie: admin }), env })).json()).historial;
-  assert.deepEqual(h.map((r) => r.channel + ':' + r.version), ['stable:1.0.0+2102', 'stable:1.0.0+2101', 'stable:1.0.0+2100', 'beta:1.0.0+2103']);
+  // Se conservan solo 2 por canal: la 2100, la más vieja, se borró al publicarla.
+  assert.deepEqual(h.map((r) => r.channel + ':' + r.version), ['stable:1.0.0+2102', 'stable:1.0.0+2101', 'beta:1.0.0+2103']);
   assert.ok(!('file_key' in h[0]) && !('key' in h[0]));
   assert.equal(await (await go('platform=windows&version=1.0.0%2B2101', admin)).text(), 'S2101'); // volver a una estable anterior
   assert.equal(await (await go('platform=windows&channel=beta&version=1.0.0%2B2103', admin)).text(), 'B2103');
@@ -246,4 +249,25 @@ await t('flujo de Windows: se publica 1.0.0.2099 y una app 1.0.0.2098 la ve (mis
   assert.equal(await ask('1.0.0.2098'), true); assert.equal(await ask('1.0.0.2099'), false); assert.equal(await ask('1.0.0.2100'), false);
 });
 
+await t('poda: cada publicación deja solo las 2 últimas por plataforma y canal; borra lo demás con su archivo y las bloqueadas no cuentan', async () => {
+  const env = mkEnv(); const sube = async (v, canal = 'stable', plat = 'windows') => { const key = `${canal}/${v}/S-${v}.exe`; env.RELEASES.put(key, 'x'); assert.equal((await ciPost(env, { platform: plat, channel: canal, version: v, key, sha256: 'a'.repeat(64) })).status, 200); };
+  for (const v of ['1.0.0.1', '1.0.0.2', '1.0.0.3']) await sube(v);
+  await sube('1.0.0.1', 'beta'); await sube('1.0.0.1', 'stable', 'android');
+  const filas = () => env.DB.raw.prepare('SELECT channel, platform, version FROM releases ORDER BY platform, channel, version').all().map((r) => `${r.platform}/${r.channel}/${r.version}`);
+  assert.deepEqual(filas(), ['android/stable/1.0.0.1', 'windows/beta/1.0.0.1', 'windows/stable/1.0.0.2', 'windows/stable/1.0.0.3']);
+  assert.equal(env.RELEASES.files.has('stable/1.0.0.1/S-1.0.0.1.exe'), true); // el de android sigue (otra plataforma, misma ruta)
+  env.DB.raw.prepare("UPDATE releases SET blocked = 1 WHERE version = '1.0.0.3' AND platform = 'windows'").run();
+  await sube('1.0.0.4');
+  assert.deepEqual(filas().filter((f) => f.startsWith('windows/stable')), ['windows/stable/1.0.0.2', 'windows/stable/1.0.0.3', 'windows/stable/1.0.0.4']); // la 3 está bloqueada: no cuenta, la 2 queda de "anterior"
+  await sube('1.0.0.5');
+  assert.deepEqual(filas().filter((f) => f.startsWith('windows/stable')), ['windows/stable/1.0.0.4', 'windows/stable/1.0.0.5']);
+  assert.equal(env.RELEASES.files.has('stable/1.0.0.2/S-1.0.0.2.exe'), false);
+});
+await t('poda: borra del R2 los archivos sin versión registrada, pero no los recién subidos', async () => {
+  const env = mkEnv(); await ensureTables(env);
+  env.RELEASES.put('beta/9.9.9.9/huerfano.exe', 'x'); env.RELEASES.subido.set('beta/9.9.9.9/huerfano.exe', Date.now() - 2 * 3600 * 1000);
+  env.RELEASES.put('beta/9.9.9.8/reciente.exe', 'x');
+  const r = await podarVersiones(env);
+  assert.equal(r.huerfanos, 1); assert.equal(env.RELEASES.files.has('beta/9.9.9.9/huerfano.exe'), false); assert.equal(env.RELEASES.files.has('beta/9.9.9.8/reciente.exe'), true);
+});
 console.log(`\n${pass} pruebas OK (versiones y descargas)`);
