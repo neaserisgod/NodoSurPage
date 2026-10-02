@@ -57,7 +57,9 @@ const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 // quien vinculó el dispositivo siga siendo un miembro activo con permiso sobre esa sucursal.
 // Quien canceló puede BAJAR (recuperar lo suyo) durante la ventana de restauración, pero no subir.
 export async function syncAccess(env, actor) {
-  const a = await backupAccess(env, actor, await backupScope(env, actor));
+  // Sincronizar lo hace quien OPERA la sucursal (un empleado también), no solo quien puede ver copias de seguridad: si no, el celular
+  // de un empleado no podría sincronizar nunca.
+  const a = await backupAccess(env, actor, await backupScope(env, actor, { accion: 'operar' }));
   return a.error ? a : { subir: Boolean(a.upload), bajar: Boolean(a.upload || a.restore) };
 }
 

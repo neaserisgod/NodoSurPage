@@ -41,6 +41,21 @@ await t('la PC y el celular de una misma sucursal se ven entre sí', async () =>
   assert.deepEqual(await textos(await bajar(env, cel)), ['venta de la PC']);
   assert.deepEqual(await textos(await bajar(env, pc)), [], 'y la PC no recibe lo suyo');
 });
+await t('el celular de un EMPLEADO sincroniza con la PC de su sucursal (opera, aunque no pueda ver copias); uno quitado, no', async () => {
+  const env = mkEnv(); const g = await negocio(env); paga('duena@x.com');
+  for (const [email, sub, role, branches] of [['emp@x.com', 'sm', 'employee', [g.a]], ['enc@x.com', 'se', 'manager', [g.a]], ['otra@x.com', 'sx', 'employee', [g.b]]]) {
+    addUser(env, email, sub); const mm = env.DB.raw.prepare('INSERT INTO memberships (org_id, user_sub, email, role, status, all_branches, created_at) VALUES (?,?,?,?,?,0,?)').run(g.org.id, sub, email, role, 'active', nowS());
+    for (const b of branches) env.DB.raw.prepare('INSERT INTO membership_branches (membership_id, branch_id) VALUES (?,?)').run(mm.lastInsertRowid, b);
+  }
+  const pc = await disp(env, g, g.a, g.dueno, 'pc'), emp = await disp(env, g, g.a, ['emp@x.com', 'sm'], 'empcel'), enc2 = await disp(env, g, g.a, ['enc@x.com', 'se'], 'enccel'), ajeno = await disp(env, g, g.b, ['otra@x.com', 'sx'], 'ajeno');
+  assert.equal((await subir(env, pc, 'de la PC', 'lote-1020-aaaa')).status, 200);
+  assert.deepEqual(await textos(await bajar(env, emp)), ['de la PC'], 'el empleado baja lo de su sucursal');
+  assert.equal((await subir(env, emp, 'del empleado', 'lote-1020-bbbb')).status, 200, 'y sube lo suyo');
+  assert.deepEqual(await textos(await bajar(env, pc)), ['del empleado']); assert.equal((await bajar(env, enc2)).status, 200);
+  assert.deepEqual(await textos(await bajar(env, ajeno)), [], 'un empleado de OTRA sucursal no ve nada de esta');
+  env.DB.raw.prepare("UPDATE memberships SET status = 'removed' WHERE user_sub = 'sm'").run();
+  assert.equal((await bajar(env, emp)).status, 401, 'quitado del negocio: su celular deja de valer');
+});
 await t('otra sucursal del MISMO dueño no ve nada (ni ella ve lo de la primera)', async () => {
   const env = mkEnv(); const g = await negocio(env); paga('duena@x.com');
   const pcA = await disp(env, g, g.a, g.dueno, 'pcA'), pcB = await disp(env, g, g.b, g.dueno, 'pcB'), celB = await disp(env, g, g.b, g.dueno, 'celB');

@@ -7,9 +7,9 @@
 //  * de sucursal (operar, descargar, copias): hay que indicar en cuál, y la persona tiene que tener esa
 //    sucursal asignada (o `all_branches`). Un empleado solo ve lo de su sucursal.
 export const ROLES = ['owner', 'manager', 'employee'];
-export const ACCIONES = ['facturacion', 'miembros', 'sucursales', 'vincular_pc', 'transferir', 'descargar', 'copias', 'operar', 'vincular_celular'];
+export const ACCIONES = ['facturacion', 'miembros', 'sucursales', 'vincular_pc', 'transferir', 'descargar', 'copias', 'operar', 'vincular_celular', 'mercadopago'];
 
-const DE_NEGOCIO = new Set(['facturacion', 'miembros', 'sucursales', 'vincular_pc', 'transferir']);
+const DE_NEGOCIO = new Set(['facturacion', 'miembros', 'sucursales', 'vincular_pc', 'transferir', 'mercadopago']);
 
 // Qué acciones permite cada rol. El dueño tiene todas.
 const POR_ROL = {
