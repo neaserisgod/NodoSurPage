@@ -1,0 +1,360 @@
+<title>Historia Nodo Sur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400..800&display=swap">
+<style>
+/* Visor: la historia (1080×1920) escalada al alto disponible, con controles abajo para revisarla. */
+@font-face{font-family:'FigtreeLocal';font-weight:400 800;src:url(assets/figtree-0.woff2) format('woff2')}
+:root{
+  --page:#eef0f4;--panel:#ffffff;--text:#121317;--mute:#566070;--line:rgba(18,19,23,.12);--accent:#3b6cff;
+  --ink:#121317;--bg2:#f3f4f7;--soft:#7b8494;--green:#1e8e3e;
+  --grad:linear-gradient(100deg,#3b6cff 0%,#8a5cf6 48%,#18c3a4 100%);
+  --font:Figtree,FigtreeLocal,"Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--page:#0c0d10;--panel:#17181c;--text:#eceef2;--mute:#9aa1ad;--line:rgba(255,255,255,.12);--accent:#7d9bff;color-scheme:dark}}
+:root[data-theme="dark"]{--page:#0c0d10;--panel:#17181c;--text:#eceef2;--mute:#9aa1ad;--line:rgba(255,255,255,.12);--accent:#7d9bff;color-scheme:dark}
+html,body{height:100%}
+body{background:var(--page);color:var(--text);font-family:var(--font);padding-inline:16px;-webkit-font-smoothing:antialiased}
+.app{height:100%;display:flex;flex-direction:column;align-items:center;gap:14px;padding-block:14px}
+.viewer{flex:1;min-height:0;width:100%;display:flex;justify-content:center;align-items:center}
+.vp{position:relative;border-radius:22px;overflow:hidden;box-shadow:0 0 0 1px var(--line),0 30px 80px -30px rgba(0,0,0,.45);background:#fff}
+.ctl{display:flex;align-items:center;gap:10px;width:100%;max-width:520px;background:var(--panel);border-radius:999px;padding:8px 14px 8px 8px;box-shadow:0 0 0 1px var(--line)}
+.ctl button{font:600 14px var(--font);color:var(--text);background:transparent;border:0;border-radius:999px;height:36px;min-width:36px;padding:0 12px;cursor:pointer}
+.ctl button:hover{background:var(--line)}
+.ctl button:focus-visible,.ctl input:focus-visible,.beats button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ctl button[aria-pressed="true"]{background:var(--text);color:var(--panel)}
+.ctl input{flex:1;min-width:0;accent-color:var(--accent)}
+.ctl time{font:500 13px var(--font);font-variant-numeric:tabular-nums;color:var(--mute);min-width:76px;text-align:right}
+.beats{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;max-width:620px}
+.beats button{font:500 12.5px var(--font);color:var(--mute);background:var(--panel);border:0;box-shadow:0 0 0 1px var(--line);border-radius:999px;padding:6px 11px;cursor:pointer}
+.beats button.on{color:var(--text);box-shadow:0 0 0 1.5px var(--text)}
+.rec .ctl,.rec .beats{display:none}
+.rec body,.rec{padding:0}
+.rec .app{padding:0;display:block}
+.rec .vp{border-radius:0;box-shadow:none}
+
+/* ---- la historia: todo posicionado en coordenadas del lienzo de 1080×1920 ---- */
+#stage{position:absolute;left:0;top:0;width:1080px;height:1920px;overflow:hidden;background:#fff;transform-origin:0 0;font-family:var(--font);color:var(--ink)}
+#stage *{box-sizing:border-box}
+#stage>*{position:absolute}
+#stage p{margin:0}
+#dark{inset:0;background:#121317}
+#cv{left:0;top:0;width:1080px;height:1920px}
+#ov{left:0;top:0;width:1080px;height:1920px;overflow:visible}
+.ab{position:absolute}
+.ctr{left:0;right:0;text-align:center}
+.h{font-weight:500;letter-spacing:-.045em;line-height:1.02}
+.w{display:inline-block;margin-right:.2em}
+.g{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:.06em}
+.ln{display:block;overflow:hidden;padding-bottom:.08em}
+.ln>span{display:block}
+.num{font-variant-numeric:tabular-nums;font-weight:700;letter-spacing:-.035em}
+
+#brand{top:236px;left:0;right:0;display:flex;justify-content:center;gap:14px;align-items:center;font-weight:700;font-size:34px;letter-spacing:-.02em}
+.mark{width:58px;height:58px;border-radius:18px;background:#1f1f1f;color:#fff;display:grid;place-items:center;font-weight:800;font-size:24px;position:relative}
+.mark i{position:absolute;right:7px;top:30px;width:7px;height:7px;border-radius:50%;background:#34a853}
+.pill{display:inline-block;background:var(--bg2);border-radius:999px;padding:16px 32px;font-size:34px;font-weight:500;color:#3c4350}
+
+#ball{z-index:5}
+.sw{display:grid;justify-items:center;overflow:hidden;padding-bottom:.08em}
+.sw>span{grid-area:1/1;white-space:nowrap}
+.prow{left:160px;width:760px;height:104px;display:flex;justify-content:space-between;align-items:center;font-size:42px;font-weight:500;z-index:6}
+.prow span{display:flex;align-items:center;gap:20px}
+.tag{font-style:normal;font-size:26px;font-weight:600;border-radius:999px;padding:6px 16px;background:#d3e3fd;color:#0b2a66}
+.tag.ok{background:#c4eed0;color:#0d652d}
+.gain{background:#1f1f1f;color:#fff;border-radius:44px;padding:34px 48px;z-index:6}
+.gain small{display:block;font-size:32px;color:#b8bcc6}.gain b{font-size:76px;color:#5bd38a}
+.card{background:#fff;border-radius:52px;box-shadow:0 0 0 2px rgba(18,19,23,.05),0 40px 100px -40px rgba(18,19,23,.35)}
+.lbl{font-size:34px;color:var(--soft);font-weight:500}
+.btnmp{background:#d3e3fd;color:#0b2a66;border-radius:44px;display:flex;align-items:center;justify-content:center;font-size:44px;font-weight:700}
+.row{display:flex;justify-content:space-between;align-items:center;font-size:42px;padding:0 60px;height:120px}
+.row+.row{border-top:2px solid rgba(18,19,23,.08)}
+.bar{border-radius:999px;z-index:4}
+.bl{font-size:38px;color:#c9cdd6;font-weight:500}
+.ba{font-size:40px;color:#fff;font-weight:700;font-variant-numeric:tabular-nums}
+.keep{background:#173d26;color:#c8f0d5;border-radius:999px;padding:24px 40px;font-size:40px;display:flex;gap:28px;align-items:center}
+.keep b{color:#5bd38a;font-size:56px;font-variant-numeric:tabular-nums}
+.toast{display:flex;gap:26px;align-items:center;background:#fff;border-radius:40px;padding:30px 40px;box-shadow:0 0 0 2px rgba(18,19,23,.05),0 30px 70px -24px rgba(18,19,23,.35)}
+.toast i{width:64px;height:64px;border-radius:50%;background:#e6f4ea;color:var(--green);display:grid;place-items:center;font-style:normal;font-weight:800;font-size:34px}
+.toast strong{display:block;font-size:40px}.toast small{font-size:30px;color:var(--mute)}
+.cta{display:inline-flex;align-items:center;gap:20px;background:var(--ink);color:#fff;border-radius:999px;padding:38px 60px;font-size:46px;font-weight:600;box-shadow:0 30px 60px -24px rgba(18,19,23,.5)}
+
+#safe{position:absolute;left:0;top:0;width:1080px;height:1920px;transform-origin:0 0;pointer-events:none}
+#safe div{position:absolute;left:0;right:0;background:rgba(220,40,60,.18);border:3px dashed rgba(220,40,60,.7);color:#b0122a;font:600 30px var(--font);display:flex;align-items:center;justify-content:center}
+</style>
+
+<div class="app">
+  <div class="viewer" id="viewer">
+    <div class="vp" id="vp">
+      <div id="stage">
+        <div id="dark"></div>
+        <canvas id="cv" width="1080" height="1920"></canvas>
+        <div id="brand"><div class="mark">NS<i></i></div><span>Nodo Sur</span></div>
+
+        <!-- 0 · apertura -->
+        <div class="ab ctr" id="s0p" style="top:690px"><span class="pill">Sistema de caja para kioscos y almacenes</span></div>
+        <!-- la frase de apertura no se va: sube, cambia "almacén" por "proveedores" y queda de título de la escena 1 -->
+        <div class="ab ctr h" id="s0h" style="top:822px;font-size:136px;transform-origin:50% 0">
+          <div class="sw"><span id="l1a">Tu almacén,</span><span id="l1b">Tus proveedores,</span></div>
+          <div class="ln"><span id="l2"><span class="g">en orden.</span></span></div>
+        </div>
+
+        <!-- 1 · comparar proveedores: la bolita se convierte en el resaltado del más barato -->
+        <div class="ab card" id="s1c" style="left:100px;top:720px;width:880px;height:560px"></div>
+        <div class="ab" id="s1p" style="left:160px;top:770px;width:760px;display:flex;justify-content:space-between;align-items:baseline"><b style="font-size:52px;letter-spacing:-.02em">Yerba 1 kg</b><span class="lbl">costo por proveedor</span></div>
+        <div class="ab" id="ball"></div>
+        <div class="ab prow" id="r0" style="top:880px"><span>Mayorista Nevado<em class="tag ok" id="tag0">Más barato</em></span><b class="num">$ 2.950</b></div>
+        <div class="ab prow" id="r1" style="top:1010px"><span>Distribuidora Andina<em class="tag">Es el actual</em></span><b class="num">$ 3.100</b></div>
+        <div class="ab prow" id="r2" style="top:1140px"><span>Almacén Cordillera</span><b class="num">$ 3.350</b></div>
+        <div class="ab gain" id="s1g" style="left:100px;top:1330px;width:880px"><small>Si cambiás a Mayorista Nevado</small><b class="num">+ $ 8.400 por mes</b></div>
+
+        <!-- 2 · separar (sobre el fondo oscuro que se abre desde el botón) -->
+        <p class="ab h" id="s2h" style="left:120px;top:400px;font-size:92px;color:#fff" data-w="Sabés cuánto separar / para cada *proveedor.*"></p>
+        <p class="ab lbl" id="s2l" style="left:140px;top:690px;color:#9aa1ad">Separar hoy</p>
+        <p class="ab num" id="s2n" style="left:136px;top:735px;font-size:120px;color:#fff">$ 0</p>
+        <p class="ab bl" id="bl0" style="left:140px;top:968px">Distribuidora Andina</p><p class="ab ba" id="ba0" style="right:140px;top:966px">$ 412.300</p>
+        <p class="ab bl" id="bl1" style="left:140px;top:1098px">Mayorista Nevado</p><p class="ab ba" id="ba1" style="right:140px;top:1096px">$ 268.900</p>
+        <p class="ab bl" id="bl2" style="left:140px;top:1228px">Almacén Cordillera</p><p class="ab ba" id="ba2" style="right:140px;top:1226px">$ 306.300</p>
+        <div class="ab keep" id="s2k" style="left:140px;top:1390px">Te queda a vos <b>$ 376.300</b></div>
+        <div class="ab bar" id="b0"></div><div class="ab bar" id="b1"></div><div class="ab bar" id="b2"></div>
+
+        <!-- 3 · cierre a ciegas: se cuenta sin ver cuánto debería haber -->
+        <p class="ab ctr h" id="s3h" style="top:400px;font-size:112px" data-w="Contás la caja / *a* *ciegas.*"></p>
+        <p class="ab ctr" id="s3s" style="top:670px;font-size:38px;color:#566070">Primero se cuenta. Después, la diferencia.</p>
+        <div class="ab card" id="s3c" style="left:100px;top:780px;width:880px;height:364px;padding:2px 0">
+          <div class="row"><span>Contaste</span><span class="num" id="s3n">$ 0</span></div>
+          <div class="row"><span>Debería haber</span><span class="num" id="s3e">$ 248.700</span></div>
+          <div class="row"><span>Diferencia</span><span class="num" id="s3d" style="color:#7b8494">—</span></div>
+        </div>
+        <p class="ab ctr" id="s3ok" style="top:1460px;font-size:46px;font-weight:700;color:#1e8e3e">La caja cierra</p>
+
+        <!-- 4 · sin internet: la bolita es el punto del wifi -->
+        <p class="ab ctr h" id="s4h" style="top:420px;font-size:104px"><span class="ln"><span>Se corta internet,</span></span><span class="ln"><span><span class="g">y seguís vendiendo.</span></span></span></p>
+        <div class="ab toast" id="s4t" style="left:230px;top:1370px;width:620px"><i>✓</i><div><strong>Venta guardada</strong><small>$ 4.200 · efectivo</small></div></div>
+        <p class="ab ctr" id="s4s" style="top:1530px;font-size:34px;color:#566070">Todo se pone al día cuando vuelve.</p>
+
+        <svg id="ov" viewBox="0 0 1080 1920" fill="none" stroke-linecap="round" stroke-linejoin="round">
+          <path id="chk" d="M494 1342l34 33 62-66" stroke="#fff" stroke-width="16" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="a1" d="" stroke="#121317" stroke-width="22" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="a2" d="" stroke="#121317" stroke-width="22" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="a3" d="" stroke="#121317" stroke-width="22" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+          <path id="sl" d="M392 952L688 1288" stroke="#ea4335" stroke-width="22" pathLength="1" stroke-dasharray="1" stroke-dashoffset="1"/>
+        </svg>
+
+        <!-- 5 · cierre: la bolita termina siendo el punto verde del logo -->
+        <svg class="ab" id="logo" style="left:440px;top:600px;width:200px;height:200px" viewBox="0 0 40 40"><rect width="40" height="40" rx="12" fill="#1f1f1f"/><text id="logoT" x="6.5" y="25.9" font-family="Figtree,FigtreeLocal,Arial" font-size="16.5" font-weight="800" letter-spacing="-.4" fill="#fff">NS</text></svg>
+        <p class="ab ctr h" id="s5h" style="top:880px;font-size:120px" data-w="Probalo / *7* *días* *gratis.*"></p>
+        <p class="ab ctr" id="s5s" style="top:1150px;font-size:40px;color:#566070">Sin costo de alta · $ 35.000 por mes</p>
+        <div class="ab ctr" id="s5b" style="top:1250px"><span class="cta"><svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 0 1-13.5 7.8L3 21l1.2-4.5A9 9 0 1 1 21 12z"/></svg>Escribime por WhatsApp</span></div>
+        <p class="ab ctr" id="s5x" style="top:1440px;font-size:36px;color:#566070"><b style="color:#121317">horsepos.com</b> · @nodosur.brc</p>
+      </div>
+      <div id="safe" hidden><div style="top:0;height:220px">Nombre de la cuenta</div><div style="bottom:0;height:300px">Responder / enlace</div></div>
+    </div>
+  </div>
+  <div class="ctl">
+    <button type="button" id="play" aria-label="Pausar">❚❚</button>
+    <button type="button" id="again" aria-label="Desde el principio">↺</button>
+    <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Posición en la historia">
+    <time id="clock">0,0 / 26,0 s</time>
+    <button type="button" id="safeBtn" aria-pressed="false">Zonas</button>
+  </div>
+  <nav class="beats" id="beats" aria-label="Escenas"></nav>
+</div>
+
+<script>
+var DUR=26;
+var REC=location.hash==='#rec'||window.__REC__;
+if(REC)document.documentElement.classList.add('rec');
+
+/* curvas de Material 3: enfatizada, desacelerada y acelerada */
+function bez(x1,y1,x2,y2){return function(x){if(x<=0)return 0;if(x>=1)return 1;var t=x;for(var i=0;i<8;i++){var cx=3*x1*t*(1-t)*(1-t)+3*x2*t*t*(1-t)+t*t*t-x,d=3*x1*(1-t)*(1-t)+6*(x2-x1)*t*(1-t)+3*(1-x2)*t*t;if(Math.abs(d)<1e-6)break;t-=cx/d;t=Math.max(0,Math.min(1,t))}return 3*y1*t*(1-t)*(1-t)+3*y2*t*t*(1-t)+t*t*t}}
+var EM=bez(.2,0,0,1),DE=bez(.05,.7,.1,1),AC=bez(.3,0,.8,.15),SM=bez(.4,0,.2,1);
+function cl(x){return x<0?0:x>1?1:x}
+function pr(t,a,d){return cl((t-a)/d)}
+function lerp(a,b,k){return a+(b-a)*k}
+function money(n){return '$ '+Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g,'.')}
+function hex(c){return [parseInt(c.substr(1,2),16),parseInt(c.substr(3,2),16),parseInt(c.substr(5,2),16)]}
+function mix(a,b,k){a=hex(a);b=hex(b);return 'rgb('+[0,1,2].map(function(i){return Math.round(lerp(a[i],b[i],k))}).join(',')+')'}
+function $(s){return document.getElementById(s)}
+function st(id,o,tf){var e=$(id);e.style.opacity=o;e.style.visibility=o>.001?'visible':'hidden';if(tf!==undefined)e.style.transform=tf}
+
+/* títulos palabra por palabra; "/" corta la línea y *…* lleva el degradé */
+[].forEach.call(document.querySelectorAll('[data-w]'),function(h){
+  h.dataset.w.split(' ').forEach(function(w){
+    if(w==='/'){h.appendChild(document.createElement('br'));return}
+    var s=document.createElement('span');s.className='w';
+    if(w[0]==='*'){w=w.replace(/\*/g,'');s.className+=' g'}
+    s.textContent=w;h.appendChild(s);
+  });
+});
+/* entrada suave: cada palabra sube 40 px y aparece; la salida es la misma al revés */
+function words(id,t,tin,tout){
+  var h=$(id),ws=h.querySelectorAll('.w'),vis=t>tin-.05&&t<tout+.5;
+  h.style.visibility=vis?'visible':'hidden';if(!vis)return;
+  [].forEach.call(ws,function(w,i){
+    var k=DE(pr(t,tin+i*.07,.75)),o=AC(pr(t,tout+i*.035,.35));
+    w.style.opacity=k*(1-o);w.style.transform='translateY('+((1-k)*40-o*40)+'px)';
+  });
+}
+function fadeUp(id,t,tin,tout,dy){dy=dy||40;var k=DE(pr(t,tin,.7)),o=AC(pr(t,tout,.35));st(id,k*(1-o),'translateY('+((1-k)*dy-o*dy)+'px)')}
+
+/* partículas: el remolino de la web, lento; dentro del círculo oscuro cambian a la paleta azul */
+var cv=$('cv'),ctx=cv.getContext('2d'),seed=21;
+function rnd(){seed=(seed*16807)%2147483647;return (seed-1)/2147483646}
+var LIGHT=['#4f7cff','#8a5cf6','#d36bb5','#9aa3b5','#9aa3b5','#c9cfdb'],DARK=['#4f7cff','#7da0ff','#5a6aa0','#3a4a78','#7da0ff','#8a5cf6'];
+var P=[];for(var i=0;i<560;i++)P.push({a:rnd()*6.283,r:140+Math.pow(rnd(),.75)*1250,w:.03+rnd()*.05,len:rnd()<.4?6+rnd()*6:2.4+rnd()*1.6,ci:Math.floor(rnd()*6),al:.25+rnd()*.6,ph:rnd()*6.28});
+var D={x:0,y:0,r:0};
+function particles(t){
+  ctx.clearRect(0,0,1080,1920);
+  var al=t<3.4?.75:t>21?lerp(.4,.75,pr(t,21,1)):.4;
+  ctx.lineCap='round';ctx.lineWidth=3;
+  for(var i=0;i<P.length;i++){
+    var p=P[i],a=p.a+p.w*t,rr=p.r+Math.sin(t*.8+p.ph)*10,ca=Math.cos(a),sa=Math.sin(a);
+    var x=540+ca*rr,y=980+sa*rr*.85;
+    if(x<-20||y<-20||x>1100||y>1940)continue;
+    var inD=D.r>0&&(x-D.x)*(x-D.x)+(y-D.y)*(y-D.y)<D.r*D.r;
+    ctx.globalAlpha=p.al*al;ctx.strokeStyle=(inD?DARK:LIGHT)[p.ci];
+    ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+ca*p.len,y+sa*p.len*.85);ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+}
+function box(el,cx,cy,w,h,r,bg){var s=el.style;s.left=cx-w/2+'px';s.top=cy-h/2+'px';s.width=w+'px';s.height=h+'px';s.borderRadius=r+'px';s.background=bg}
+function qb(a,c,b,k){return (1-k)*(1-k)*a+2*(1-k)*k*c+k*k*b}
+function arc(r){var cx=540,cy=1250,a1=-2.36,a2=-.785;return 'M'+(cx+r*Math.cos(a1))+' '+(cy+r*Math.sin(a1))+'A'+r+' '+r+' 0 0 1 '+(cx+r*Math.cos(a2))+' '+(cy+r*Math.sin(a2))}
+$('a1').setAttribute('d',arc(95));$('a2').setAttribute('d',arc(175));$('a3').setAttribute('d',arc(255));
+function dash(id,k){$(id).style.strokeDashoffset=1-k}
+
+var BW=[800,522,594],BY=[1040,1170,1300],BC=['#4f7cff','#18c3a4','#d36bb5'];
+
+function render(t){
+  /* fondo oscuro: se abre en círculo desde el botón (7,0 s) y se cierra hacia los puntos (12,4 s) */
+  var open=EM(pr(t,7.0,1.1)),close=EM(pr(t,12.35,.9));
+  D.x=lerp(540,540,close);D.y=lerp(1420,1100,close);D.r=t<7?0:2300*open*(1-close);
+  $('dark').style.clipPath='circle('+D.r+'px at '+D.x+'px '+D.y+'px)';
+  $('dark').style.visibility=D.r>0?'visible':'hidden';
+  particles(t);
+
+  var bOut=AC(pr(t,20.6,.4)),onDark=D.r>0&&Math.hypot(540-D.x,265-D.y)<D.r;
+  st('brand',DE(pr(t,.1,.8))*(1-bOut));$('brand').style.color=onDark?'#fff':'#121317';
+
+  /* 0 · apertura: "Tu almacén, en orden." */
+  fadeUp('s0p',t,.2,2.6,30);
+  var h0=$('s0h'),up=EM(pr(t,2.8,.85)),sw=EM(pr(t,3.55,.65)),hx=AC(pr(t,6.85,.4));
+  h0.style.visibility='visible';
+  h0.style.transform='translateY('+(-422*up)+'px) scale('+lerp(1,.76,up)+')';
+  var a1=DE(pr(t,.5,.75)),a2=DE(pr(t,.65,.75));
+  $('l1a').style.transform='translateY('+((1-a1)*30-sw*100)+'%)';
+  $('l1b').style.opacity=sw*(1-hx);$('l1b').style.transform='translateY('+((1-sw)*100-hx*30)+'%)';
+  $('l2').style.opacity=a2*(1-hx);$('l2').style.transform='translateY('+((1-a2)*30-hx*30)+'%)';
+
+  /* 1 · los proveedores aparecen desordenados y se ordenan solos del más barato al más caro */
+  var cIn=DE(pr(t,3.6,.8)),o1=AC(pr(t,6.95,.4));
+  st('s1c',cIn*(1-o1),'translateY('+((1-cIn)*40-o1*30)+'px)');
+  fadeUp('s1p',t,3.85,6.95,24);
+  var srt=EM(pr(t,4.6,.8)),FROM=[260,-130,-130];
+  for(var r=0;r<3;r++){
+    var rk=DE(pr(t,3.95+r*.1,.7)),ro=AC(pr(t,6.95,.4)),lift=r===0?Math.sin(Math.PI*srt):0;
+    st('r'+r,rk*(1-ro),'translateY('+(FROM[r]*(1-srt)+(1-rk)*24-ro*24)+'px) scale('+(1+.04*lift)+')');
+    /* la fila que sube va levantada, como una tarjeta que pasa por encima de las otras */
+    if(r===0){var e0=$('r0'),wb=Math.min(1,lift*4);e0.style.zIndex=7;e0.style.borderRadius='30px';e0.style.background=wb>0?'rgba(255,255,255,'+wb+')':'transparent';
+      e0.style.boxShadow=wb>0?'0 0 0 22px rgba(255,255,255,'+wb+'),0 '+(30*lift)+'px '+(60*lift)+'px rgba(18,19,23,'+(.22*lift)+')':'none'}
+  }
+  var hl=EM(pr(t,5.3,.5)),ball=$('ball');
+  if(hl>0&&t<7.4){ball.style.visibility='visible';box(ball,540,932,lerp(300,840,hl),108,30,'#e6f4ea');ball.style.opacity=hl*(1-AC(pr(t,6.95,.4)))}
+  else ball.style.visibility='hidden';
+  $('tag0').style.opacity=DE(pr(t,5.45,.4));
+  var gk=EM(pr(t,5.75,.7)),go=AC(pr(t,7.0,.3));st('s1g',gk*(1-go),'translateY('+(1-gk)*50+'px)');
+
+  /* 2 · separar: barras por proveedor */
+  words('s2h',t,7.7,11.9);fadeUp('s2l',t,8.1,11.95,24);fadeUp('s2n',t,8.15,11.95,24);
+  $('s2n').textContent=money(987500*SM(pr(t,8.3,1.2)));
+  fadeUp('s2k',t,10.4,11.95,30);
+  for(var i=0;i<3;i++){
+    fadeUp('bl'+i,t,9.0+i*.15,11.95,20);fadeUp('ba'+i,t,9.1+i*.15,11.95,20);
+    var b=$('b'+i);
+    if(t<9.05||(i!==1&&t>13.75)){b.style.visibility='hidden';continue}
+    b.style.visibility='visible';b.style.opacity=1;
+    var gw=BW[i]*DE(pr(t,9.1+i*.15,1)),cx=140+gw/2,cy=BY[i],w=gw,h=30,c=BC[i];
+    /* 12,2 s: cada barra se recoge en un punto; los tres puntos saltan y se juntan en uno verde */
+    var mm=EM(pr(t,12.2,.65));
+    if(mm>0){w=lerp(BW[i],30,mm);cx=lerp(140+BW[i]/2,[480,540,600][i],mm);cy=lerp(BY[i],1100,mm)}
+    cy-=46*Math.sin(Math.PI*pr(t,12.9+i*.1,.38));
+    var mg=EM(pr(t,13.3,.5));
+    if(i!==1){cx=lerp(cx,540,mg);b.style.opacity=1-mg}
+    else{
+      c=mix('#18c3a4','#34a853',mg);cy=lerp(cy,1340,mg);
+      /* después es el punto que espera el conteo, el tilde, el wifi y el logo */
+      if(t>13.8){var pu=t<15.3?1+.14*Math.sin((t-13.8)*5):1;w=30*pu;h=w}
+      var gr=EM(pr(t,15.45,.5)),sh=EM(pr(t,16.8,.6));
+      if(gr>0){w=h=lerp(30,150,gr)*(1-sh)+34*sh;c=mix('#34a853','#1e8e3e',gr)}
+      if(sh>0){cy=lerp(1340,1250,sh);c=mix('#1e8e3e','#121317',sh)}
+      var lg=EM(pr(t,20.9,.75));
+      if(lg>0){w=h=lerp(34,23,lg);cx=qb(540,720,600,lg);cy=qb(1250,900,718,lg);c=mix('#121317','#34a853',lg)}
+    }
+    box(b,cx,cy,w,h,Math.min(w,h)/2,c);
+  }
+
+  /* 3 · cierre de caja */
+  words('s3h',t,13.4,16.7);
+  var c3=DE(pr(t,13.7,.7)),o3=AC(pr(t,16.7,.4));
+  st('s3c',c3*(1-o3),'translateY('+((1-c3)*40-o3*60)+'px)');
+  fadeUp('s3s',t,13.7,16.7,24);
+  var cnt=SM(pr(t,14.3,1));$('s3n').textContent=money(248700*cnt);
+  /* lo que debería haber queda tapado hasta terminar de contar */
+  var rev=DE(pr(t,15.3,.45)),e=$('s3e');e.style.filter='blur('+(1-rev)*18+'px)';e.style.opacity=lerp(.5,1,rev);
+  var d=$('s3d');if(rev<.5){d.textContent='—';d.style.color='#7b8494'}else{d.textContent='$ 0';d.style.color='#1e8e3e'}
+  dash('chk',SM(pr(t,15.75,.35))*(1-pr(t,16.75,.15)));
+  fadeUp('s3ok',t,15.95,16.7,24);
+
+  /* 4 · sin internet: las ondas salen del punto, se tachan y la venta queda guardada igual */
+  var lnIn=[17.5,17.62],lnOut=20.5;
+  [].forEach.call($('s4h').querySelectorAll('.ln>span'),function(s,i){
+    var k=EM(pr(t,lnIn[i],.8)),o=AC(pr(t,lnOut+i*.06,.45));s.style.transform='translateY('+((1-k)*110-o*110)+'%)';
+  });
+  $('s4h').style.visibility=t>17.3&&t<21.2?'visible':'hidden';
+  var un=SM(pr(t,20.55,.45));
+  dash('a1',DE(pr(t,17.35,.5))*(1-un));dash('a2',DE(pr(t,17.5,.5))*(1-un));dash('a3',DE(pr(t,17.65,.5))*(1-un));
+  var grey=SM(pr(t,18.7,.4));['a1','a2','a3'].forEach(function(id){$(id).style.stroke=mix('#121317','#c3c8d1',grey)});
+  dash('sl',SM(pr(t,18.8,.4))*(1-un));
+  var tIn=EM(pr(t,19.3,.7)),tOut=AC(pr(t,20.5,.4));st('s4t',tIn*(1-tOut),'translateY('+((1-tIn)*80+tOut*40)+'px)');
+  fadeUp('s4s',t,19.75,20.5,20);
+
+  /* 5 · el logo crece desde su punto verde */
+  var lk=EM(pr(t,21.45,.6));st('logo',lk>0?1:0,'scale('+lk+')');$('logo').style.transformOrigin='160px 118px';
+  $('logoT').style.opacity=DE(pr(t,21.8,.5));
+  words('s5h',t,21.9,99);fadeUp('s5s',t,22.6,99,24);
+  var bk=EM(pr(t,22.85,.7));st('s5b',bk,'translateY('+(1-bk)*30+'px) scale('+lerp(.92,1,bk)+')');
+  fadeUp('s5x',t,23.2,99,20);
+}
+window.render=render;window.DUR=DUR;
+
+/* ---- visor ---- */
+var vp=$('vp'),stage=$('stage'),safe=$('safe');
+function fit(){
+  var s=1;
+  if(!REC){var v=$('viewer').getBoundingClientRect();s=Math.min(v.height/1920,v.width/1080)}
+  vp.style.width=1080*s+'px';vp.style.height=1920*s+'px';
+  stage.style.transform=safe.style.transform='scale('+s+')';
+}
+fit();addEventListener('resize',fit);
+if(!REC){
+  var playing=!matchMedia('(prefers-reduced-motion: reduce)').matches,t=playing?0:5.5,last=performance.now();
+  var NAMES=[['Apertura',0],['Comparar proveedores',3.2],['Separar',7.2],['Cierre a ciegas',12.2],['Sin internet',16.8],['Contacto',20.8]];
+  var bt=$('beats');
+  NAMES.forEach(function(n){var b=document.createElement('button');b.type='button';b.textContent=n[0];b.onclick=function(){t=n[1];setPlay(true);draw()};bt.appendChild(b)});
+  function draw(){
+    render(t);
+    $('scrub').value=Math.round(t/DUR*1000);
+    $('clock').textContent=t.toFixed(1).replace('.',',')+' / 26,0 s';
+    [].forEach.call(bt.children,function(b,i){var a=NAMES[i][1],z=(NAMES[i+1]||[0,99])[1];b.classList.toggle('on',t>=a&&t<z)});
+  }
+  function setPlay(on){playing=on;$('play').textContent=on?'❚❚':'▶';$('play').setAttribute('aria-label',on?'Pausar':'Reproducir')}
+  $('play').onclick=function(){setPlay(!playing)};
+  $('again').onclick=function(){t=0;setPlay(true);draw()};
+  $('scrub').oninput=function(e){t=e.target.value/1000*DUR;setPlay(false);draw()};
+  $('safeBtn').onclick=function(){safe.hidden=!safe.hidden;this.setAttribute('aria-pressed',String(!safe.hidden))};
+  vp.onclick=function(){setPlay(!playing)};
+  setPlay(playing);
+  (function loop(now){var dt=Math.min(.1,(now-last)/1000);last=now;if(playing){t=(t+dt)%DUR}draw();requestAnimationFrame(loop)})(last);
+}
+</script>
