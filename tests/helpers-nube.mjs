@@ -22,7 +22,7 @@ export function fakeR2() {
 export const BACKUP_KEY = Buffer.alloc(32, 7).toString('base64');
 export const mkEnv = (extra = {}) => (clearMpCache(), {
   SESSION_SECRET: 'x'.repeat(48), SITE_URL: 'https://horsepos.com', MP_ACCESS_TOKEN: 'tok', ADMIN_EMAILS: 'admin@x.com',
-  RELEASE_TOKEN: 'r'.repeat(40), BACKUP_KEY, DB: fakeD1(), RELEASES: fakeR2(), ...extra });
+  RELEASE_TOKEN: 'r'.repeat(40), BACKUP_KEY, MP_CACHE_MS: 0, DB: fakeD1(), RELEASES: fakeR2(), ...extra });
 export const addUser = (env, email, sub, exempt = 0) => env.DB.raw.prepare('INSERT INTO users (sub,email,name,created_at,last_seen,login_count,exempt) VALUES (?,?,?,?,?,1,?)').run(sub, email, email, nowS(), nowS(), exempt);
 export const sess = async (env, email, sub, name = 'X') => `ns_session=${await sign({ sub, email, name, iat: nowS(), exp: nowS() + 999 }, env.SESSION_SECRET)}`;
 export const req = (path, { method = 'GET', body, raw, cookie, headers = {} } = {}) => new Request('https://horsepos.com' + path, {

@@ -5,7 +5,7 @@
 // permisos.js. Quien no pertenece a ningún negocio (cuentas anteriores a este modelo) sigue entrando por la
 // suscripción de su propio mail, como siempre.
 import { isAdminEmail, now } from './util.js';
-import { listSubscriptions } from './mp.js';
+import { listSubscriptions, listSubscriptionsCached } from './mp.js';
 import { isPrivilegedSub } from './devices.js';
 import { orgsWith, getOrg, getMembership } from './orgs.js';
 import { puede } from './permisos.js';
@@ -66,7 +66,7 @@ export async function backupAccess(env, actor, scope) {
   if (scope.ownerSub && await isPrivilegedSub(env, scope.ownerSub, scope.billingEmail)) return { upload: true, restore: true, privileged: true }; // negocio de prueba
   if (!env.MP_ACCESS_TOKEN) return { error: 'mp_error' };
   let subs;
-  try { subs = await listSubscriptions(env, scope.billingEmail); } catch { return { error: 'mp_error' }; }
+  try { subs = await listSubscriptionsCached(env, scope.billingEmail); } catch { return { error: 'mp_error' }; } // camino caliente: con memoria breve
   if (subs.some((s) => s.status === 'authorized')) return { upload: true, restore: true };
   const limite = now() - VENTANA_RESTAURAR_DIAS * DAY;
   const reciente = subs.some((s) => ['cancelled', 'canceled', 'paused', 'pending'].includes(s.status)
