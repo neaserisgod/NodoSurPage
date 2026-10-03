@@ -18,6 +18,7 @@ export async function onRequestGet({ request, env }) {
   // suscripción es del negocio. A esa persona no se le consulta Mercado Pago ni se le ofrece "elegí tu sistema".
   const membresias = hasDB(env) ? await membershipsOf(env, s.sub) : [];
   const isAdmin = isAdminEmail(env, s.email);
+  const exempt = Boolean(user && user.exempt); // cuenta eximida: como la de administración, no paga
   const billing = isAdmin || !membresias.length || membresias.some((m) => m.role === 'owner');
 
   let subscriptions = null, mpError = false;
@@ -46,6 +47,7 @@ export async function onRequestGet({ request, env }) {
     mpConfigured: Boolean(env.MP_ACCESS_TOKEN),
     mpError,
     isAdmin,
+    exempt,
     intent,
     promoActive: await getPromo(env),
     notice: user && user.delete_after ? { deleteAfter: user.delete_after } : null,
@@ -59,7 +61,7 @@ export async function onRequestGet({ request, env }) {
   // ni una cosa ni la otra (un empleado: lo paga el negocio y no descarga). Dos usos distintos de la misma cookie, así que el valor
   // "no molestar" no puede ser 1: un empleado vería un "Descargar" que lo llevaría a una página que le niega el acceso.
   const puedeDescargar = (await describirOrgs(env, membresias)).some((o) => o.can.descargar);
-  if (isAdmin || has || covered || (!billing && puedeDescargar)) res.headers.append('Set-Cookie', cookie('ns_sub', '1', { maxAge: month, httpOnly: false }));
+  if (isAdmin || exempt || has || covered || (!billing && puedeDescargar)) res.headers.append('Set-Cookie', cookie('ns_sub', '1', { maxAge: month, httpOnly: false }));
   else if (!billing) res.headers.append('Set-Cookie', cookie('ns_sub', '2', { maxAge: month, httpOnly: false }));
   else if (!mpError) res.headers.append('Set-Cookie', cookie('ns_sub', '0', { maxAge: month, httpOnly: false }));
   res.headers.append('Set-Cookie', cookie('ns_plan', intent ? intent.plan : '', { maxAge: intent ? month : 0, httpOnly: false }));

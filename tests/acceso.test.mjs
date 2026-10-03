@@ -7,6 +7,7 @@ import { downloadAccess } from '../functions/_lib/access.js';
 import { sha256Hex, purgeBackups } from '../functions/_lib/backups.js';
 import { listAllSubscribers } from '../functions/_lib/mp.js';
 import { sweep } from '../functions/_lib/sweep.js';
+import { estadoFacturacion } from '../functions/_lib/facturacion.js';
 import * as authorize from '../functions/api/device/authorize.js';
 import * as token from '../functions/api/device/token.js';
 import * as deviceMe from '../functions/api/device/me.js';
@@ -299,5 +300,19 @@ await t('herencia: el barrido no borra a un empleado de un negocio eximido, pero
   assert.deepEqual((await sweep(env, { apply: false })).actions.map((a) => a.email).sort(), ['duena@x.com', 'emp@x.com']);
   env.DB.raw.prepare("UPDATE users SET exempt = 1 WHERE sub = 'sd'").run();
   assert.deepEqual((await sweep(env, { apply: false })).actions, []); // ni la dueña ni su gente
+});
+await t('copias: a un empleado el negocio al día no le dice "sin suscripción": le dice que no administra copias', async () => {
+  const env = mkEnv(); const n = await negocio(env); paga('duena@x.com'); miembro(env, n, 'emp@x.com', 'sm', 'employee', { branches: [n.a] });
+  const tok = await pc(env, n, n.a, 'sm', 'emp@x.com', ID('emp2'));
+  const r = await listarDev(env, tok);
+  assert.equal(r.noPermission, true); assert.equal(r.upload, false); assert.deepEqual(r.backups, []);
+  const dueno = await listarDev(env, await pc(env, n, n.a, 'sd', 'duena@x.com', ID('due2')));
+  assert.equal(dueno.noPermission, undefined); assert.equal(dueno.upload, true);
+});
+await t('facturación: el negocio de una cuenta eximida figura pago y sin vencimiento, sin tocar Mercado Pago', async () => {
+  const env = mkEnv(); const n = await negocio(env); paga(); // nadie paga en Mercado Pago
+  assert.equal((await estadoFacturacion(env, n.org, 'duena@x.com')).status, 'none');
+  env.DB.raw.prepare("UPDATE users SET exempt = 1 WHERE sub = 'sd'").run();
+  assert.equal((await estadoFacturacion(env, n.org, 'duena@x.com')).status, 'authorized');
 });
 console.log(`\n${pass} pruebas OK (acceso por negocio y sucursal)`);
