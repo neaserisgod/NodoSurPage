@@ -16,9 +16,9 @@ El sitio se publica como **Worker con archivos estáticos** (`wrangler.jsonc`, n
 - `/admin/`: solo `gtalovergamer@gmail.com` (o `ADMIN_EMAILS`). Clientes, último uso, suscripciones, ingresos. Requiere D1.
 - Solo se ven/cancelan suscripciones de los 3 planes propios (`functions/_lib/mp.js`).
 
-### Negocios, sucursales y miembros (en construcción)
+### Negocios, sucursales y miembros
 
-Hoy todo cuelga del `sub` de una persona. El modelo nuevo agrega el **negocio** (el que paga) entre la persona y todo lo demás. Se implementa por fases; ya están el modelo (fase 1), el acceso calculado por negocio (fase 2), la API de miembros, invitaciones y sucursales (fase 3), las pantallas (fase 4) y la transferencia de propiedad con la facturación (fase 5). Falta el POS (fase 6).
+Hoy todo cuelga del `sub` de una persona. El modelo nuevo agrega el **negocio** (el que paga) entre la persona y todo lo demás. Se implementa por fases; ya están el modelo (fase 1), el acceso calculado por negocio (fase 2), la API de miembros, invitaciones y sucursales (fase 3), las pantallas (fase 4) y la transferencia de propiedad con la facturación (fase 5). El POS ya lo usa (2026-10-03): la PC y el celular se vinculan a una sucursal y sincronizan por sucursal.
 
 - **`orgs`** (negocio, con `billing_email`), **`branches`** (sucursales), **`memberships`** (persona + rol + sucursales), **`invitations`**. Definición en `functions/_lib/orgs.js` (se crean solas) y `migrations/0005_orgs.sql` (opcional).
 - Todo negocio nace con una **"Sucursal principal"**; `devices` y `backups` ganan `owner_org` y `branch_id` (nullable). `backfillOrgs` convierte lo que ya existe, es idempotente y solo toca filas sin negocio.
@@ -40,7 +40,7 @@ Hoy todo cuelga del `sub` de una persona. El modelo nuevo agrega el **negocio** 
 - **Pantallas (fase 4)**
   - `/negocio/` (Mi negocio): el **dueño** administra equipo (invitar, cambiar rol y sucursales, quitar), sucursales, PC vinculadas y copias. Un **encargado** ve sus sucursales, copias y descargas. Un **empleado** ve solo su lugar de trabajo: sin copias, descargas ni facturación. Con más de un negocio hay selector. Las secciones salen de `can` en `/api/me` (que viene de `permisos.js`): la pantalla no repite la tabla de permisos.
   - `/unirse/?t=`: aceptar una invitación. Sin sesión manda a `/ingresar/` y vuelve (el token de 64 hex es lo único que `safeNext` deja pasar). El token se saca de la barra de direcciones apenas se lee. Con otro mail muestra el mail enmascarado y no revela el negocio.
-  - `/cuenta/`: muestra "Tu negocio" y, a quien solo es encargado o empleado (`billing: false` en `/api/me`), no le consulta Mercado Pago ni le ofrece "elegí tu sistema". `/vincular/` deja elegir negocio y sucursal (solo el dueño vincula).
+  - `/cuenta/`: muestra "Tu negocio" y, a quien solo es encargado o empleado (`billing: false` en `/api/me`), no le consulta Mercado Pago ni le ofrece "elegí tu sistema". `/vincular/` deja elegir negocio y sucursal (una PC la vincula solo el dueño; un celular, cada miembro con su cuenta).
   - `/admin/`: tabla de **Negocios** (solo lectura: dueño, mail de cobro, suscripción, equipo, sucursales, PC, tope blando). Es distinta de `/negocio/`: la de admin es de Nodo Sur, la otra es de cada dueño.
   - Las páginas arman todo con `textContent` (nombres y mails vienen de la base; hay un test que prohíbe `innerHTML`).
 - **Transferencia de propiedad y facturación (fase 5)**
@@ -49,7 +49,7 @@ Hoy todo cuelga del `sub` de una persona. El modelo nuevo agrega el **negocio** 
   - **El mail de cobro (`billing_email`) no cambia solo** (Mercado Pago cobra a quien pagó). `GET/POST /api/org/billing` (solo el dueño): muestra quién paga (enmascarado si no es él) y deja **pasar el cobro a la suscripción propia**.
   - Reglas de seguridad: (1) el mail sale **siempre de la sesión**, nunca del pedido, y debe tener una suscripción vigente: si no, cualquiera podría apuntar su negocio a la suscripción de otro cliente y usar el sistema sin pagar; (2) **nadie cancela la suscripción de otra persona** (puede cubrir otros negocios suyos): `cancel.js` no se tocó, cancela quien paga; (3) el administrador de la plataforma puede ajustar el mail de cobro (`POST /api/admin/org`, botón «Mail de cobro» en `/admin/`) para casos de soporte.
   - `/api/me` suma `covered`: el dueño de un negocio cubierto por la suscripción de otra persona no recibe «elegí tu sistema». `/negocio/` muestra la propuesta recibida y la tarjeta de Facturación.
-- Las ventas y la caja siguen siendo **locales por PC**: no hay reportes consolidados entre sucursales (exigirían subir las ventas a la nube).
+- Cada sucursal tiene su propia caja y su propio stock: las ventas viajan a la nube cifradas solo para sincronizar los dispositivos de esa sucursal (`/api/sync`), y no hay reportes consolidados entre sucursales.
 
 ### Pagar exige ingresar (y se recuerda el plan)
 
@@ -156,6 +156,8 @@ Disposición de las páginas de contenido (12 páginas): el HTML se reordenó en
 - Subir es idempotente por `X-Lote-Id`. Los lotes viejos se borran solo si pasaron 365 días Y la sucursal supera 50 MB (la revisión corre cada 25 lotes): un local chico nunca purga, así un celular nuevo baja la historia entera. Quien quede detrás de lo ya borrado recibe `expirado: true`. Tablas D1 `sync_lotes` y `sync_cuentas`, ambas por alcance (se crean solas, una vez por instancia).
 
 **Aviso en vivo, para no consultar de más.** `GET /api/sync/escuchar` (WebSocket) conecta al dispositivo con el Durable Object `SyncHub` de su sucursal (binding `SYNC_HUB`, clase con SQLite: está en el plan gratis; el nombre del hub es un hash, sin nada en claro). Cuando alguien sube un lote, el hub manda `{"seq":N}` a los demás dispositivos y recién ahí bajan; sin cambios no hay ningún pedido. Costo (WebSocket Hibernation): conectar es 1 pedido; un socket quieto no consume cómputo; los mensajes salientes y los pings no se cobran. El cliente no manda nada por el socket. Sin el binding todo anda igual, solo que los dispositivos tienen que consultar de vez en cuando. Cada subida hace ~3 consultas a D1 y 1 pedido al hub; cada bajada, 2 consultas.
+
+**La PC en el wifi del local (2026-10-03).** `POST /api/device/pc-local` `{ip, puerto, token}`: la PC vinculada avisa su dirección del wifi (solo 10.x, 172.16–31.x o 192.168.x) y la llave de su servidor para celulares; la llave se guarda cifrada con `BACKUP_KEY`. `GET /api/device/pc-local`: un celular de la **misma sucursal** la pide y se conecta con un toque, sin QR ni código. Mismo control que sincronizar (quien opera la sucursal, negocio al día); se ofrece la que avisó más reciente, si no pasaron 30 días (`functions/_lib/pc_local.js`).
 
 ## Cambiar un .js o .css de las páginas
 
