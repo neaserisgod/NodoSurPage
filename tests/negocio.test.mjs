@@ -123,7 +123,7 @@ await t('páginas /negocio/ y /unirse/: existen, no se indexan y cargan su scrip
     const src = leer(js); new vm.Script(src, { filename: js }); // sintaxis válida
     assert.ok(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval\(/.test(src), `${js}: solo textContent / createElement (nombres y mails vienen de la base)`);
     assert.ok(!/\sonclick=|\sonerror=/.test(html), `${dir}: sin manejadores en línea`);
-    assert.match(readFileSync(new URL('../_headers', import.meta.url), 'utf8'), new RegExp(`/${js.replace('.', '\\.')}\\n  Cache-Control: public, max-age=0, must-revalidate`), `${js} sin caché larga`);
+    assert.match(readFileSync(new URL('../_headers', import.meta.url), 'utf8'), /\/\*\.js\n  Cache-Control: public, max-age=31536000, immutable/, `${js} se guarda con huella en la dirección (ver tests/estaticos.test.mjs)`);
     assert.ok(leer('robots.txt').includes(`Disallow: /${dir}/`), `robots: /${dir}/`);
     assert.ok(!leer('sitemap.xml').includes(`/${dir}/`), 'fuera del sitemap');
   }
