@@ -4,7 +4,7 @@
 // Pensada para que se vea igual en Gmail, Outlook y el celular: tablas y estilos en línea (los clientes de mail ignoran casi todo
 // el CSS), el botón es un enlace con relleno (no una imagen) y la marca está armada con HTML, sin imágenes que se puedan bloquear.
 // Todo lo que viene de personas (nombres de negocio, de quien invita) se escapa: nunca entra HTML ajeno al mail.
-const TINTA = '#121317', GRIS = '#566070', SUAVE = '#7b8494', FONDO = '#f3f4f7', LINEA = '#e4e6ec', AZUL = '#2f5fe0', VERDE = '#34a853';
+const TINTA = '#121317', GRIS = '#566070', SUAVE = '#7b8494', FONDO = '#f3f4f7', LINEA = '#e4e6ec', AZUL = '#2f5fe0';
 const FUENTE = "Figtree,-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
 
 export const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -16,7 +16,7 @@ export function plantillaMail({ preheader = '', titulo, intro = '', filas = [], 
   const url = boton && urlSegura(boton.url);
   const web = urlSegura(sitio) || 'https://horsepos.com';
   const marca = `<table role="presentation" cellpadding="0" cellspacing="0" border="0"><tr>
-      <td width="40" height="40" align="center" valign="middle" bgcolor="${TINTA}" style="width:40px;height:40px;border-radius:12px;background:#1f1f1f;color:#ffffff;font:800 16px/40px ${FUENTE};letter-spacing:-.4px">NS<span style="color:${VERDE}">&#8226;</span></td>
+      <td width="40" height="40" align="center" valign="middle" bgcolor="${TINTA}" style="width:40px;height:40px;border-radius:9px;background:${TINTA};color:#ffffff;font:700 18px/40px ${FUENTE};letter-spacing:-.5px">ns<span style="vertical-align:top;font-size:12px;line-height:22px">&#9679;</span></td>
       <td style="padding-left:12px;font:700 20px/1 ${FUENTE};letter-spacing:-.02em;color:${TINTA}">Nodo Sur</td></tr></table>`;
   const datos = filas.length ? `<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:22px 0 4px;border:1px solid ${LINEA};border-radius:14px">${
     filas.map(([k, v], i) => `<tr><td style="padding:12px 16px;${i ? `border-top:1px solid ${LINEA};` : ''}font:600 13px/1.4 ${FUENTE};color:${SUAVE};width:34%">${esc(k)}</td>
