@@ -88,7 +88,29 @@ export function json(data, status = 200, headers = {}) {
 export async function getSession(request, env) {
   const c = parseCookies(request.headers.get('Cookie'));
   const s = await verify(c.ns_session, env.SESSION_SECRET);
-  return s && s.email && s.sub ? s : null;
+  if (!s || !s.email || !s.sub) return null;
+  if (s.jti && await sesionCerrada(env, s.jti)) return null;
+  return s;
+}
+
+// Sesiones cerradas con "Cerrar sesión" (2026-10-03): la cookie es una firma que vale 30 días, así que borrarla del
+// navegador no alcanzaba (una copia seguía entrando). Se anota su id hasta que vence. Las sesiones de antes de este
+// cambio no tienen id y vencen solas.
+const DDL_SESIONES = 'CREATE TABLE IF NOT EXISTS sesiones_cerradas (jti TEXT PRIMARY KEY, exp INTEGER NOT NULL)';
+async function sesionCerrada(env, jti) {
+  if (!env.DB) return false;
+  try {
+    return Boolean(await env.DB.prepare('SELECT 1 AS x FROM sesiones_cerradas WHERE jti = ?1').bind(jti).first());
+  } catch (e) {
+    if (/no such table/i.test(String(e && e.message))) return false;
+    throw e;
+  }
+}
+export async function cerrarSesion(env, s) {
+  if (!env.DB || !s || !s.jti) return;
+  await env.DB.prepare(DDL_SESIONES).run();
+  await env.DB.prepare('DELETE FROM sesiones_cerradas WHERE exp < ?1').bind(now()).run(); // limpieza oportunista
+  await env.DB.prepare('INSERT OR IGNORE INTO sesiones_cerradas (jti, exp) VALUES (?1, ?2)').bind(s.jti, s.exp).run();
 }
 
 // Defensa CSRF para POST: pedido "fetch" propio + Origin del mismo sitio.

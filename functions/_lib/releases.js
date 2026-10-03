@@ -1,3 +1,4 @@
+import { sign, verify } from './util.js';
 // Versiones del sistema POS (instaladores y actualizaciones). Los archivos viven en R2 (binding RELEASES)
 // y los metadatos en D1. Las tablas se crean solas la primera vez que se publica una versión.
 export const PLATFORMS = ['windows', 'macos', 'linux', 'android'];
@@ -91,6 +92,8 @@ export async function eligible(release, cid) {
 // Actualización para una instalación: la más nueva que le toque y que sea mayor a la que ya tiene.
 // `conBeta`: la instalación es de una cuenta de pruebas (administrador o eximida) y ve primero las betas.
 export async function latestForUpdate(env, platform, channel, current, cid, { conBeta = false } = {}) {
+  // El canal beta es solo para cuentas de pruebas: pedirlo a mano (`channel=beta`) no alcanza (2026-10-03).
+  if (channel === 'beta' && !conBeta) return null;
   const ok = [];
   const canales = conBeta && channel === 'stable' ? ['stable', 'beta'] : [channel];
   for (const canal of canales) for (const r of await candidates(env, platform, canal)) if (await eligible(r, cid)) ok.push(r);
@@ -166,4 +169,21 @@ export async function streamRelease(env, request, release, { attachment = false 
   }
   if (status === 200) h.set('content-length', String(obj.size));
   return new Response(obj.body, { status, headers: h });
+}
+
+// --- Archivos de actualización (2026-10-03)
+// Una versión estable liberada al 100 % se baja sin permiso: es la que recibe cualquier instalación, aunque no tenga cuenta
+// (por eso la actualización no pide sesión, y el archivo va firmado). Una beta o una versión a medio liberar, en cambio,
+// solo con el permiso que da el feed a la instalación a la que le toca; antes alcanzaba con probar `?id=N`.
+const PERMISO_TTL = 7 * 24 * 3600; // WinSparkle puede bajar el archivo bastante después de leer el feed
+const secretoPermiso = (env) => `${env.SESSION_SECRET}:archivo-actualizacion`;
+export const esPublica = (r) => r.channel === 'stable' && r.rollout >= 100 && Boolean(r.active) && !r.blocked;
+export const permisoArchivo = (env, id, t = Math.floor(Date.now() / 1000)) => sign({ typ: 'upd', id, exp: t + PERMISO_TTL }, secretoPermiso(env));
+export async function permisoValido(env, permiso, id) {
+  const p = await verify(permiso, secretoPermiso(env));
+  return Boolean(p && p.typ === 'upd' && p.id === id);
+}
+// La dirección del archivo que va en el feed: con permiso solo si hace falta (las estables al 100 % quedan como siempre).
+export async function urlArchivo(env, base, r) {
+  return esPublica(r) ? base : `${base}${base.includes('?') ? '&' : '?'}p=${encodeURIComponent(await permisoArchivo(env, r.id))}`;
 }

@@ -107,6 +107,7 @@ await t('vincular: la primera vez crea el negocio personal y deja la PC en su "S
   const { tok } = await vincular(env, await sess(env, 'ana@x.com', 's1')); assert.ok(tok);
   const org = one(env, 'SELECT * FROM orgs'); const suc = one(env, 'SELECT * FROM branches WHERE org_id = ?', org.id);
   const d = one(env, 'SELECT * FROM devices'); assert.equal(d.owner_org, org.id); assert.equal(d.branch_id, suc.id);
+  assert.equal(d.kind, 'pc', 'el sitio guarda que es una PC');
   assert.equal(org.billing_email, 'ana@x.com'); assert.equal(one(env, 'SELECT role FROM memberships').role, 'owner');
 });
 await t('vincular: una segunda PC de la misma persona reutiliza el negocio (no crea otro)', async () => {
@@ -138,6 +139,7 @@ await t('vincular un CELULAR: el empleado y el encargado lo vinculan con su cuen
   // Sin sucursal indicada: la suya (no la principal).
   const ok = await vincular(env, emp, { tipo: 'celular', orgId: n.org.id }, 'cel-emp-0123456789abcdefgh'); assert.ok(ok.tok);
   assert.equal(one(env, "SELECT branch_id b, owner_org o FROM devices WHERE id = 'cel-emp-0123456789abcdefgh'").b, n.b);
+  assert.equal(one(env, "SELECT kind FROM devices WHERE id = 'cel-emp-0123456789abcdefgh'").kind, 'celular', 'el sitio guarda que es un celular');
   // Una sucursal donde no trabaja, o de otro negocio, no.
   assert.equal((await vincular(env, emp, { tipo: 'celular', orgId: n.org.id, branchId: n.a }, 'cel-emp2-0123456789abcdefg')).r.status, 403);
   assert.equal((await vincular(env, emp, { tipo: 'celular', orgId: ajeno.org.id }, 'cel-emp3-0123456789abcdefg')).r.status, 403);
