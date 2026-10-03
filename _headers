@@ -6,9 +6,6 @@
   Strict-Transport-Security: max-age=31536000; includeSubDomains
   Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
 
-/styles.css
-  Cache-Control: public, max-age=0, must-revalidate
-
 /og.png
   Cache-Control: public, max-age=604800
 
@@ -18,32 +15,8 @@
 /sitemap.xml
   Cache-Control: public, max-age=3600
 
-/main.js
-  Cache-Control: public, max-age=0, must-revalidate
-
 /api/*
   Cache-Control: no-store
-
-/cuenta.js
-  Cache-Control: public, max-age=0, must-revalidate
-
-/planes.js
-  Cache-Control: public, max-age=0, must-revalidate
-
-/descargar.js
-  Cache-Control: public, max-age=0, must-revalidate
-
-/vincular.js
-  Cache-Control: public, max-age=0, must-revalidate
-
-/negocio.js
-  Cache-Control: public, max-age=0, must-revalidate
-
-/unirse.js
-  Cache-Control: public, max-age=0, must-revalidate
-
-/pagar.js
-  Cache-Control: public, max-age=0, must-revalidate
 
 /img/*
   Cache-Control: public, max-age=31536000, immutable
@@ -65,3 +38,11 @@
 
 /icon-512.png
   Cache-Control: public, max-age=86400
+
+# Los .js y .css llevan la huella de su contenido en la dirección (?v=..., ver scripts/versionar-estaticos.mjs): si el archivo
+# cambia, cambia la dirección. Por eso se guardan un año y no se vuelven a pedir.
+/*.js
+  Cache-Control: public, max-age=31536000, immutable
+
+/*.css
+  Cache-Control: public, max-age=31536000, immutable
