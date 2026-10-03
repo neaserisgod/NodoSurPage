@@ -222,7 +222,8 @@ function box(el,cx,cy,w,h,r,bg){var s=el.style;s.left=cx-w/2+'px';s.top=cy-h/2+'
 function qb(a,c,b,k){return (1-k)*(1-k)*a+2*(1-k)*k*c+k*k*b}
 function arc(r){var cx=540,cy=1250,a1=-2.36,a2=-.785;return 'M'+(cx+r*Math.cos(a1))+' '+(cy+r*Math.sin(a1))+'A'+r+' '+r+' 0 0 1 '+(cx+r*Math.cos(a2))+' '+(cy+r*Math.sin(a2))}
 $('a1').setAttribute('d',arc(95));$('a2').setAttribute('d',arc(175));$('a3').setAttribute('d',arc(255));
-function dash(id,k){$(id).style.strokeDashoffset=1-k}
+/* con puntas redondeadas un trazo de largo cero igual dibuja un punto: sin nada que mostrar, se oculta */
+function dash(id,k){var e=$(id);e.style.strokeDashoffset=1-k;e.style.visibility=k>.001?'visible':'hidden'}
 
 var BW=[800,522,594],BY=[1040,1170,1300],BC=['#4f7cff','#18c3a4','#d36bb5'];
 

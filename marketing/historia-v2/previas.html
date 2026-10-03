@@ -1,0 +1,200 @@
+<title>Previas Nodo Sur</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400..800&display=swap">
+<style>
+/* Dos historias previas a la principal (historia.html), con las mismas piezas: la cápsula de degradé, los tres puntos
+   que saltan y el punto verde del logo. Visor igual al de la historia: escalada al alto disponible, controles abajo. */
+@font-face{font-family:'FigtreeLocal';font-weight:400 800;src:url(assets/figtree-0.woff2) format('woff2')}
+:root{
+  --page:#eef0f4;--panel:#ffffff;--text:#121317;--mute:#566070;--line:rgba(18,19,23,.12);--accent:#3b6cff;
+  --ink:#121317;--bg2:#f3f4f7;--grad:linear-gradient(100deg,#3b6cff 0%,#8a5cf6 48%,#18c3a4 100%);
+  --font:Figtree,FigtreeLocal,"Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--page:#0c0d10;--panel:#17181c;--text:#eceef2;--mute:#9aa1ad;--line:rgba(255,255,255,.12);--accent:#7d9bff;color-scheme:dark}}
+:root[data-theme="dark"]{--page:#0c0d10;--panel:#17181c;--text:#eceef2;--mute:#9aa1ad;--line:rgba(255,255,255,.12);--accent:#7d9bff;color-scheme:dark}
+html,body{height:100%}
+body{background:var(--page);color:var(--text);font-family:var(--font);padding-inline:16px;-webkit-font-smoothing:antialiased}
+.app{height:100%;display:flex;flex-direction:column;align-items:center;gap:12px;padding-block:14px}
+.tabs{display:flex;gap:6px}
+.tabs button{font:600 13.5px var(--font);color:var(--mute);background:var(--panel);border:0;box-shadow:0 0 0 1px var(--line);border-radius:999px;padding:7px 14px;cursor:pointer}
+.tabs button[aria-pressed="true"]{color:var(--panel);background:var(--text);box-shadow:none}
+.viewer{flex:1;min-height:0;width:100%;display:flex;justify-content:center;align-items:center}
+.vp{position:relative;border-radius:22px;overflow:hidden;box-shadow:0 0 0 1px var(--line),0 30px 80px -30px rgba(0,0,0,.45);background:#fff}
+.ctl{display:flex;align-items:center;gap:10px;width:100%;max-width:520px;background:var(--panel);border-radius:999px;padding:8px 14px 8px 8px;box-shadow:0 0 0 1px var(--line)}
+.ctl button{font:600 14px var(--font);color:var(--text);background:transparent;border:0;border-radius:999px;height:36px;min-width:36px;padding:0 12px;cursor:pointer}
+.ctl button:hover{background:var(--line)}
+.ctl button[aria-pressed="true"]{background:var(--text);color:var(--panel)}
+.ctl button:focus-visible,.ctl input:focus-visible,.tabs button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.ctl input{flex:1;min-width:0;accent-color:var(--accent)}
+.ctl time{font:500 13px var(--font);font-variant-numeric:tabular-nums;color:var(--mute);min-width:70px;text-align:right}
+.nota{font-size:13px;color:var(--mute);max-width:520px;text-align:center;line-height:1.45}
+.rec .ctl,.rec .tabs,.rec .nota{display:none}
+.rec body,.rec{padding:0}
+.rec .app{padding:0;display:block}
+.rec .vp{border-radius:0;box-shadow:none}
+
+#stage{position:absolute;left:0;top:0;width:1080px;height:1920px;overflow:hidden;background:#fff;transform-origin:0 0;font-family:var(--font);color:var(--ink)}
+#stage *{box-sizing:border-box}
+#stage>*{position:absolute}
+#stage p{margin:0}
+#cv{left:0;top:0;width:1080px;height:1920px}
+.ctr{left:0;right:0;text-align:center}
+.h{font-weight:500;letter-spacing:-.045em;line-height:1.02}
+.w{display:inline-block;margin-right:.2em}
+.g{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent;padding-bottom:.06em}
+#brand{top:236px;left:0;right:0;display:flex;justify-content:center;gap:14px;align-items:center;font-weight:700;font-size:34px;letter-spacing:-.02em}
+.mark{width:58px;height:58px;border-radius:18px;background:#1f1f1f;color:#fff;display:grid;place-items:center;font-weight:800;font-size:24px;position:relative}
+.mark i{position:absolute;right:7px;top:30px;width:7px;height:7px;border-radius:50%;background:#34a853}
+.pill{display:inline-block;background:var(--bg2);border-radius:999px;padding:16px 32px;font-size:34px;font-weight:500;color:#3c4350}
+#cap{border-radius:999px;overflow:hidden;background:var(--grad)}
+#cap i{position:absolute;top:0;bottom:0;width:180px;background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent)}
+.dot{border-radius:50%}
+#safe{position:absolute;left:0;top:0;width:1080px;height:1920px;transform-origin:0 0;pointer-events:none}
+#safe div{position:absolute;left:0;right:0;background:rgba(220,40,60,.16);border:3px dashed rgba(220,40,60,.7);color:#b0122a;font:600 30px var(--font);display:flex;align-items:center;justify-content:center}
+#safe .stk{background:rgba(59,108,255,.12);border-color:rgba(59,108,255,.7);color:#1f46b8;left:180px;right:180px;border-radius:40px}
+</style>
+
+<div class="app">
+  <div class="tabs" role="group" aria-label="Historia previa">
+    <button type="button" data-h="1" aria-pressed="true">Previa 1 · Se viene</button>
+    <button type="button" data-h="2" aria-pressed="false">Previa 2 · Mañana</button>
+  </div>
+  <div class="viewer" id="viewer">
+    <div class="vp" id="vp">
+      <div id="stage">
+        <canvas id="cv" width="1080" height="1920"></canvas>
+        <div id="brand"><div class="mark">NS<i></i></div><span>Nodo Sur</span></div>
+
+        <!-- Previa 1 · "Tu almacén, en ___": la palabra queda tapada por la cápsula de la historia -->
+        <div class="ctr" id="p1pill" style="top:640px"><span class="pill">Algo nuevo para tu almacén</span></div>
+        <p class="ctr h" id="p1h" style="top:800px;font-size:136px"><span class="w">Tu</span><span class="w">almacén,</span></p>
+        <p class="h" id="p1en" style="top:950px;left:250px;font-size:136px"><span class="g">en</span></p>
+        <div id="cap" style="left:450px;top:975px;width:380px;height:120px"><i id="capbrillo"></i></div>
+        <p class="ctr" id="p1sub" style="top:1150px;font-size:44px;color:#566070">Muy pronto, en tu celular y tu PC.</p>
+
+        <!-- Previa 2 · los puntos se juntan, crece el logo y llega la promesa -->
+        <div class="dot" id="d0"></div><div class="dot" id="d1"></div><div class="dot" id="d2"></div>
+        <div id="logo" style="left:440px;top:560px;width:200px;height:200px;border-radius:60px;background:#1f1f1f;transform-origin:160px 118px">
+          <span id="logoT" style="position:absolute;left:32px;top:48px;font:800 82px var(--font);letter-spacing:-2px;color:#fff;line-height:1">NS</span>
+        </div>
+        <p class="ctr h" id="p2h" style="top:850px;font-size:104px;color:#fff"><span class="w">Mañana</span><span class="w">te</span><span class="w">mostramos</span><br><span class="w g">cómo</span><span class="w g">dejar</span><span class="w g">de</span><br><span class="w g">hacer</span><span class="w g">cuentas.</span></p>
+        <p class="ctr" id="p2sub" style="top:1200px;font-size:40px;color:#b8bcc6">El sistema de caja que las hace por vos.</p>
+        <p class="ctr" id="p2pie" style="top:1560px;font-size:34px;color:#b8bcc6">🔔 Activá el recordatorio</p>
+      </div>
+      <div id="safe" hidden>
+        <div style="top:0;height:220px">Nombre de la cuenta</div>
+        <div class="stk" id="stk" style="top:1260px;height:260px">Sticker</div>
+        <div style="bottom:0;height:300px">Responder</div>
+      </div>
+    </div>
+  </div>
+  <div class="ctl">
+    <button type="button" id="play" aria-label="Pausar">❚❚</button>
+    <button type="button" id="again" aria-label="Desde el principio">↺</button>
+    <input type="range" id="scrub" min="0" max="1000" value="0" aria-label="Posición en la historia">
+    <time id="clock">0,0 s</time>
+    <button type="button" id="safeBtn" aria-pressed="false">Zonas</button>
+  </div>
+  <p class="nota" id="nota"></p>
+</div>
+
+<script>
+var DUR=9;
+var REC=!!window.__REC__;
+if(REC)document.documentElement.classList.add('rec');
+var H=(window.__H__||'1');
+
+function bez(x1,y1,x2,y2){return function(x){if(x<=0)return 0;if(x>=1)return 1;var t=x;for(var i=0;i<8;i++){var cx=3*x1*t*(1-t)*(1-t)+3*x2*t*t*(1-t)+t*t*t-x,d=3*x1*(1-t)*(1-t)+6*(x2-x1)*t*(1-t)+3*(1-x2)*t*t;if(Math.abs(d)<1e-6)break;t-=cx/d;t=Math.max(0,Math.min(1,t))}return 3*y1*t*(1-t)*(1-t)+3*y2*t*t*(1-t)+t*t*t}}
+var EM=bez(.2,0,0,1),DE=bez(.05,.7,.1,1),SM=bez(.4,0,.2,1);
+function cl(x){return x<0?0:x>1?1:x}
+function pr(t,a,d){return cl((t-a)/d)}
+function lerp(a,b,k){return a+(b-a)*k}
+function $(s){return document.getElementById(s)}
+function hex(c){return [parseInt(c.substr(1,2),16),parseInt(c.substr(3,2),16),parseInt(c.substr(5,2),16)]}
+function mix(a,b,k){a=hex(a);b=hex(b);return 'rgb('+[0,1,2].map(function(i){return Math.round(lerp(a[i],b[i],k))}).join(',')+')'}
+function st(id,o,tf){var e=$(id);e.style.opacity=o;e.style.visibility=o>.001?'visible':'hidden';if(tf!==undefined)e.style.transform=tf}
+function sube(id,t,a,dy){var k=DE(pr(t,a,.8));st(id,k,'translateY('+(1-k)*(dy||40)+'px)')}
+function palabras(id,t,a){var h=$(id);h.style.visibility='visible';[].forEach.call(h.querySelectorAll('.w'),function(w,i){var k=DE(pr(t,a+i*.07,.75));w.style.opacity=k;w.style.transform='translateY('+(1-k)*40+'px)'})}
+function circulo(el,cx,cy,d,color){var s=el.style;s.left=cx-d/2+'px';s.top=cy-d/2+'px';s.width=d+'px';s.height=d+'px';s.background=color}
+
+/* partículas: el remolino de la web, lento */
+var cv=$('cv'),ctx=cv.getContext('2d'),seed=21;
+function rnd(){seed=(seed*16807)%2147483647;return (seed-1)/2147483646}
+var CLARO=['#4f7cff','#8a5cf6','#d36bb5','#9aa3b5','#9aa3b5','#c9cfdb'],OSCURO=['#4f7cff','#7da0ff','#5a6aa0','#3a4a78','#7da0ff','#8a5cf6'];
+var P=[];for(var i=0;i<560;i++)P.push({a:rnd()*6.283,r:140+Math.pow(rnd(),.75)*1250,w:.03+rnd()*.05,len:rnd()<.4?6+rnd()*6:2.4+rnd()*1.6,ci:Math.floor(rnd()*6),al:.25+rnd()*.6,ph:rnd()*6.28});
+function particulas(t,pal,al,cy){
+  ctx.clearRect(0,0,1080,1920);ctx.lineCap='round';ctx.lineWidth=3;
+  for(var i=0;i<P.length;i++){
+    var p=P[i],a=p.a+p.w*t,rr=p.r+Math.sin(t*.8+p.ph)*10,ca=Math.cos(a),sa=Math.sin(a),x=540+ca*rr,y=cy+sa*rr*.85;
+    if(x<-20||y<-20||x>1100||y>1940)continue;
+    ctx.globalAlpha=p.al*al;ctx.strokeStyle=pal[p.ci];ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+ca*p.len,y+sa*p.len*.85);ctx.stroke();
+  }
+  ctx.globalAlpha=1;
+}
+
+var IDS1=['p1pill','p1h','p1en','cap','p1sub'],IDS2=['d0','d1','d2','logo','p2h','p2sub','p2pie'];
+
+function previa1(t){
+  $('stage').style.background='#fff';$('brand').style.color='#121317';
+  particulas(t,CLARO,lerp(.2,.7,DE(pr(t,0,1.2))),980);
+  sube('brand',t,.1,20);sube('p1pill',t,.3);palabras('p1h',t,.7);sube('p1en',t,1.45);
+  /* la cápsula ocupa el lugar de "orden.": aparece estirándose y brilla como algo que todavía está cargando */
+  var c=EM(pr(t,1.7,.7));st('cap',c>0?1:0,'scaleX('+lerp(.1,1,c)+')');$('cap').style.transformOrigin='0 50%';
+  var b=((t-2.3)%1.6)/1.6;$('capbrillo').style.left=(t<2.3?-200:lerp(-200,400,SM(cl(b*1.3))))+'px';
+  var pulso=t>2.5?1+.015*Math.sin((t-2.5)*3):1;$('cap').style.transform+=' scale('+pulso+')';
+  sube('p1sub',t,2.9);
+}
+
+function previa2(t){
+  $('stage').style.background='#121317';$('brand').style.color='#fff';
+  particulas(t,OSCURO,lerp(.15,.55,DE(pr(t,0,1.2))),960);
+  sube('brand',t,.1,20);
+  /* tres puntos que saltan, como un "cargando"; se juntan en uno verde y de ahí crece el logo */
+  var C=['#4f7cff','#18c3a4','#d36bb5'],X=[490,540,590],Y=820;
+  var junta=EM(pr(t,2.55,.5)),lleva=EM(pr(t,3.05,.45)),logo=EM(pr(t,3.35,.6));
+  for(var i=0;i<3;i++){
+    var aparece=DE(pr(t,.3+i*.1,.4)),salto=0;
+    for(var v=0;v<2;v++)salto+=Math.sin(Math.PI*pr(t,.8+v*.85+i*.12,.42));
+    var x=lerp(X[i],540,junta),y=Y-46*salto,d=34*aparece,col=C[i];
+    if(i===1){col=mix(C[1],'#34a853',junta);x=lerp(x,600,lleva);y=lerp(y,678,lleva);d=lerp(34,23,lleva)}
+    var el=$('d'+i);circulo(el,x,y,d,col);el.style.opacity=i===1?1:1-junta;el.style.visibility=d>0?'visible':'hidden';el.style.zIndex=5;
+  }
+  st('logo',logo>0?1:0,'scale('+logo+')');$('logoT').style.opacity=DE(pr(t,3.7,.5));
+  palabras('p2h',t,3.8);sube('p2sub',t,4.6);sube('p2pie',t,5.0,20);
+}
+
+function render(t){
+  IDS1.concat(IDS2).forEach(function(id){$(id).style.visibility='hidden'});
+  if(H==='2')previa2(t);else previa1(t);
+}
+window.render=render;window.DUR=DUR;
+
+/* ---- visor ---- */
+var vp=$('vp'),stage=$('stage'),safe=$('safe');
+function fit(){
+  var s=1;
+  if(!REC){var v=$('viewer').getBoundingClientRect();s=Math.min(v.height/1920,v.width/1080)}
+  vp.style.width=1080*s+'px';vp.style.height=1920*s+'px';
+  stage.style.transform=safe.style.transform='scale('+s+')';
+}
+fit();addEventListener('resize',fit);
+if(!REC){
+  var NOTAS={
+    '1':'Dos días antes. Sticker de encuesta en el espacio de abajo: "¿Tu caja cierra todos los días?" · Sí / Ni idea 😅',
+    '2':'El día antes. Sticker de cuenta regresiva en el espacio de abajo: "Nodo Sur" con fecha y hora del lanzamiento.'
+  };
+  var playing=!matchMedia('(prefers-reduced-motion: reduce)').matches,t=playing?0:6,last=performance.now();
+  function elegir(h){H=h;t=0;[].forEach.call(document.querySelectorAll('.tabs button'),function(b){b.setAttribute('aria-pressed',String(b.dataset.h===h))});$('nota').textContent=NOTAS[h];$('stk').textContent=h==='1'?'Sticker de encuesta':'Sticker de cuenta regresiva'}
+  [].forEach.call(document.querySelectorAll('.tabs button'),function(b){b.onclick=function(){elegir(b.dataset.h)}});
+  function draw(){render(t);$('scrub').value=Math.round(t/DUR*1000);$('clock').textContent=t.toFixed(1).replace('.',',')+' s'}
+  function setPlay(on){playing=on;$('play').textContent=on?'❚❚':'▶';$('play').setAttribute('aria-label',on?'Pausar':'Reproducir')}
+  $('play').onclick=function(){setPlay(!playing)};
+  $('again').onclick=function(){t=0;setPlay(true)};
+  $('scrub').oninput=function(e){t=e.target.value/1000*DUR;setPlay(false);draw()};
+  $('safeBtn').onclick=function(){safe.hidden=!safe.hidden;this.setAttribute('aria-pressed',String(!safe.hidden))};
+  vp.onclick=function(){setPlay(!playing)};
+  elegir('1');setPlay(playing);
+  (function loop(now){var dt=Math.min(.1,(now-last)/1000);last=now;if(playing){t=(t+dt)%DUR}draw();requestAnimationFrame(loop)})(last);
+}
+</script>
