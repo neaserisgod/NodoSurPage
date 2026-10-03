@@ -21,6 +21,7 @@ import * as deviceAuthorize from './functions/api/device/authorize.js';
 import * as deviceToken from './functions/api/device/token.js';
 import * as devicePing from './functions/api/device/ping.js';
 import * as deviceMe from './functions/api/device/me.js';
+import * as devicePcLocal from './functions/api/device/pc_local.js';
 import * as mpConexion from './functions/api/mp/conexion.js';
 import * as mpOrden from './functions/api/mp/orden.js';
 import * as devices from './functions/api/devices.js';
@@ -59,6 +60,8 @@ const ROUTES = {
   'POST /api/device/token': deviceToken.onRequestPost,
   'POST /api/device/ping': devicePing.onRequestPost,
   'GET /api/device/me': deviceMe.onRequestGet,
+  'POST /api/device/pc-local': devicePcLocal.onRequestPost,
+  'GET /api/device/pc-local': devicePcLocal.onRequestGet,
   'POST /api/device/revoke': devices.onRequestRevoke,
   'GET /api/devices': devices.onRequestGet,
   'PUT /api/backup': backup.onRequestPut,
