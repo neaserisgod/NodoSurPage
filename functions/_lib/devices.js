@@ -110,9 +110,19 @@ export async function isPrivilegedSub(env, sub, email) {
   const u = await safe(() => env.DB.prepare('SELECT exempt, email FROM users WHERE sub = ?1').bind(sub).first(), null);
   return Boolean(u && (u.exempt || isAdminEmail(env, u.email)));
 }
+// ¿El negocio es de pruebas, porque su dueño (o el mail que paga) es administrador o está eximido? Quien trabaja en él
+// (encargado, empleado) hereda eso: su PC o celular recibe las betas y su cuenta no se barre por inactividad, aunque
+// la suya, sola, no sea de pruebas. Sin negocio (PC anteriores al modelo), false.
+export async function isPrivilegedOrg(env, orgId) {
+  if (!orgId) return false;
+  const o = await safe(() => env.DB.prepare('SELECT owner_sub, billing_email FROM orgs WHERE id = ?1').bind(orgId).first(), null);
+  return o ? isPrivilegedSub(env, o.owner_sub, o.billing_email) : false;
+}
+// Una cuenta es de pruebas por sí misma o por el negocio al que pertenece su dispositivo.
+export const isPrivilegedDevice = async (env, sub, email, orgId) => (await isPrivilegedSub(env, sub, email)) || isPrivilegedOrg(env, orgId);
 // Para el feed de actualizaciones (público, identifica la instalación por `cid`).
 export async function cidIsPrivileged(env, cid) {
   if (!cid) return false;
-  const d = await safe(() => env.DB.prepare('SELECT owner_sub, owner_email FROM devices WHERE cid = ?1 AND revoked = 0').bind(cid).first(), null);
-  return d ? isPrivilegedSub(env, d.owner_sub, d.owner_email) : false;
+  const d = await safe(() => env.DB.prepare('SELECT owner_sub, owner_email, owner_org FROM devices WHERE cid = ?1 AND revoked = 0').bind(cid).first(), null);
+  return d ? isPrivilegedDevice(env, d.owner_sub, d.owner_email, d.owner_org) : false;
 }

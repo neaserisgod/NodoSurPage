@@ -10,7 +10,7 @@
 // Las tablas se crean solas (como el resto del sitio); migrations/0005_orgs.sql es la misma definición, opcional.
 import { now, once } from './util.js';
 import { puedeEnAlguna, permisosDe } from './permisos.js';
-import { ensureDeviceTables } from './devices.js';
+import { ensureDeviceTables, isPrivilegedSub } from './devices.js';
 import { ensureBackupTables } from './backups.js';
 
 export const SUCURSAL_PRINCIPAL = 'Sucursal principal';
@@ -172,6 +172,22 @@ export const billingEmailsBySub = (env) => sinTabla(async () => {
   for (const f of filas) mapa.set(f.user_sub, [...(mapa.get(f.user_sub) || []), f.billing_email]);
   return mapa;
 }, new Map());
+
+// Quiénes son miembros activos de un negocio de pruebas (dueño administrador o eximido): Set de `sub`. El barrido los
+// salta, igual que a la cuenta del dueño: heredan su exención.
+export const subsDeNegociosDePrueba = (env) => sinTabla(async () => {
+  const out = new Set();
+  if (!env.DB) return out;
+  const filas = (await env.DB.prepare(
+    `SELECT m.user_sub, o.owner_sub, o.billing_email FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.status = 'active'`).all()).results;
+  const veredicto = new Map();
+  for (const f of filas) {
+    const k = `${f.owner_sub}|${f.billing_email}`;
+    if (!veredicto.has(k)) veredicto.set(k, await isPrivilegedSub(env, f.owner_sub, f.billing_email));
+    if (veredicto.get(k)) out.add(f.user_sub);
+  }
+  return out;
+}, new Set());
 
 // Los negocios de una persona tal como los muestran las pantallas: rol, sucursales que ve (la dueña y quien tiene
 // "todas" ven todas las activas; el resto, solo las asignadas) y qué puede hacer. Sin ids de Google ni mail de cobro.

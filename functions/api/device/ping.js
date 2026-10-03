@@ -1,6 +1,6 @@
 import { json, now } from '../../_lib/util.js';
 import { actorOf } from '../../_lib/actor.js';
-import { touchDevice, isPrivilegedSub, signDeviceToken } from '../../_lib/devices.js';
+import { touchDevice, isPrivilegedDevice, signDeviceToken } from '../../_lib/devices.js';
 
 const cleanVersion = (v) => (typeof v === 'string' && /^[0-9A-Za-z.+-]{1,40}$/.test(v) ? v : undefined);
 
@@ -14,7 +14,7 @@ export async function onRequestPost({ request, env }) {
   const os = typeof b.os === 'string' ? b.os.replace(/[^\w .()-]/g, '').slice(0, 40) : undefined;
   const t = now();
   await touchDevice(env, a.device.id, { version: cleanVersion(b.version), os, cid }, t);
-  const out = { ok: true, channel: (await isPrivilegedSub(env, a.sub, a.email)) ? 'beta' : 'stable' };
+  const out = { ok: true, channel: (await isPrivilegedDevice(env, a.sub, a.email, a.device.owner_org)) ? 'beta' : 'stable' };
   // Renovación: si al token le queda menos de 60 días, se entrega uno nuevo.
   if (a.exp - t < 60 * 24 * 3600) out.token = await signDeviceToken(env, { sub: a.sub, email: a.email, deviceId: a.device.id }, t);
   return json(out);
