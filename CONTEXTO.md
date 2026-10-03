@@ -1,38 +1,51 @@
-# Contexto del proyecto (para retomar en Claude Code)
+# Para retomar el proyecto — leer esto primero
 
-Sesión original: https://claude.ai/code/session_01Ujc9z88LZd6bzcf4wg4KVd
-(`claude --teleport session_01Ujc9z88LZd6bzcf4wg4KVd` para continuarla).
+Puerta de entrada para una sesión nueva (otra cuenta de Claude, otra persona). Actualizado al **2026-10-03**.
 
-## Repos
-- `neaserisgod/NodoSurPage`: web de Nodo Sur (horsepos.com). Mocks del rediseño en `mocks/antigravity/` (en `main`).
-- `neaserisgod/P41---POS-`: POS de escritorio (Flutter, Windows) y app Android companion (`lib/companion`). Local: Flutter 3.47.6.
-- `horsepospronative`: tercer repo del proyecto (no tocado en esta sesión).
+**El contexto completo del proyecto está en el otro repo: `neaserisgod/P41---POS-` → `CONTEXTO.md`.** Ahí está el
+sistema entero (PC, celular y este sitio), cómo trabaja el dueño, cómo se publica y qué quedó pendiente. Este archivo
+cubre lo propio del sitio. Los detalles de cada función del servidor están en `README.md`.
 
-## Objetivo
-Rediseño de la web, el POS y la app Android al estilo antigravity.google (fondo blanco, bloques #F3F4F7, acento #121317, radios 28/16), con estilo Y disposición iguales a los mocks interactivos, **usando solo funciones que existen en las apps reales**. Lo que existe solo en los mocks está en `docs/anotaciones-mocks.md` (P41) para revisar luego.
+## Qué es este repo
 
-## Estado
-- Rediseño del POS (todas las pantallas) y de Android: hecho y publicado.
-- Releases: Windows estable y Android estable publicados el 2026-10-02 (nota: "Rediseño completo al estilo de la web de Nodo Sur").
-- Feature nueva: pagarle a un proveedor sin cargar deuda antes (PC y celular), PR #28 mergeado. Dispara una beta de Windows; **no está en estable** (ni en el APK estable actual).
-- Pagos offline desde el celular no tocan la cuenta corriente de la PC.
+**horsepos.com**: la web de Nodo Sur y el servidor del sistema POS. Cloudflare Worker con archivos estáticos
+(`wrangler.jsonc`, worker `broad-frog-1e4b`), base D1 `nodosur`, bucket R2 para versiones y copias, y un Durable Object
+(`SyncHub`) para avisar cambios en vivo. Se publica solo al mezclar a `main`.
 
-## Desvíos deliberados respecto de los mocks (por funciones reales)
-- Cierre de caja: conserva el flujo real (efectivo a ciegas primero).
-- Vender: cuatro medios de pago siempre visibles con atajos Alt.
-- Configuración, Equilibrio, Respaldo e Impresión: estilo nuevo, secciones y campos reales.
+- **Páginas** (HTML + JS sin build): home, páginas del sistema y guías, `/ingresar`, `/cuenta`, `/negocio`, `/unirse`,
+  `/vincular`, `/pagar`, `/descargar`, `/admin`.
+- **API** (`worker.js` → `functions/`): login con Google; negocios, sucursales, miembros e invitaciones; suscripciones
+  (Mercado Pago de Nodo Sur, `MP_ACCESS_TOKEN`); dispositivos y vinculación de PC/celular; copias cifradas
+  (`/api/backup`); sync por sucursal (`/api/sync` + WebSocket); versiones y actualizaciones (`/api/update`,
+  `scripts/publicar-release.mjs`, se conservan 2 por plataforma y canal); **Mercado Pago del negocio** (`/api/mp/*`:
+  conectar por OAuth, terminal por sucursal, órdenes Point, imprimir en la terminal, cobros reales para el cierre y
+  registro de actividad); mails con Resend (`functions/_lib/mail_template.js`).
 
-## Cómo se publica (P41)
-- `publicar-beta.yml`: un merge a `main` que toque código publica beta de Windows (ignora `*.md`, `docs/`, `test/`, `.github/`). Manual: `workflow_dispatch` con canal beta/stable, rollout, notas.
-- `publicar-apk.yml`: manual, canal, notas, rollout.
-- `tests.yml`. Grupo de concurrencia `publicar`: uno a la vez; publica el HEAD de `main` al despachar.
+## Cómo se trabaja
 
-## Detalles técnicos útiles
-- Tema: `ui/tema/` (`colores_escritorio.dart`, `acentos.dart`, `tema.dart`, `tema_inverso.dart`). Filas negras seleccionadas: usar `coloresDeFila` / `TemaInverso`.
-- Capturas de pantallas: `test/ui/capturas_escritorio_test.dart` (salen a `capturas/escritorio/`).
-- Pagos a proveedores: `movimientos_de_caja` tipo `PAGO_PROVEEDOR` con `proveedorId`; cuenta corriente en `movimientos_deuda`.
-- Línea base de tests: 4 archivos de test no cargan desde antes (preexistente).
+- Rama por tarea, PR, **merge solo con el OK del dueño** ("mergeá"). Al mezclar a `main` el sitio se publica solo.
+- Pruebas: `for f in tests/*.test.mjs; do node --experimental-sqlite "$f" || echo "FALLA $f"; done` (Node 22). Mercado
+  Pago, Google y Resend están simulados en las pruebas.
+- Si cambiás un `.js` o `.css` de las páginas: `node scripts/versionar-estaticos.mjs` antes de commitear (la prueba
+  `tests/estaticos.test.mjs` lo exige).
+- Las páginas arman todo con `textContent` (hay una prueba que prohíbe `innerHTML`).
+- Secretos (Cloudflare → Workers → broad-frog-1e4b → Variables and secrets): `BACKUP_KEY`, `MP_CLIENT_SECRET`,
+  `MP_ACCESS_TOKEN`, `RESEND_API_KEY`, `MAIL_FROM`, entre otros (lista en `README.md`). No se pueden leer desde una
+  sesión: si falta uno, pedírselo al dueño.
 
-## Pendiente / opcional
-- Diferencias de disposición restantes vs mocks (ver `docs/anotaciones-mocks.md`).
-- Decidir si la feature de pago sin deuda pasa a estable (Windows) y publicar nueva APK.
+## Diseño
+
+Mismo lenguaje que el POS: estilo antigravity.google (fondo blanco, bloques `#F3F4F7`, tinta `#121317`, pastillas,
+Figtree, poco texto). Home con `home.css`/`home.js`; páginas internas con `styles.css` + `theme.css`/`theme.js` +
+`fx.js`. Mocks del rediseño en `mocks/antigravity/` (no se publican). Detalle en `README.md` ("Rediseño del index").
+
+## Estado al 2026-10-03
+
+- Publicado y en uso: negocios y sucursales con sync por sucursal, Mercado Pago por negocio (cobro, impresión, cobros
+  reales para el cierre, actividad), herencia de lo del dueño a sus miembros (cuentas admin/eximidas = suscripción
+  activa sin vencimiento), plantilla de mails, retención de 2 versiones, caché de 2 minutos del estado de pago y caché
+  larga de `.js`/`.css` con huella.
+- Versiones del POS publicadas: Windows estable 1.0.0.2127 y Android estable 1.0.0+2128.
+- Pendiente que toca este repo (ver la lista completa en `P41---POS-/CONTEXTO.md`): webhooks de Mercado Pago (avisos de
+  pagos en vivo), devoluciones desde el POS y saldo real del negocio en el cierre. El MCP de Mercado Pago sirve para
+  configurar webhooks de la app y leer documentación, no para ver la cuenta real.
