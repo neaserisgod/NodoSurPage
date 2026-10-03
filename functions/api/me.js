@@ -37,12 +37,13 @@ export async function onRequestGet({ request, env }) {
     }
   }
   const intent = billing && user && isPlan(user.plan_interest) ? { plan: user.plan_interest, promo: Boolean(user.promo_interest) } : null;
+  const orgs = await describirOrgs(env, membresias); // una sola vez: antes se calculaba dos veces por pedido
   const res = json({
     user: { name: s.name, email: s.email, since: user ? user.created_at : s.iat, lastSeen: user ? user.last_seen : null },
     subscriptions,
     billing,
     covered,
-    orgs: await describirOrgs(env, membresias),
+    orgs,
     mpConfigured: Boolean(env.MP_ACCESS_TOKEN),
     mpError,
     isAdmin,
@@ -58,7 +59,7 @@ export async function onRequestGet({ request, env }) {
   // ns_sub: 1 = puede descargar (el menú muestra "Descargar"), 0 = debería suscribirse (aparece "Elegí tu sistema"), 2 = no necesita
   // ni una cosa ni la otra (un empleado: lo paga el negocio y no descarga). Dos usos distintos de la misma cookie, así que el valor
   // "no molestar" no puede ser 1: un empleado vería un "Descargar" que lo llevaría a una página que le niega el acceso.
-  const puedeDescargar = (await describirOrgs(env, membresias)).some((o) => o.can.descargar);
+  const puedeDescargar = orgs.some((o) => o.can.descargar);
   if (isAdmin || has || covered || (!billing && puedeDescargar)) res.headers.append('Set-Cookie', cookie('ns_sub', '1', { maxAge: month, httpOnly: false }));
   else if (!billing) res.headers.append('Set-Cookie', cookie('ns_sub', '2', { maxAge: month, httpOnly: false }));
   else if (!mpError) res.headers.append('Set-Cookie', cookie('ns_sub', '0', { maxAge: month, httpOnly: false }));

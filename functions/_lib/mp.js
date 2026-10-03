@@ -47,6 +47,22 @@ export async function listSubscriptions(env, email) {
     .map(mapSub);
 }
 
+// Versión con memoria breve para el control de acceso (sync, copias, descargas). La sync de cada dispositivo pasa por acá
+// en cada subida y bajada: sin memoria, cada una era un pedido a Mercado Pago (lento, y con 429 la sync se caía con
+// `mp_error`). Solo guarda lecturas exitosas; una baja tarda como mucho ACCESO_TTL_MS en notarse. Lo que muestra o cambia
+// plata (/api/me, cancelar) sigue usando listSubscriptions, siempre fresco.
+const ACCESO_TTL_MS = 120_000; // env.MP_ACCESO_TTL_MS lo pisa (los tests lo ponen en 0 para cambiar el estado de la suscripción a mitad de camino)
+const ACCESO = new Map();
+export async function listSubscriptionsCached(env, email) {
+  const key = `${String(env.MP_ACCESS_TOKEN || '').trim()}|${email.trim().toLowerCase()}`;
+  const hit = ACCESO.get(key), t = Date.now();
+  if (hit && t - hit.at < Number(env.MP_ACCESO_TTL_MS ?? ACCESO_TTL_MS)) return hit.data;
+  const data = await listSubscriptions(env, email);
+  if (ACCESO.size > 500) ACCESO.clear(); // tope simple: una instancia no acumula mails sin límite
+  ACCESO.set(key, { at: t, data });
+  return data;
+}
+
 export async function listPayments(env, subId) {
   try {
     const res = await mp(env, `/authorized_payments/search?preapproval_id=${encodeURIComponent(subId)}`);
@@ -81,7 +97,7 @@ async function failWith(res) {
 // Memoria breve por instancia: el panel no vuelve a pedir el listado en cada recarga.
 const CACHE = new Map();
 const FRESH_MS = 60_000, STALE_MS = 10 * 60_000;
-export const clearMpCache = () => CACHE.clear();
+export const clearMpCache = () => { CACHE.clear(); ACCESO.clear(); };
 
 // `fresh: true` (limpieza automática) ignora la memoria: nunca decide con datos viejos.
 export async function listAllSubscribers(env, { fresh = false } = {}) {

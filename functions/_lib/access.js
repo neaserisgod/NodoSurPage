@@ -5,7 +5,7 @@
 // permisos.js. Quien no pertenece a ningún negocio (cuentas anteriores a este modelo) sigue entrando por la
 // suscripción de su propio mail, como siempre.
 import { isAdminEmail, now } from './util.js';
-import { listSubscriptions } from './mp.js';
+import { listSubscriptionsCached as listSubscriptions } from './mp.js';
 import { isPrivilegedSub } from './devices.js';
 import { orgsWith, getOrg, getMembership } from './orgs.js';
 import { puede } from './permisos.js';
