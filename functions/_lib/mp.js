@@ -81,7 +81,28 @@ async function failWith(res) {
 // Memoria breve por instancia: el panel no vuelve a pedir el listado en cada recarga.
 const CACHE = new Map();
 const FRESH_MS = 60_000, STALE_MS = 10 * 60_000;
-export const clearMpCache = () => CACHE.clear();
+// Estado de pago por mail para el camino caliente (cada sincronización, cada cobro con terminal, cada consulta de una orden):
+// sin esto, cada pedido de cada dispositivo hacía una consulta en vivo a Mercado Pago (cientos de ms y, con varios equipos, el
+// límite de frecuencia). Se recuerda 2 minutos; si Mercado Pago falla se sigue con lo último que se supo hasta 15 minutos, para
+// que un tropiezo de ellos no corte los cobros del local. Una baja se nota en minutos, no al instante: es lo aceptable acá.
+// `MP_CACHE_MS=0` apaga la memoria (las pruebas y quien quiera verificar en vivo).
+const SUBS = new Map();
+const SUBS_FRESCO_MS = 2 * 60_000, SUBS_VIEJO_MS = 15 * 60_000;
+export const clearMpCache = () => { CACHE.clear(); SUBS.clear(); };
+export async function listSubscriptionsCached(env, email) {
+  const vida = env.MP_CACHE_MS === undefined ? SUBS_FRESCO_MS : Number(env.MP_CACHE_MS);
+  const clave = String(email || '').trim().toLowerCase();
+  const hit = SUBS.get(clave), t = Date.now();
+  if (vida > 0 && hit && t - hit.at < vida) return hit.data;
+  try {
+    const data = await listSubscriptions(env, email);
+    if (vida > 0) SUBS.set(clave, { at: t, data });
+    return data;
+  } catch (e) {
+    if (vida > 0 && hit && t - hit.at < SUBS_VIEJO_MS) return hit.data; // Mercado Pago falló: lo último que se supo, por poco tiempo
+    throw e;
+  }
+}
 
 // `fresh: true` (limpieza automática) ignora la memoria: nunca decide con datos viejos.
 export async function listAllSubscribers(env, { fresh = false } = {}) {
