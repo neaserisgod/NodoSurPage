@@ -3,7 +3,7 @@ import { actorOf } from '../../_lib/actor.js';
 import { hasDB } from '../../_lib/db.js';
 import { readJson } from '../../_lib/miembros.js';
 import { syncAccess } from '../../_lib/sync.js';
-import { mpConfigurado, ensureMpTables, crearOrden, consultarOrden, cancelarOrden, imprimirTicket, registrarActividad, MAX_CONTENIDO_TICKET, detalleError } from '../../_lib/mp_conexion.js';
+import { mpConfigurado, ensureMpTables, crearOrden, consultarOrden, cancelarOrden, imprimirTicket, registrarActividad, MAX_CONTENIDO_TICKET, detalleError, cobrosDe } from '../../_lib/mp_conexion.js';
 
 // Cobrar con la terminal Point DESDE EL SERVIDOR: la PC o el celular piden la orden acá y el sitio la crea con el token del
 // negocio (que nunca sale del servidor). Pueden quienes operan la sucursal del dispositivo con el negocio al día.
@@ -65,4 +65,17 @@ export async function onRequestImprimir({ request, env }) {
   if (r.status === 409 || !r.j && !(r.status >= 200 && r.status < 300)) return json({ error: (r.j && r.j.error) || 'mp_error' }, r.status === 409 ? 409 : 502);
   if (r.status < 200 || r.status >= 300) return json({ error: 'mp_rechazo', status: r.status, mensaje: detalleError(r.j) }, 502);
   return json({ ok: true });
+}
+
+// Los cobros reales de la cuenta del negocio en un rango, para el cierre de caja. ?desde=<seg>&hasta=<seg>, hasta 31 días.
+// Solo lo que hace falta para conciliar: ni datos de quien pagó ni nada de la cuenta.
+export const MAX_RANGO_COBROS = 31 * 24 * 3600;
+export async function onRequestCobros({ request, env }) {
+  const w = await quien(request, env); if (w.error) return w.error;
+  const sp = new URL(request.url).searchParams;
+  const desde = Number(sp.get('desde')); const hasta = Number(sp.get('hasta'));
+  if (!Number.isInteger(desde) || !Number.isInteger(hasta) || desde <= 0 || hasta <= desde || hasta - desde > MAX_RANGO_COBROS) return json({ error: 'bad_request' }, 400);
+  const r = await cobrosDe(env, w.orgId, { desde, hasta });
+  if (r.error) return json({ error: r.error, status: r.status ?? null, mensaje: r.detalle ?? null }, r.error === 'mp_no_conectado' ? 409 : 502);
+  return json({ desde, hasta, ...r });
 }
