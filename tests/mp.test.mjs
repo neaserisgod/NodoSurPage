@@ -38,6 +38,11 @@ function simular() {
     if (u.pathname === '/v1/orders' && init.method === 'POST' && m.rechazarOrden) return r(m.rechazarOrden, 400);
     if (u.pathname === '/v1/orders' && init.method === 'POST') { const id = 'ORD' + (m.ordenes.size + 1); m.ordenes.set(id, 'created'); return r({ id, status: 'created', secreto_interno: 'no-se-filtra' }, 201); }
     if (u.pathname === '/terminals/v1/actions' && init.method === 'POST') return m.rechazarImpresion ? r({ errors: [{ code: 'property_value', message: 'Invalid value for property', details: ["'$.config.point.terminal_id' - does not match pattern"] }] }, 400) : r({ id: 'ACT1', status: 'created' }, 201);
+    if (u.pathname === '/v1/payments/search') {
+      m.busquedas = m.busquedas || []; m.busquedas.push(Object.fromEntries(u.searchParams));
+      const off = Number(u.searchParams.get('offset') || 0); const todos = m.pagos || [];
+      return r({ paging: { total: todos.length, limit: 50, offset: off }, results: todos.slice(off, off + 50) });
+    }
     const g = /^\/v1\/orders\/([^/]+)(\/cancel)?$/.exec(u.pathname);
     if (g && m.ordenes.has(g[1])) { if (g[2]) m.ordenes.set(g[1], 'canceled'); return r({ id: g[1], status: m.ordenes.get(g[1]), status_detail: g[2] ? 'canceled' : 'created' }); }
     return r({ message: 'not found' }, 404);
@@ -280,5 +285,48 @@ await t('registro: se guardan solo los últimos 500 por negocio y un fallo al an
   for (let i = 0; i < 503; i++) await registrarActividad(env, { orgId: n.org.id, branchId: n.a }, { accion: 'orden', r: { status: 201, j: { id: 'X' + i } } });
   assert.equal(one(env, 'SELECT COUNT(*) c FROM mp_actividad').c, 500); assert.equal(one(env, 'SELECT MIN(mp_id) m FROM mp_actividad WHERE mp_id = ?', 'X0')?.m ?? null, null, 'lo más viejo se fue');
   env.DB.raw.exec('DROP TABLE mp_actividad'); await registrarActividad(env, { orgId: n.org.id }, { accion: 'orden', r: { status: 201, j: {} } }); // no tira
+});
+
+const pago = (id, monto, extra = {}) => ({ id, status: 'approved', collector_id: 241983636, transaction_amount: monto, transaction_amount_refunded: 0,
+  date_created: '2026-10-01T14:00:00.000-03:00', date_approved: '2026-10-01T14:00:05.000-03:00', payment_type_id: 'account_money', payment_method_id: 'account_money',
+  fee_details: [{ type: 'mercadopago_fee', amount: Math.round(monto * 2) / 100, fee_payer: 'collector' }], transaction_details: { net_received_amount: monto - Math.round(monto * 2) / 100 },
+  payer: { email: 'cliente@secreto.com' }, ...extra });
+await t('cobros: lo que entró a la cuenta del negocio, con comisión y neto, sin pagos hechos ni rechazados ni datos de quien pagó', async () => {
+  const env = mkEnv(MP_ENV); const n = await negocio(env); const m = simular(); const cookie = await sess(env, 'duena@x.com', 'sd'); await conectar(env, n, m, cookie);
+  m.pagos = [
+    pago(1, 3600),
+    pago(2, 13300, { payment_type_id: 'debit_card', payment_method_id: 'debvisa' }),
+    pago(3, 5000, { status: 'rejected' }),
+    pago(4, 100000, { collector_id: 999 }), // un pago que hizo el negocio: no es un cobro
+    pago(5, 2000, { status: 'refunded', transaction_amount_refunded: 2000 }),
+    pago(6, 1000, { status: 'partially_refunded', transaction_amount_refunded: 400 }),
+  ];
+  const cel = await celular(env, n, n.a, 'sd', 'duena@x.com', 'cel-dueno-0123456789abcdefg');
+  const desde = 1790874000; const hasta = desde + 12 * 3600;
+  const res = await get(orden.onRequestCobros, env, `/api/mp/cobros?desde=${desde}&hasta=${hasta}`, { headers: cel });
+  assert.equal(res.status, 200); const j = await res.json();
+  assert.deepEqual(j.cobros.map((c) => c.id), ['1', '2', '3', '5', '6'], 'el pago hecho por el negocio no aparece');
+  assert.equal(j.totales.cantidad, 4); assert.equal(j.totales.noCobrados, 1, 'el rechazado se cuenta aparte');
+  assert.equal(j.totales.brutoCentavos, (3600 + 13300 + 2000 + 1000) * 100); assert.equal(j.totales.devueltoCentavos, (2000 + 400) * 100);
+  assert.equal(j.totales.comisionCentavos, 7200 + 26600 + 0 + 2000, 'el devuelto entero no cobra comisión');
+  assert.equal(j.totales.netoCentavos, j.totales.brutoCentavos - j.totales.devueltoCentavos - j.totales.comisionCentavos);
+  assert.equal(j.totales.porMedio.debit_card, 1330000); assert.equal(j.cobros[1].fecha, Date.parse('2026-10-01T14:00:05.000-03:00') / 1000, 'la hora en que se aprobó');
+  assert.ok(!JSON.stringify(j).includes('secreto'), 'nada de quien pagó'); assert.equal(j.truncado, false);
+  const b = m.busquedas[0];
+  assert.equal(b['collector.id'], '241983636'); assert.equal(b.range, 'date_created');
+  assert.equal(b.begin_date, new Date(desde * 1000).toISOString().replace('Z', '-00:00')); assert.equal(b.end_date, new Date(hasta * 1000).toISOString().replace('Z', '-00:00'));
+  assert.equal(m.llamadas.find((x) => x.path === '/v1/payments/search').auth, 'Bearer token-falso-acceso-1');
+});
+await t('cobros: pagina de a 50 hasta el total, y rechaza rangos raros, sin dispositivo o sin conectar', async () => {
+  const env = mkEnv(MP_ENV); const n = await negocio(env); const m = simular(); const cookie = await sess(env, 'duena@x.com', 'sd');
+  const cel = await celular(env, n, n.a, 'sd', 'duena@x.com', 'cel-dueno-0123456789abcdefg');
+  const ok = '/api/mp/cobros?desde=1790874000&hasta=1790917200';
+  assert.equal((await get(orden.onRequestCobros, env, ok, { headers: cel })).status, 409, 'sin conectar');
+  await conectar(env, n, m, cookie);
+  m.pagos = Array.from({ length: 120 }, (_, i) => pago(i + 1, 100));
+  const j = await (await get(orden.onRequestCobros, env, ok, { headers: cel })).json();
+  assert.equal(j.cobros.length, 120); assert.equal(m.busquedas.length, 3); assert.deepEqual(m.busquedas.map((x) => x.offset), ['0', '50', '100']);
+  for (const q of ['', '?desde=10', '?desde=100&hasta=50', '?desde=1&hasta=99999999', '?desde=abc&hasta=200']) assert.equal((await get(orden.onRequestCobros, env, '/api/mp/cobros' + q, { headers: cel })).status, 400, q);
+  assert.equal((await get(orden.onRequestCobros, env, ok, { headers: {} })).status, 401);
 });
 console.log(`\n${pass} pruebas OK (Mercado Pago por negocio)`);

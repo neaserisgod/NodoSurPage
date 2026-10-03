@@ -237,3 +237,64 @@ export async function registrarActividad(env, w, { accion, canal = null, montoCe
 export const actividadDe = async (env, orgId, limite = 50) => (await env.DB.prepare(
   `SELECT id, branch_id, device_name, accion, canal, monto_centavos, referencia, mp_id, http_status, resultado, detalle, creado
    FROM mp_actividad WHERE org_id = ?1 ORDER BY id DESC LIMIT ?2`).bind(orgId, Math.min(Math.max(Number(limite) || 50, 1), 200)).all()).results;
+
+// --- cobros reales del negocio (para el cierre de caja)
+// Lo que Mercado Pago dice que ENTRÓ a la cuenta del negocio entre dos momentos: cada cobro con bruto, comisión y neto. El
+// cierre de la app lo compara con lo que registró ella misma, así se ve al centavo si falta anotar un cobro, si hay uno de
+// más y cuánto se llevó Mercado Pago en comisiones (la "diferencia" de MP que antes no tenía explicación).
+// Solo cobros donde el negocio es el cobrador (`collector.id` = la cuenta conectada): un pago o una transferencia que el
+// negocio HACE no entra acá. Los rechazados, cancelados y pendientes no son plata: se cuentan aparte, sin sumarlos.
+export const MAX_COBROS = 1000;
+export const ESTADOS_COBRADOS = ['approved', 'partially_refunded', 'refunded', 'charged_back'];
+const POR_PAGINA = 50;
+const isoMp = (seg) => new Date(seg * 1000).toISOString().replace('Z', '-00:00');
+const aCentavos = (x) => Math.round(Number(x || 0) * 100);
+const aSegundos = (s) => { const t = Date.parse(s || ''); return Number.isFinite(t) ? Math.floor(t / 1000) : null; };
+
+export function cobroDesdePago(p) {
+  const monto = aCentavos(p.transaction_amount);
+  const devuelto = Math.min(aCentavos(p.transaction_amount_refunded), monto);
+  const tarifas = Array.isArray(p.fee_details) ? p.fee_details.filter((f) => !f.fee_payer || f.fee_payer === 'collector') : null;
+  const neto = p.transaction_details && p.transaction_details.net_received_amount != null ? aCentavos(p.transaction_details.net_received_amount) : null;
+  let comision = tarifas && tarifas.length ? tarifas.reduce((a, f) => a + aCentavos(f.amount), 0) : (neto != null ? Math.max(monto - neto, 0) : 0);
+  if (p.status === 'refunded') comision = 0; // devuelto entero: Mercado Pago devuelve también la comisión
+  return {
+    id: String(p.id), estado: p.status || null, fecha: aSegundos(p.date_approved) ?? aSegundos(p.date_created),
+    montoCentavos: monto, devueltoCentavos: devuelto, comisionCentavos: comision, netoCentavos: monto - devuelto - comision,
+    medio: p.payment_type_id || null, metodo: p.payment_method_id || null, referencia: p.external_reference || null,
+  };
+}
+
+export function totalesDeCobros(cobros) {
+  const t = { cantidad: 0, brutoCentavos: 0, devueltoCentavos: 0, comisionCentavos: 0, netoCentavos: 0, noCobrados: 0, porMedio: {} };
+  for (const c of cobros) {
+    if (!ESTADOS_COBRADOS.includes(c.estado)) { t.noCobrados++; continue; }
+    t.cantidad++; t.brutoCentavos += c.montoCentavos; t.devueltoCentavos += c.devueltoCentavos; t.comisionCentavos += c.comisionCentavos; t.netoCentavos += c.netoCentavos;
+    const m = c.medio || 'otro'; t.porMedio[m] = (t.porMedio[m] || 0) + c.montoCentavos - c.devueltoCentavos;
+  }
+  return t;
+}
+
+// [desde, hasta) en segundos. Devuelve { cobros, totales, truncado } o { error }.
+export async function cobrosDe(env, orgId, { desde, hasta }) {
+  await ensureMpTables(env);
+  const c = await env.DB.prepare('SELECT mp_user_id FROM mp_conexiones WHERE org_id = ?1').bind(orgId).first();
+  if (!c) return { error: 'mp_no_conectado' };
+  const crudos = []; let offset = 0; let total = 0;
+  do {
+    const q = new URLSearchParams({ sort: 'date_created', criteria: 'asc', range: 'date_created', begin_date: isoMp(desde), end_date: isoMp(hasta),
+      'collector.id': c.mp_user_id, limit: String(POR_PAGINA), offset: String(offset) });
+    const r = await mpFetch(env, orgId, `/v1/payments/search?${q}`);
+    if (r.status !== 200 || !r.j) return { error: r.status === 409 ? 'mp_no_conectado' : 'mp_error', status: r.status, detalle: detalleError(r.j) };
+    const pagina = Array.isArray(r.j.results) ? r.j.results : [];
+    total = Number((r.j.paging && r.j.paging.total) ?? pagina.length);
+    crudos.push(...pagina);
+    offset += POR_PAGINA;
+    if (!pagina.length) break;
+  } while (offset < total && offset < MAX_COBROS);
+  // El filtro de Mercado Pago por cobrador se vuelve a aplicar acá: si algún día lo ignora, un pago HECHO por el negocio no
+  // puede aparecer como un cobro.
+  const propios = crudos.filter((p) => { const col = p.collector_id ?? (p.collector && p.collector.id); return col == null || String(col) === c.mp_user_id; });
+  const cobros = propios.map(cobroDesdePago);
+  return { cobros, totales: totalesDeCobros(cobros), truncado: total > MAX_COBROS };
+}
