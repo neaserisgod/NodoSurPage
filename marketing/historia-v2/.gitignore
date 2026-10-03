@@ -1,2 +1,4 @@
 # Temporales de render.js mientras graba
 _rec-*.html
+# Los videos se pasan aparte, no se suben
+*.mp4
