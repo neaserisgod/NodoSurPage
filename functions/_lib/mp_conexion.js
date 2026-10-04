@@ -259,6 +259,9 @@ export async function ordenDelAviso(env, { orderId, userId, estado }, t = now())
   return { orgId: f.org_id, branchId: f.branch_id };
 }
 export const consultarOrden = (env, orgId, id) => mpFetch(env, orgId, `/v1/orders/${encodeURIComponent(id)}`);
+// Devolución TOTAL de una orden ya cobrada (Orders API, `POST /v1/orders/{id}/refund` sin cuerpo). La clave de idempotencia
+// la manda la app y es fija por venta: reintentar la misma devolución (se cortó la red) nunca devuelve dos veces.
+export const devolverOrden = (env, orgId, id, idempotencyKey) => mpFetch(env, orgId, `/v1/orders/${encodeURIComponent(id)}/refund`, { method: 'POST', headers: { 'X-Idempotency-Key': idempotencyKey } });
 export const cancelarOrden = (env, orgId, id) => mpFetch(env, orgId, `/v1/orders/${encodeURIComponent(id)}/cancel`, { method: 'POST', headers: { 'X-Idempotency-Key': randomHex(16) }, body: '{}' });
 
 // Imprimir un ticket en la terminal Point de la sucursal (Terminals API, `type: print`). El contenido ya viene armado por

@@ -52,4 +52,11 @@ t('puedeEnAlguna: sirve para "¿puede descargar en algún lado?" (sin elegir suc
   assert.equal(puedeEnAlguna(m('manager', { all: 1 }), 'miembros'), false);
   assert.equal(puedeEnAlguna(null, 'operar'), false);
 });
+t('devolver por Mercado Pago (etapa B): dueño y encargado en su sucursal; un empleado no', () => {
+  assert.ok(ACCIONES.includes('devolver'));
+  assert.equal(puede(m('owner'), 'devolver', 7), true);
+  assert.equal(puede({ role: 'manager', all_branches: 0, branches: [7] }, 'devolver', 7), true);
+  assert.equal(puede({ role: 'manager', all_branches: 0, branches: [7] }, 'devolver', 8), false, 'el encargado, solo en sus sucursales');
+  assert.equal(puede({ role: 'employee', all_branches: 1, branches: [] }, 'devolver', 7), false);
+});
 console.log(`${pass} pruebas de permisos ok`);

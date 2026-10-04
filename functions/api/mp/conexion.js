@@ -3,7 +3,8 @@ import { actorOf } from '../../_lib/actor.js';
 import { currentUser } from '../../_lib/auth.js';
 import { hasDB } from '../../_lib/db.js';
 import { guard, readJson } from '../../_lib/miembros.js';
-import { listBranches } from '../../_lib/orgs.js';
+import { listBranches, getMembership } from '../../_lib/orgs.js';
+import { puede } from '../../_lib/permisos.js';
 import { mpConfigurado, ensureMpTables, iniciarConexion, completarConexion, estadoConexion, desconectar, terminalesDe, terminalDeSucursal, elegirTerminal, crearOrden, cancelarOrden, actividadDe, detalleError } from '../../_lib/mp_conexion.js';
 import { randomHex } from '../../_lib/util.js';
 
@@ -19,7 +20,11 @@ export async function onRequestGet({ request, env }) {
     if (!hasDB(env) || !a.device.owner_org) return json({ connected: false, terminalConfigured: false });
     await ensureMpTables(env);
     const e = await estadoConexion(env, a.device.owner_org);
-    return json({ connected: e.connected, needsReconnect: Boolean(e.needsReconnect), terminalConfigured: Boolean(await terminalDeSucursal(env, a.device.owner_org, a.device.branch_id)) });
+    // `canRefund`: si la persona que vinculó este equipo puede devolver por Mercado Pago en su sucursal (dueño y encargado). La
+    // app lo usa solo para ofrecer o no la devolución; quien decide es `POST /api/mp/orden/devolver`.
+    const m = await getMembership(env, a.device.owner_org, a.sub);
+    return json({ connected: e.connected, needsReconnect: Boolean(e.needsReconnect), terminalConfigured: Boolean(await terminalDeSucursal(env, a.device.owner_org, a.device.branch_id)),
+      canRefund: Boolean(m && m.status === 'active' && puede(m, 'devolver', a.device.branch_id)) });
   }
   const g = await guard(request, env, { orgId: orgDe(request), accion: 'mercadopago' });
   if (g.error) return g.error;
