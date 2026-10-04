@@ -3,7 +3,9 @@ import { actorOf } from '../../_lib/actor.js';
 import { hasDB } from '../../_lib/db.js';
 import { readJson } from '../../_lib/miembros.js';
 import { syncAccess } from '../../_lib/sync.js';
-import { mpConfigurado, ensureMpTables, crearOrden, consultarOrden, cancelarOrden, imprimirTicket, registrarActividad, MAX_CONTENIDO_TICKET, detalleError, cobrosDe } from '../../_lib/mp_conexion.js';
+import { getMembership } from '../../_lib/orgs.js';
+import { puede } from '../../_lib/permisos.js';
+import { mpConfigurado, ensureMpTables, crearOrden, consultarOrden, cancelarOrden, devolverOrden, imprimirTicket, registrarActividad, MAX_CONTENIDO_TICKET, detalleError, cobrosDe } from '../../_lib/mp_conexion.js';
 
 // Cobrar con la terminal Point DESDE EL SERVIDOR: la PC o el celular piden la orden acá y el sitio la crea con el token del
 // negocio (que nunca sale del servidor). Pueden quienes operan la sucursal del dispositivo con el negocio al día.
@@ -16,7 +18,7 @@ async function quien(request, env) {
   if (acc.error) return { error: json({ error: acc.error }, 503) };
   if (!acc.subir) return { error: json({ error: 'forbidden' }, 403) };
   await ensureMpTables(env);
-  return { orgId: a.device.owner_org, branchId: a.device.branch_id, deviceId: a.device.id, deviceName: a.device.name };
+  return { orgId: a.device.owner_org, branchId: a.device.branch_id, deviceId: a.device.id, deviceName: a.device.name, sub: a.sub };
 }
 // Lo que se le devuelve a la app: solo lo que necesita para seguir la orden; nada del token ni de la cuenta.
 const salida = (r) => {
@@ -51,6 +53,29 @@ export async function onRequestCancelar({ request, env }) {
   if (!b || typeof b.id !== 'string' || !/^[\w-]{1,64}$/.test(b.id)) return json({ error: 'bad_request' }, 400);
   const r = await cancelarOrden(env, w.orgId, b.id);
   await registrarActividad(env, w, { accion: 'cancelar', referencia: b.id, r });
+  return salida(r);
+}
+
+// Devolverle al cliente lo cobrado por una orden (etapa B: al anular una venta, preguntando cada vez). Cuerpo: { id, idempotencyKey }.
+// Blindaje:
+//  * Solo quien puede `devolver` en esa sucursal (dueño y encargado): lo decide el sitio con la cuenta que vinculó el equipo,
+//    nunca la app.
+//  * Solo una orden cobrada (`processed`) de la cuenta de ESTE negocio: se consulta con su token antes (una orden de otra
+//    cuenta da 404 y no se toca). Una ya devuelta contesta `ya_devuelta` en vez de intentar de nuevo.
+//  * Devolución total: el monto lo sabe Mercado Pago, la app no lo manda (no se puede devolver de más).
+export async function onRequestDevolver({ request, env }) {
+  const w = await quien(request, env); if (w.error) return w.error;
+  const m = await getMembership(env, w.orgId, w.sub);
+  if (!m || m.status !== 'active' || !puede(m, 'devolver', w.branchId)) return json({ error: 'sin_permiso_devolver' }, 403);
+  const b = await readJson(request);
+  if (!b || typeof b.id !== 'string' || !/^[\w-]{1,64}$/.test(b.id) || typeof b.idempotencyKey !== 'string' || !/^[\w-]{8,64}$/.test(b.idempotencyKey)) return json({ error: 'bad_request' }, 400);
+  const actual = await consultarOrden(env, w.orgId, b.id);
+  if (actual.status !== 200 || !actual.j) return salida(actual);
+  if (actual.j.status === 'refunded') return json({ error: 'ya_devuelta', id: b.id, status: 'refunded' }, 409);
+  if (actual.j.status !== 'processed') return json({ error: 'no_cobrada', id: b.id, status: actual.j.status || null }, 409);
+  const r = await devolverOrden(env, w.orgId, b.id, b.idempotencyKey);
+  const total = actual.j.total_amount != null ? Math.round(Number(actual.j.total_amount) * 100) : null;
+  await registrarActividad(env, w, { accion: 'devolver', montoCentavos: Number.isFinite(total) ? total : null, referencia: b.id, r });
   return salida(r);
 }
 

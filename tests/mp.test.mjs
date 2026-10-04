@@ -57,6 +57,8 @@ function simular() {
     if (u.pathname === '/v1/account/release_report/config') return m.sinConfig && !m.config ? r({ message: 'Configuration not found for user', error: 'config_not_found_for_user' }, 404) : r(m.config || { file_name_prefix: 'liq', columns: [{ key: 'BALANCE_AMOUNT' }] });
     if (u.pathname === '/v1/account/release_report' && init.method === 'POST') { m.pedidos = (m.pedidos || []).concat([cuerpo]); return r({ id: 77, status: 'pending' }, 202); }
     if (u.pathname === '/v1/account/release_report/liq-2026-10-03.csv') return new Response('DATE;RECORD_TYPE;DESCRIPTION;NET_CREDIT_AMOUNT;NET_DEBIT_AMOUNT;BALANCE_AMOUNT\n2026-10-03T00:00:00;initial_available_balance;;286149.00;0.00;286149.00\n2026-10-03T11:13:00;release;payout;0.00;201016.00;85133.00\n', { status: 200 });
+    const dev = /^\/v1\/orders\/([^/]+)\/refund$/.exec(u.pathname);
+    if (dev && m.ordenes.has(dev[1])) { m.devoluciones = (m.devoluciones || []).concat([{ id: dev[1], clave: (init.headers || {})['X-Idempotency-Key'], cuerpo: init.body }]); m.ordenes.set(dev[1], 'refunded'); return r({ id: dev[1], status: 'refunded' }); }
     const g = /^\/v1\/orders\/([^/]+)(\/cancel)?$/.exec(u.pathname);
     if (g && m.ordenes.has(g[1])) { if (g[2]) m.ordenes.set(g[1], 'canceled'); return r({ id: g[1], status: m.ordenes.get(g[1]), status_detail: g[2] ? 'canceled' : 'created' }); }
     return r({ message: 'not found' }, 404);
@@ -160,7 +162,7 @@ await t('estado: el dueño ve sus sucursales y terminales; el dispositivo solo v
   assert.equal(d.connected, true); assert.deepEqual(d.branches.map((b) => b.name), ['Sucursal principal', 'Centro']); assert.ok(!JSON.stringify(d).includes('token-falso'));
   const cel = await celular(env, n, n.a, 'sd', 'duena@x.com', 'cel-dueno-0123456789abcdefg');
   const v = await (await get(conexion.onRequestGet, env, '/api/mp/estado', { headers: cel })).json();
-  assert.deepEqual(v, { connected: true, needsReconnect: false, terminalConfigured: false });
+  assert.deepEqual(v, { connected: true, needsReconnect: false, terminalConfigured: false, canRefund: true }, 'la dueña puede devolver');
   assert.equal((await get(conexion.onRequestGet, env, `/api/mp/estado?org=${n.org.id}`, { cookie: await sess(env, 'emp@x.com', 'sm') })).status, 401);
 });
 await t('terminales: el dueño las lista, elige la de una sucursal y se pasa a modo PDV', async () => {
@@ -439,5 +441,34 @@ await t('el hub de sync reenvía el aviso de una orden a TODOS los equipos de la
   const r = await hub.fetch(new Request('https://hub/avisar', { method: 'POST', body: JSON.stringify({ mp: { orden: 'ORD1', accion: 'processed', extra: 'no-va' } }) }));
   assert.equal(r.status, 204);
   assert.deepEqual(enviados, [['pc-1', '{"mp":{"orden":"ORD1","accion":"processed"}}'], ['cel-1', '{"mp":{"orden":"ORD1","accion":"processed"}}']]);
+});
+await t('devolver (etapa B): solo dueño y encargado, solo una orden cobrada de este negocio, total y con clave fija', async () => {
+  const env = mkEnv(MP_ENV); const n = await negocio(env); const m = simular(); const cookie = await sess(env, 'duena@x.com', 'sd');
+  await conectar(env, n, m, cookie);
+  await post(conexion.onRequestElegirTerminal, env, '/api/mp/terminal', cookie, { orgId: n.org.id, branchId: n.b, terminalId: 'PAX_A910__SERIE1' });
+  miembro(env, n, 'emp@x.com', 'sm', 'employee', { branches: [n.b] });
+  miembro(env, n, 'enc@x.com', 'se', 'manager', { branches: [n.b] });
+  const celEmp = await celular(env, n, n.b, 'sm', 'emp@x.com', 'cel-emp-0123456789abcdefghi');
+  const celEnc = await celular(env, n, n.b, 'se', 'enc@x.com', 'cel-enc-0123456789abcdefghi');
+  const { id } = await (await post(orden.onRequestPost, env, '/api/mp/orden', null, { externalReference: 'venta-7', idempotencyKey: 'clave-idem-0007', montoCentavos: 5000, canal: 'qr' }, celEmp)).json();
+  const devolver = (cel, cuerpo) => post(orden.onRequestDevolver, env, '/api/mp/orden/devolver', null, cuerpo, cel);
+  const cuerpo = { id, idempotencyKey: 'devolver-venta-7' };
+
+  assert.equal((await (await get(conexion.onRequestGet, env, '/api/mp/estado', { headers: celEmp })).json()).canRefund, false, 'al empleado no se le ofrece');
+  assert.equal((await (await get(conexion.onRequestGet, env, '/api/mp/estado', { headers: celEnc })).json()).canRefund, true);
+  assert.equal((await devolver(celEmp, cuerpo)).status, 403, 'un empleado no devuelve aunque llame directo');
+  assert.equal((await devolver(celEnc, cuerpo)).status, 409, 'una orden todavía sin cobrar no se devuelve');
+  assert.equal(m.devoluciones, undefined);
+
+  m.ordenes.set(id, 'processed');
+  const ok = await devolver(celEnc, cuerpo);
+  assert.equal(ok.status, 200); assert.equal((await ok.json()).status, 'refunded');
+  assert.deepEqual(m.devoluciones, [{ id, clave: 'devolver-venta-7', cuerpo: undefined }], 'total (sin cuerpo) y con la clave de la app');
+  assert.equal(one(env, "SELECT COUNT(*) c FROM mp_actividad WHERE accion = 'devolver'").c, 1);
+  const otra = await devolver(celEnc, cuerpo);
+  assert.equal(otra.status, 409); assert.equal((await otra.json()).error, 'ya_devuelta', 'nunca dos veces');
+  assert.equal(m.devoluciones.length, 1);
+  assert.equal((await devolver(celEnc, { id: 'ORDAJENA', idempotencyKey: 'devolver-venta-8' })).status, 404, 'una orden de otra cuenta');
+  assert.equal((await devolver(celEnc, { id, idempotencyKey: 'x' })).status, 400);
 });
 console.log(`\n${pass} pruebas OK (Mercado Pago por negocio)`);
