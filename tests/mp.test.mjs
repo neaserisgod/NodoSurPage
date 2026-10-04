@@ -50,6 +50,8 @@ function simular() {
     }
     if (u.pathname === '/users/me') return r({ id: m.cuentaNodoSur ?? 111 });
     if (/^\/users\/[^/]+\/mercadopago_account\/balance$/.test(u.pathname)) return m.saldoNegado ? r({ message: 'Public access not allowed', error: 'forbidden' }, 403) : r({ available_balance: 1344.21, total_amount: 2000, unavailable_balance: 655.79 });
+    if (u.pathname === '/v1/account/release_report/list' && m.listaReportes) return r(m.listaReportes);
+    if (m.csvs && m.csvs[u.pathname.split('/').pop()] != null && u.pathname.startsWith('/v1/account/release_report/')) return new Response(m.csvs[u.pathname.split('/').pop()], { status: 200 });
     if (u.pathname === '/v1/account/release_report/list') return r([{ file_name: 'liq-2026-10-03.csv', status: 'processed' }]);
     if (u.pathname === '/v1/account/release_report/config' && init.method === 'POST') {
       if (cuerpo.columns.some((c) => c.key === 'BALANCE_AMOUNT') && m.rechazarBalance) return r({ message: 'invalid column' }, 400);
@@ -583,6 +585,70 @@ await t('el hub reenvía el aviso de un cobro a todos los equipos, sin tocarlo',
   const aviso = { id: 5, tipo: 'cobro', mpId: '9', pagoId: '9', montoCentavos: 100, referencia: null, estado: 'approved', detalle: null, fecha: 1, creado: 2 };
   assert.equal((await hub.fetch(new Request('https://hub/avisar', { method: 'POST', body: JSON.stringify({ mp: { aviso } }) }))).status, 204);
   assert.deepEqual(JSON.parse(enviados[0]), { mp: { aviso } });
+});
+
+
+// --- saldo real para el cierre (etapa E)
+await t('parsearReporte: saldo de la última fila real, sin el inicial ni los pares reserve_for_*; con otro formato de número y sin columna de saldo', async () => {
+  const { parsearReporte, filasDelCsv, aCentavosCsv } = await import('../functions/_lib/mp_saldo.js');
+  const csv = ['DATE;SOURCE_ID;EXTERNAL_REFERENCE;RECORD_TYPE;DESCRIPTION;NET_CREDIT_AMOUNT;NET_DEBIT_AMOUNT;BALANCE_AMOUNT',
+    '2026-10-03T00:00:00;;;initial_available_balance;;286149.00;0.00;286149.00',
+    '2026-10-03T09:00:00;111;ref-1;release;payment;5000.00;0.00;291149.00',
+    '2026-10-03T09:01:00;112;;reserve_for_payment;reserve_for_payment;0.00;300.00;290849.00',
+    '2026-10-03T09:01:01;112;;reserve_for_payment;reserve_for_payment;300.00;0.00;291149.00',
+    '2026-10-03T11:13:00;113;;release;"payout; a otra cuenta";0.00;201016.00;90133.00'].join('\n');
+  const p = parsearReporte(filasDelCsv(csv, { max: 100 }));
+  assert.equal(p.saldoCentavos, 9013300); assert.equal(p.inicialCentavos, 28614900);
+  assert.deepEqual(p.movimientos.map((x) => [x.descripcion, x.creditoCentavos, x.debitoCentavos, x.referencia]), [['payment', 500000, 0, 'ref-1'], ['payout; a otra cuenta', 0, 20101600, null]]);
+  assert.equal(p.movimientos[0].fecha, Date.parse('2026-10-03T09:00:00-03:00') / 1000, 'el reporte sale en hora argentina');
+  const sinSaldo = csv.replace('"payout; a otra cuenta"', 'payout').split('\n').map((l) => l.split(';').slice(0, 7).join(';')).join('\n');
+  assert.equal(parsearReporte(filasDelCsv(sinSaldo, { max: 100 })).saldoCentavos, 9013300, 'sin la columna de saldo se calcula desde el inicial');
+  assert.equal(aCentavosCsv('1.234,50'), 123450); assert.equal(aCentavosCsv('286149.00'), 28614900); assert.equal(aCentavosCsv(''), null); assert.equal(aCentavosCsv('x'), null);
+  assert.equal(parsearReporte(filasDelCsv('DATE;RECORD_TYPE\n', { max: 5 })).error, 'reporte_sin_saldo');
+});
+await t('saldo (etapa E): se pide, se pregunta hasta que está, suma lo cobrado y no liberado, y el token no sale', async () => {
+  const env = mkEnv(MP_ENV); const n = await negocio(env); const m = simular(); const cookie = await sess(env, 'duena@x.com', 'sd'); await conectar(env, n, m, cookie);
+  const cel = await celular(env, n, n.a, 'sd', 'duena@x.com', 'cel-dueno-0123456789abcdefg');
+  const desde = nowS() - 6 * 3600;
+  const pedir = (c, cuerpo) => post(orden.onRequestSaldoPedir, env, '/api/mp/saldo', null, cuerpo, c);
+  const ver = async (id) => (await (await get(orden.onRequestSaldo, env, `/api/mp/saldo?id=${id}`, { headers: cel })).json());
+
+  m.sinConfig = true; // la cuenta todavía no tiene la configuración del reporte
+  const r = await pedir(cel, { desde }); assert.equal(r.status, 200); const { id } = await r.json();
+  assert.ok(id);
+  const cfg = m.llamadas.filter((x) => x.path === '/v1/account/release_report/config' && x.metodo === 'POST'); assert.equal(cfg.length, 1, 'crea la configuración una vez');
+  const ped = m.pedidos.pop(); assert.equal(Date.parse(ped.begin_date) / 1000, desde); assert.ok(Date.parse(ped.end_date) / 1000 >= nowS() - 5);
+  assert.equal((await (await pedir(cel, { desde })).json()).id, id, 'un segundo toque reutiliza el pedido');
+  assert.equal(m.pedidos.length, 0, 'y no pide otro reporte');
+
+  m.listaReportes = [];
+  assert.equal((await ver(id)).estado, 'pendiente');
+  m.listaReportes = [{ id: 77, file_name: 'liq-hoy.csv', status: 'pending' }];
+  assert.equal((await ver(id)).estado, 'pendiente', 'todavía se está armando');
+  m.listaReportes = [{ id: 77, file_name: 'liq-hoy.csv', status: 'processed' }];
+  m.csvs = { 'liq-hoy.csv': 'DATE;SOURCE_ID;EXTERNAL_REFERENCE;RECORD_TYPE;DESCRIPTION;NET_CREDIT_AMOUNT;NET_DEBIT_AMOUNT;BALANCE_AMOUNT\n2026-10-04T00:00:00;;;initial_available_balance;;100000.00;0.00;100000.00\n2026-10-04T10:00:00;1;;release;payout;0.00;40000.00;60000.00\n' };
+  const futuro = new Date((nowS() + 86400) * 1000).toISOString().replace('Z', '-00:00'); const pasado = new Date((nowS() - 86400) * 1000).toISOString().replace('Z', '-00:00');
+  m.pagos = [pago(1, 1000, { money_release_date: futuro }), pago(2, 500, { money_release_date: pasado }), pago(3, 700, { status: 'rejected', money_release_date: futuro }), pago(4, 2000, { money_release_date: futuro, status: 'partially_refunded', transaction_amount_refunded: 500 })];
+  const j = await ver(id);
+  assert.equal(j.estado, 'listo'); assert.equal(j.saldoDisponibleCentavos, 6000000);
+  assert.equal(j.aLiberarCentavos, 98000 + 146000, 'solo lo aprobado con liberación a futuro, neto de comisión y devoluciones'); assert.equal(j.aLiberarCobros, 2);
+  assert.equal(j.totalCentavos, j.saldoDisponibleCentavos + j.aLiberarCentavos);
+  assert.deepEqual(j.movimientos.map((x) => [x.descripcion, x.debitoCentavos]), [['payout', 4000000]]);
+  assert.ok(!JSON.stringify(j).includes('token-falso') && !JSON.stringify(j).includes('secreto'), 'nada del token ni de quien pagó');
+  assert.equal(one(env, "SELECT COUNT(*) c FROM mp_actividad WHERE accion = 'saldo'").c, 2);
+
+  m.listaReportes = [{ id: 77, file_name: 'liq-hoy.csv', status: 'error' }]; assert.equal((await ver(id)).estado, 'error');
+  m.listaReportes = [{ file_name: 'liq-hoy.csv', status: 'processed', begin_date: ped.begin_date, end_date: ped.end_date }];
+  assert.equal((await ver(id)).estado, 'listo', 'si la lista no trae el id, se reconoce por el rango pedido');
+  m.listaReportes = [{ id: 5, file_name: 'otro.csv', status: 'processed' }]; assert.equal((await ver(id)).estado, 'pendiente', 'un reporte ajeno no sirve');
+  m.listaReportes = [{ id: 77, file_name: '../x', status: 'processed' }]; assert.equal((await ver(id)).estado, 'error');
+  m.listaReportes = [{ id: 77, file_name: 'liq-hoy.csv', status: 'processed' }]; m.csvs['liq-hoy.csv'] = 'DATE;RECORD_TYPE\n'; assert.equal((await ver(id)).motivo, 'reporte_sin_saldo');
+
+  assert.equal((await get(orden.onRequestSaldo, env, `/api/mp/saldo?id=${id}`, {})).status, 401, 'sin dispositivo');
+  assert.equal((await pedir({}, { desde })).status, 401);
+  for (const malo of [{}, { desde: -1 }, { desde: 'x' }, { desde: nowS() + 1000 }, { desde: nowS() - 61 * 86400 }]) assert.equal((await pedir(cel, malo)).status, 400);
+  assert.equal((await get(orden.onRequestSaldo, env, '/api/mp/saldo?id=9999', { headers: cel })).status, 404);
+  const otra = mkEnv(MP_ENV); void otra;
 });
 
 console.log(`\n${pass} pruebas OK (Mercado Pago por negocio)`);

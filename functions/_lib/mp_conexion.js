@@ -36,6 +36,9 @@ const DDL = [
   `CREATE INDEX IF NOT EXISTS idx_mp_ordenes_creado ON mp_ordenes(creado)`,
   // Avisos de cobros, contracargos y reclamos (etapa D). Una fila por cosa que pasó: el cobro una vez; el contracargo o reclamo
   // otra vez cada vez que cambia (`firma`). Solo lo necesario para cruzarlo con una venta, nada de quien pagó. 30 días.
+  // Pedidos del reporte de Liquidaciones para el saldo real del cierre (etapa E): la app pide y después pregunta por el id.
+  `CREATE TABLE IF NOT EXISTS mp_saldo_pedidos (id INTEGER PRIMARY KEY AUTOINCREMENT, org_id INTEGER NOT NULL, branch_id INTEGER, desde INTEGER NOT NULL, hasta INTEGER NOT NULL,
+     mp_report_id TEXT, creado INTEGER NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS mp_avisos (id INTEGER PRIMARY KEY AUTOINCREMENT, org_id INTEGER NOT NULL, branch_id INTEGER, tipo TEXT NOT NULL, mp_id TEXT NOT NULL, firma TEXT NOT NULL DEFAULT '',
      pago_id TEXT, monto_centavos INTEGER, referencia TEXT, estado TEXT, detalle TEXT, fecha INTEGER, creado INTEGER NOT NULL, UNIQUE (org_id, tipo, mp_id, firma))`,
 ];
@@ -344,6 +347,7 @@ export function cobroDesdePago(p) {
     id: String(p.id), estado: p.status || null, fecha: aSegundos(p.date_approved) ?? aSegundos(p.date_created),
     montoCentavos: monto, devueltoCentavos: devuelto, comisionCentavos: comision, netoCentavos: monto - devuelto - comision,
     medio: p.payment_type_id || null, metodo: p.payment_method_id || null, referencia: p.external_reference || null,
+    liberacion: aSegundos(p.money_release_date), // cuándo queda disponible (null si ya lo está o no lo informa)
   };
 }
 

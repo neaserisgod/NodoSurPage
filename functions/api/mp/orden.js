@@ -1,5 +1,6 @@
-import { json } from '../../_lib/util.js';
+import { json, now } from '../../_lib/util.js';
 import { avisosDe } from '../../_lib/mp_avisos.js';
+import { pedirSaldo, estadoSaldo, MAX_RANGO_SALDO } from '../../_lib/mp_saldo.js';
 import { actorOf } from '../../_lib/actor.js';
 import { hasDB } from '../../_lib/db.js';
 import { readJson } from '../../_lib/miembros.js';
@@ -113,4 +114,27 @@ export async function onRequestAvisos({ request, env }) {
   const desde = Number(new URL(request.url).searchParams.get('desde') || 0);
   if (!Number.isInteger(desde) || desde < 0) return json({ error: 'bad_request' }, 400);
   return json({ avisos: await avisosDe(env, w.orgId, w.branchId, desde) });
+}
+
+// Saldo real de la cuenta para el cierre (etapa E). Es asíncrono: se pide y después se pregunta por el id.
+//   POST /api/mp/saldo  { desde }   → { id }   (desde = segundos; el reporte va de ahí hasta ahora, hasta 60 días)
+//   GET  /api/mp/saldo?id=N         → { estado: 'pendiente' | 'error' | 'listo', … }
+// Lo pueden usar los mismos equipos que ven los cobros del cierre (`quien`). Ni datos de quien pagó ni nada de la cuenta.
+export async function onRequestSaldoPedir({ request, env }) {
+  const w = await quien(request, env); if (w.error) return w.error;
+  const b = await readJson(request);
+  const hasta = now();
+  if (!b || !Number.isInteger(b.desde) || b.desde <= 0 || b.desde >= hasta || hasta - b.desde > MAX_RANGO_SALDO) return json({ error: 'bad_request' }, 400);
+  const r = await pedirSaldo(env, w.orgId, w.branchId, { desde: b.desde, hasta });
+  if (r.error) return json({ error: r.error, status: r.http ?? null }, r.status);
+  await registrarActividad(env, w, { accion: 'saldo', referencia: String(r.id), r: { status: 200, j: { id: r.id, status: r.reutilizado ? 'reutilizado' : 'pedido' } } });
+  return json({ id: r.id });
+}
+export async function onRequestSaldo({ request, env }) {
+  const w = await quien(request, env); if (w.error) return w.error;
+  const id = Number(new URL(request.url).searchParams.get('id'));
+  if (!Number.isInteger(id) || id <= 0) return json({ error: 'bad_request' }, 400);
+  const r = await estadoSaldo(env, w.orgId, id);
+  if (r.error) return json({ error: r.error, status: r.http ?? null }, r.status);
+  return json(r);
 }

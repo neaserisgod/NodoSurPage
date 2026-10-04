@@ -107,6 +107,8 @@ const ROUTES = {
   'POST /api/mp/imprimir': mpOrden.onRequestImprimir,
   'GET /api/mp/cobros': mpOrden.onRequestCobros,
   'GET /api/mp/avisos': mpOrden.onRequestAvisos,
+  'POST /api/mp/saldo': mpOrden.onRequestSaldoPedir,
+  'GET /api/mp/saldo': mpOrden.onRequestSaldo,
   'POST /api/mp/webhook': mpWebhook.onRequestPost,
   'GET /api/mp/actividad': mpConexion.onRequestActividad,
   'POST /api/sync': sync.onRequestPost,
