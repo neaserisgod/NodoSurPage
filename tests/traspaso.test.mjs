@@ -101,6 +101,19 @@ await t('aceptar: el nuevo dueño pasa a "owner" con todas las sucursales; el an
   assert.equal(q(env, "SELECT * FROM memberships WHERE role = 'owner'").length, 1, 'un solo dueño');
   assert.equal(one(env, 'SELECT status s FROM org_transfers').s, 'accepted'); assert.equal((await aceptar(env, tid)).status, 410, 'no se acepta dos veces');
 });
+await t('aceptar: si un cambio del lote falla, no cambia NADA (un solo dueño, la propuesta sigue pendiente) y se puede aceptar de nuevo', async () => {
+  const env = mkEnv(); const n = await negocio(env); const id = miembro(env, n, N[0], N[1], 'employee', { branches: [n.a] });
+  const tid = (await (await iniciar(env, n, id)).json()).transfer.id;
+  env.DB.raw.exec("CREATE TRIGGER falla_dueno BEFORE UPDATE OF owner_sub ON orgs BEGIN SELECT RAISE(ABORT, 'falla a propósito'); END");
+  await assert.rejects(() => aceptar(env, tid), /falla a propósito/);
+  assert.equal(one(env, 'SELECT owner_sub o FROM orgs').o, 'sd', 'el dueño sigue siendo el mismo');
+  assert.deepEqual([rol(env, 'sd').role, rol(env, 'sn').role], ['owner', 'employee'], 'ningún rol cambió');
+  assert.equal(q(env, 'SELECT * FROM membership_branches WHERE membership_id = ?', id).length, 1, 'ni se borraron sus sucursales');
+  assert.equal(q(env, "SELECT * FROM memberships WHERE role = 'owner'").length, 1);
+  assert.equal(one(env, 'SELECT status s FROM org_transfers').s, 'pending', 'la propuesta no se perdió');
+  env.DB.raw.exec('DROP TRIGGER falla_dueno');
+  assert.equal((await aceptar(env, tid)).status, 200); assert.equal(one(env, 'SELECT owner_sub o FROM orgs').o, 'sn');
+});
 await t('aceptar: solo quien la recibe; no vencida; ni si el dueño ya cambió, ni si dejó de ser miembro', async () => {
   const env = mkEnv(); const n = await negocio(env); const id = miembro(env, n, N[0], N[1], 'manager', { all: 1 }); addUser(env, 'otra@x.com', 'so');
   const tid = (await (await iniciar(env, n, id)).json()).transfer.id;
