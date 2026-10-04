@@ -34,6 +34,10 @@ const DDL = [
   `CREATE TABLE IF NOT EXISTS mp_ordenes (order_id TEXT PRIMARY KEY, org_id INTEGER NOT NULL, branch_id INTEGER NOT NULL, external_reference TEXT,
      estado TEXT, creado INTEGER NOT NULL, actualizado INTEGER NOT NULL)`,
   `CREATE INDEX IF NOT EXISTS idx_mp_ordenes_creado ON mp_ordenes(creado)`,
+  // Avisos de cobros, contracargos y reclamos (etapa D). Una fila por cosa que pasó: el cobro una vez; el contracargo o reclamo
+  // otra vez cada vez que cambia (`firma`). Solo lo necesario para cruzarlo con una venta, nada de quien pagó. 30 días.
+  `CREATE TABLE IF NOT EXISTS mp_avisos (id INTEGER PRIMARY KEY AUTOINCREMENT, org_id INTEGER NOT NULL, branch_id INTEGER, tipo TEXT NOT NULL, mp_id TEXT NOT NULL, firma TEXT NOT NULL DEFAULT '',
+     pago_id TEXT, monto_centavos INTEGER, referencia TEXT, estado TEXT, detalle TEXT, fecha INTEGER, creado INTEGER NOT NULL, UNIQUE (org_id, tipo, mp_id, firma))`,
 ];
 export const ensureMpTables = (env) => once(env, 'mp_conexion', async () => { for (const sql of DDL) await env.DB.prepare(sql).run(); });
 export const mpConfigurado = (env) => Boolean(env.DB && env.MP_CLIENT_ID && env.MP_CLIENT_SECRET && claveValida(env.BACKUP_KEY));

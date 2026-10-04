@@ -2,6 +2,7 @@ import { json } from '../../_lib/util.js';
 import { hasDB } from '../../_lib/db.js';
 import { avisarOrdenMp } from '../../_lib/sync.js';
 import { ensureMpTables, firmaWebhookValida, ordenDelAviso, registrarActividad } from '../../_lib/mp_conexion.js';
+import { TEMAS_AVISO, procesarAvisoMp } from '../../_lib/mp_avisos.js';
 
 // Avisos de Mercado Pago sobre las órdenes de cobro de la Point (webhook "Order (Mercado Pago)", configurado UNA vez en el
 // panel de la aplicación de Nodo Sur con la URL https://horsepos.com/api/mp/webhook; la clave secreta que genera Mercado Pago
@@ -27,6 +28,12 @@ export async function onRequestPost({ request, env }) {
     xSignature: request.headers.get('x-signature'), xRequestId: request.headers.get('x-request-id'), dataId,
   });
   if (!valida) return json({ error: 'firma_invalida' }, 401);
+  // Temas opcionales (etapa D): un cobro que entró, un contracargo, un reclamo. Se consulta el objeto con el token del negocio
+  // y se guarda un aviso para la PC (`mp_avisos`); ver `_lib/mp_avisos.js`.
+  if (cuerpo && TEMAS_AVISO[cuerpo.type] && dataId) {
+    if (!hasDB(env)) return json({ error: 'no_db' }, 503);
+    return json({ ok: true, ...(await procesarAvisoMp(env, { tema: cuerpo.type, id: dataId, userId: cuerpo.user_id })) });
+  }
   if (!cuerpo || cuerpo.type !== 'order' || !ACCIONES.has(cuerpo.action) || !dataId || !/^[\w-]{1,64}$/.test(dataId)) return json({ ok: true, ignorado: true });
   if (!hasDB(env)) return json({ error: 'no_db' }, 503);
   await ensureMpTables(env);

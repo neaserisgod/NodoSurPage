@@ -42,6 +42,7 @@ function simular() {
     if (u.pathname === '/v1/orders' && init.method === 'POST' && m.rechazarOrden) return r(m.rechazarOrden, 400);
     if (u.pathname === '/v1/orders' && init.method === 'POST') { const id = 'ORD' + (m.ordenes.size + 1); m.ordenes.set(id, 'created'); return r({ id, status: 'created', secreto_interno: 'no-se-filtra' }, 201); }
     if (u.pathname === '/terminals/v1/actions' && init.method === 'POST') return m.rechazarImpresion ? r({ errors: [{ code: 'property_value', message: 'Invalid value for property', details: ["'$.config.point.terminal_id' - does not match pattern"] }] }, 400) : r({ id: 'ACT1', status: 'created' }, 201);
+    if (m.objetos && m.objetos[u.pathname]) return r(m.objetos[u.pathname]);
     if (u.pathname === '/v1/payments/search') {
       m.busquedas = m.busquedas || []; m.busquedas.push(Object.fromEntries(u.searchParams));
       const off = Number(u.searchParams.get('offset') || 0); const todos = m.pagos || [];
@@ -500,4 +501,88 @@ await t('modo de la terminal (etapa C): la dueña la pasa a autónomo y la vuelv
   miembro(env, n, 'emp@x.com', 'sm', 'employee', { branches: [n.b] });
   assert.notEqual((await modo(await sess(env, 'emp@x.com', 'sm'), { orgId: n.org.id, branchId: n.b, modo: 'STANDALONE' })).status, 200, 'un empleado no');
 });
+
+// Avisos de los temas opcionales (etapa D): mismo webhook, misma firma.
+function avisoTema(secreto, { tema, id, userId = 241983636, action = 'x.created', requestId = 'req-2', ts = '1742505638684' }) {
+  const v1 = createHmac('sha256', secreto).update(`id:${String(id).toLowerCase()};request-id:${requestId};ts:${ts};`).digest('hex');
+  return req(`/api/mp/webhook?data.id=${id}&type=${tema}`, { method: 'POST', headers: { 'x-signature': `ts=${ts},v1=${v1}`, 'x-request-id': requestId },
+    body: { action, type: tema, user_id: userId, live_mode: true, data: { id } } });
+}
+await t('avisos de cobros, contracargos y reclamos (etapa D): se consulta el objeto, se guarda una vez, despierta a la sucursal y se baja con GET', async () => {
+  const env = mkEnv({ ...MP_ENV, MP_WEBHOOK_SECRET: 'clave-webhook' }); const n = await negocio(env); const m = simular(); const cookie = await sess(env, 'duena@x.com', 'sd');
+  await conectar(env, n, m, cookie); env.SYNC_HUB = hubFalso();
+  await post(conexion.onRequestElegirTerminal, env, '/api/mp/terminal', cookie, { orgId: n.org.id, branchId: n.b, terminalId: 'PAX_A910__SERIE1' });
+  const cel = await celular(env, n, n.b, 'sd', 'duena@x.com', 'cel-dueno-0123456789abcdefg');
+  const celA = await celular(env, n, n.a, 'sd', 'duena@x.com', 'cel-dueno-a-0123456789abcdef');
+  const enviar = (rq) => mpWebhook.onRequestPost({ request: rq, env });
+  const A = (tema, id, extra = {}) => enviar(avisoTema('clave-webhook', { tema, id, ...extra }));
+  m.objetos = {
+    '/v1/payments/9001': { id: 9001, status: 'approved', transaction_amount: 1234.5, collector_id: 241983636, external_reference: null, payment_type_id: 'account_money', date_approved: '2026-10-04T15:00:00.000-03:00', payer: { email: 'no-se-guarda@x.com' } },
+    '/v1/payments/9002': { id: 9002, status: 'rejected', transaction_amount: 500, collector_id: 241983636 },
+    '/v1/payments/9003': { id: 9003, status: 'approved', transaction_amount: 700, collector_id: 555 },
+    '/v1/chargebacks/CB1': { id: 'CB1', payments: [9001], amount: 1234.5, documentation_required: true, date_documentation_deadline: '2026-10-20T00:00:00.000-03:00', date_created: '2026-10-04T16:00:00.000-03:00' },
+    '/post-purchase/v1/claims/CL1': { id: 'CL1', resource_id: 9001, status: 'opened', type: 'mediations', stage: 'dispute', reason_id: 'PNR' },
+  };
+
+  const r1 = await A('payment', '9001', { action: 'payment.created' });
+  assert.equal(r1.status, 200); assert.equal((await r1.json()).guardado, 1);
+  const f = one(env, "SELECT * FROM mp_avisos WHERE tipo = 'cobro'");
+  assert.equal(f.monto_centavos, 123450); assert.equal(f.mp_id, '9001'); assert.equal(f.branch_id, null);
+  assert.ok(!JSON.stringify(f).includes('no-se-guarda'), 'nada de quien pagó');
+  assert.deepEqual(env.SYNC_HUB.avisos.map((x) => x.cuerpo.mp.aviso.tipo), ['cobro'], 'despierta a la sucursal que tiene terminal');
+  assert.equal(env.SYNC_HUB.avisos[0].cuerpo.mp.aviso.montoCentavos, 123450);
+
+  assert.equal((await (await A('payment', '9001', { action: 'payment.updated' })).json()).ignorado, true, 'el mismo cobro no se avisa dos veces');
+  assert.equal((await (await A('payment', '9002')).json()).ignorado, true, 'un cobro rechazado no es plata');
+  assert.equal((await (await A('payment', '9003')).json()).ignorado, true, 'un pago de otra cuenta');
+  assert.equal((await (await A('payment', '9001', { userId: 999 })).json()).ignorado, true, 'el aviso de otra cuenta');
+  assert.equal((await A('payment', '9001', { userId: 999 })).status, 200);
+  assert.equal(one(env, 'SELECT COUNT(*) c FROM mp_avisos').c, 1);
+
+  assert.equal((await (await A('topic_chargebacks_wh', 'CB1')).json()).guardado, 1);
+  assert.equal((await (await A('topic_chargebacks_wh', 'CB1')).json()).ignorado, true, 'igual que antes: no se repite');
+  m.objetos['/v1/chargebacks/CB1'] = { ...m.objetos['/v1/chargebacks/CB1'], documentation_required: false };
+  assert.equal((await (await A('topic_chargebacks_wh', 'CB1')).json()).guardado, 1, 'si cambia, es un aviso nuevo');
+  assert.equal((await (await A('topic_claims_integration_wh', 'CL1')).json()).guardado, 1);
+  const cb = one(env, "SELECT * FROM mp_avisos WHERE tipo = 'contracargo' ORDER BY id LIMIT 1");
+  assert.equal(cb.pago_id, '9001'); assert.equal(cb.monto_centavos, 123450); assert.equal(cb.estado, 'documentacion');
+  const cl = one(env, "SELECT * FROM mp_avisos WHERE tipo = 'reclamo'");
+  assert.equal(cl.pago_id, '9001'); assert.equal(cl.monto_centavos, 123450, 'el monto sale del cobro afectado'); assert.equal(cl.estado, 'opened');
+
+  assert.equal((await enviar(avisoTema('otra-clave', { tema: 'payment', id: '9001' }))).status, 401, 'sin la firma, nada');
+  assert.equal((await (await A('payment', 'no-valido!')).json()).ignorado, true, 'un id con caracteres raros ni se consulta');
+
+  // La PC los baja al arrancar; cada una ve solo los de su sucursal.
+  const g = async (h, desde = 0) => (await (await get(orden.onRequestAvisos, env, `/api/mp/avisos?desde=${desde}`, { headers: h })).json()).avisos;
+  const todos = await g(cel);
+  assert.deepEqual(todos.map((x) => x.tipo), ['cobro', 'contracargo', 'contracargo', 'reclamo']);
+  assert.deepEqual(await g(cel, todos[2].id), [todos[3]], 'desde el último que ya tiene');
+  assert.equal((await g(celA)).length, 4, 'sin sucursal de origen son de todas');
+  env.DB.raw.prepare("UPDATE mp_avisos SET branch_id = ? WHERE tipo = 'cobro'").run(n.a);
+  assert.equal((await g(cel)).filter((x) => x.tipo === 'cobro').length, 0, 'un cobro de la sucursal A no se ve en la B');
+  assert.equal((await get(orden.onRequestAvisos, env, '/api/mp/avisos?desde=-1', { headers: cel })).status, 400);
+  assert.equal((await get(orden.onRequestAvisos, env, '/api/mp/avisos', {})).status, 401);
+
+  // Un cobro que salió de una orden de este servidor se avisa solo a la sucursal de esa orden.
+  const antes = env.SYNC_HUB.avisos.length;
+  const { id } = await (await post(orden.onRequestPost, env, '/api/mp/orden', null, { externalReference: 'venta-77', idempotencyKey: 'clave-idem-0077', montoCentavos: 5000, canal: 'qr' }, cel)).json();
+  assert.ok(id);
+  m.objetos['/v1/payments/9010'] = { id: 9010, status: 'approved', transaction_amount: 50, collector_id: 241983636, external_reference: 'venta-77' };
+  await A('payment', '9010');
+  assert.equal(one(env, "SELECT branch_id FROM mp_avisos WHERE mp_id = '9010'").branch_id, n.b);
+  assert.equal(env.SYNC_HUB.avisos.length, antes + 1);
+
+  // Tope: no crece sin límite.
+  const { MAX_AVISOS_POR_NEGOCIO } = await import('../functions/_lib/mp_avisos.js');
+  assert.ok(MAX_AVISOS_POR_NEGOCIO >= 100);
+});
+await t('el hub reenvía el aviso de un cobro a todos los equipos, sin tocarlo', async () => {
+  const { SyncHub } = await import('../functions/_lib/sync_hub.js');
+  const enviados = []; const sockets = [{ tag: 'pc', send: (x) => enviados.push(x) }];
+  const hub = new SyncHub({ getWebSockets: () => sockets, getTags: (w) => [w.tag], acceptWebSocket() {} }, {});
+  const aviso = { id: 5, tipo: 'cobro', mpId: '9', pagoId: '9', montoCentavos: 100, referencia: null, estado: 'approved', detalle: null, fecha: 1, creado: 2 };
+  assert.equal((await hub.fetch(new Request('https://hub/avisar', { method: 'POST', body: JSON.stringify({ mp: { aviso } }) }))).status, 204);
+  assert.deepEqual(JSON.parse(enviados[0]), { mp: { aviso } });
+});
+
 console.log(`\n${pass} pruebas OK (Mercado Pago por negocio)`);

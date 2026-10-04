@@ -19,7 +19,9 @@ export class SyncHub {
       try { datos = await request.json(); } catch { return new Response(null, { status: 400 }); }
       // `mp`: aviso de Mercado Pago de una orden de cobro (`/api/mp/webhook`). Va a TODOS los equipos de la sucursal y
       // solo lleva el id de la orden: cada uno consulta el estado real antes de dar nada por cobrado.
-      if (datos && datos.mp) this.enviar(JSON.stringify({ mp: { orden: String(datos.mp.orden || ''), accion: String(datos.mp.accion || '') } }), null);
+      // `mp.aviso`: cobro, contracargo o reclamo (etapa D); lleva lo mismo que guarda `mp_avisos`, nada de quien pagó.
+      if (datos && datos.mp && datos.mp.aviso) this.enviar(JSON.stringify({ mp: { aviso: datos.mp.aviso } }), null);
+      else if (datos && datos.mp) this.enviar(JSON.stringify({ mp: { orden: String(datos.mp.orden || ''), accion: String(datos.mp.accion || '') } }), null);
       else this.difundir(datos.seq, datos.de);
       return new Response(null, { status: 204 });
     }
