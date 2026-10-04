@@ -1,4 +1,5 @@
 import { json } from '../../_lib/util.js';
+import { avisosDe } from '../../_lib/mp_avisos.js';
 import { actorOf } from '../../_lib/actor.js';
 import { hasDB } from '../../_lib/db.js';
 import { readJson } from '../../_lib/miembros.js';
@@ -103,4 +104,13 @@ export async function onRequestCobros({ request, env }) {
   const r = await cobrosDe(env, w.orgId, { desde, hasta });
   if (r.error) return json({ error: r.error, status: r.status ?? null, mensaje: r.detalle ?? null }, r.error === 'mp_no_conectado' ? 409 : 502);
   return json({ desde, hasta, ...r });
+}
+
+// Avisos de cobros, contracargos y reclamos que llegaron desde la última vez (etapa D). ?desde=<último id que la app ya tiene>.
+// Lo usa la PC al arrancar: lo que pasó con ella apagada no tiene aviso en vivo.
+export async function onRequestAvisos({ request, env }) {
+  const w = await quien(request, env); if (w.error) return w.error;
+  const desde = Number(new URL(request.url).searchParams.get('desde') || 0);
+  if (!Number.isInteger(desde) || desde < 0) return json({ error: 'bad_request' }, 400);
+  return json({ avisos: await avisosDe(env, w.orgId, w.branchId, desde) });
 }
