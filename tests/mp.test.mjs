@@ -39,7 +39,7 @@ function simular() {
     if (m.respuesta401Una && u.pathname.startsWith('/v1/orders')) { m.respuesta401Una = false; return r({ message: 'invalid access token' }, 401); }
     if (u.pathname === '/terminals/v1/list') return r({ data: { terminals: m.terminales }, paging: { total: m.terminales.length } });
     if (u.pathname === '/terminals/v1/setup') { for (const x of cuerpo.terminals) { const tt = m.terminales.find((y) => y.id === x.id); if (tt) tt.operating_mode = x.operating_mode; } return r({ terminals: cuerpo.terminals.map((x) => ({ id: x.id, operating_mode: x.operating_mode })) }); }
-    if (u.pathname === '/v1/orders' && init.method === 'POST' && m.rechazarOrden) return r(m.rechazarOrden, 400);
+    if (u.pathname === '/v1/orders' && init.method === 'POST' && m.rechazarOrden) return r(m.rechazarOrden, m.statusRechazo || 400);
     if (u.pathname === '/v1/orders' && init.method === 'POST') { const id = 'ORD' + (m.ordenes.size + 1); m.ordenes.set(id, 'created'); return r({ id, status: 'created', secreto_interno: 'no-se-filtra' }, 201); }
     if (u.pathname === '/terminals/v1/actions' && init.method === 'POST') return m.rechazarImpresion ? r({ errors: [{ code: 'property_value', message: 'Invalid value for property', details: ["'$.config.point.terminal_id' - does not match pattern"] }] }, 400) : r({ id: 'ACT1', status: 'created' }, 201);
     if (m.objetos && m.objetos[u.pathname]) return r(m.objetos[u.pathname]);
@@ -679,15 +679,29 @@ await t('timeouts: si Mercado Pago no contesta, el pedido termina (502 con motiv
   const t0 = Date.now();
   const r = await post(orden.onRequestPost, env, '/api/mp/orden', null, { externalReference: 'venta-t', idempotencyKey: 'clave-idem-t001', montoCentavos: 5000, canal: 'qr' }, cel);
   assert.ok(Date.now() - t0 < 2000, 'no se queda esperando');
-  assert.equal(r.status, 502); const j = await r.json(); assert.equal(j.error, 'mp_rechazo'); assert.match(j.mensaje, /no respondió a tiempo/);
+  assert.equal(r.status, 504); const j = await r.json(); assert.equal(j.error, 'mp_sin_respuesta', 'distinto de un rechazo: no se sabe si la orden se creó'); assert.match(j.mensaje, /no respondió a tiempo/);
   assert.ok(colgadas >= 1);
   // Renovar el token con Mercado Pago colgado: se sigue con el token actual y la conexión NO queda marcada para reconectar.
   env.DB.raw.prepare('UPDATE mp_conexiones SET expires_at = ?').run(nowS() + 3600);
   assert.equal(await tokenDe(env, n.org.id), 'token-falso-acceso-1', 'sigue con el token vigente');
   assert.equal(one(env, 'SELECT needs_reconnect n FROM mp_conexiones').n, 0, 'un corte no desconecta al negocio');
   // La app que vuelve a preguntar la orden (mismo pedido) tampoco rompe: 502 prolijo.
-  const g = await get(orden.onRequestGet, env, '/api/mp/orden?id=ORD1', { headers: cel }); assert.equal(g.status, 502);
+  const g = await get(orden.onRequestGet, env, '/api/mp/orden?id=ORD1', { headers: cel }); assert.equal(g.status, 504);
   clearInterval(mantener); globalThis.fetch = buena;
+});
+await t('crear orden: un 4xx de Mercado Pago es un rechazo (no se creó); un 5xx es "sin respuesta" (quizá sí) y la app reintenta con la misma clave', async () => {
+  const env = mkEnv(MP_ENV); const n = await negocio(env); const m = simular(); const cookie = await sess(env, 'duena@x.com', 'sd'); await conectar(env, n, m, cookie);
+  await post(conexion.onRequestElegirTerminal, env, '/api/mp/terminal', cookie, { orgId: n.org.id, branchId: n.a, terminalId: 'PAX_A910__SERIE1' });
+  const cel = await celular(env, n, n.a, 'sd', 'duena@x.com', 'cel-dueno-0123456789abcdefg');
+  const cuerpo = { externalReference: 'venta-5', idempotencyKey: 'clave-idem-5001', montoCentavos: 5000, canal: 'qr' };
+  m.rechazarOrden = { message: 'terminal not found' };
+  let r = await post(orden.onRequestPost, env, '/api/mp/orden', null, cuerpo, cel);
+  assert.equal(r.status, 502); assert.equal((await r.json()).error, 'mp_rechazo');
+  for (const st of [500, 502, 503]) {
+    m.statusRechazo = st; m.rechazarOrden = { message: 'internal error' };
+    r = await post(orden.onRequestPost, env, '/api/mp/orden', null, cuerpo, cel);
+    const j = await r.json(); assert.equal(r.status, 504, `MP ${st}`); assert.equal(j.error, 'mp_sin_respuesta'); assert.equal(j.status, st);
+  }
 });
 await t('cancelar y devolver: una orden de OTRA sucursal del negocio no se toca desde este equipo', async () => {
   const env = mkEnv(MP_ENV); const n = await negocio(env); const m = simular(); const cookie = await sess(env, 'duena@x.com', 'sd'); await conectar(env, n, m, cookie);

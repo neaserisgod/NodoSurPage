@@ -31,6 +31,10 @@ async function esDeOtraSucursal(env, w, id) {
 // Lo que se le devuelve a la app: solo lo que necesita para seguir la orden; nada del token ni de la cuenta.
 const salida = (r) => {
   if (r.status === 409 || !r.j) return json({ error: (r.j && r.j.error) || 'mp_error' }, r.status === 409 ? 409 : 502);
+  // Un 5xx de Mercado Pago, o que no haya contestado a tiempo (504 propio), no dice si la orden se creó o no. Se distingue de un
+  // rechazo (4xx: Mercado Pago NO la creó) para que la app sepa si puede dar el cobro por fallido o tiene que reintentar con la
+  // MISMA clave de idempotencia.
+  if (r.status >= 500) return json({ error: 'mp_sin_respuesta', status: r.status, mensaje: detalleError(r.j) }, 504);
   if (r.status < 200 || r.status >= 300) return json({ error: 'mp_rechazo', status: r.status, mensaje: detalleError(r.j) }, r.status === 404 ? 404 : 502);
   return json({ id: r.j.id ? String(r.j.id) : null, status: r.j.status || null, statusDetail: r.j.status_detail || null });
 };
