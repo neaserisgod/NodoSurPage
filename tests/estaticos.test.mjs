@@ -26,4 +26,21 @@ await t('el script detecta un archivo cambiado, uno sin huella y uno que no exis
   assert.deepEqual(revisar({ dir: d }).cambios, [], 'idempotente');
   writeFileSync(join(d, 'app.js'), 'console.log(2)'); assert.deepEqual(revisar({ dir: d }).cambios, ['index.html'], 'si el archivo cambia, la página queda pendiente');
 });
+await t('la política de contenido no permite scripts en línea y ninguna página ejecuta uno (solo datos JSON-LD)', async () => {
+  const { paginas } = await import('../scripts/versionar-estaticos.mjs');
+  const h = readFileSync(new URL('../_headers', import.meta.url), 'utf8');
+  const csp = /Content-Security-Policy: (.*)/.exec(h)[1];
+  const scriptSrc = /script-src ([^;]*)/.exec(csp)[1];
+  assert.ok(!/unsafe-inline|unsafe-eval/.test(scriptSrc), `script-src no puede llevar unsafe-*: ${scriptSrc}`);
+  for (const pagina of paginas()) {
+    const html = readFileSync(pagina, 'utf8');
+    for (const m of html.matchAll(/<script\b([^>]*)>/gi)) {
+      const attrs = m[1];
+      if (/\bsrc=/.test(attrs) || /type="application\/ld\+json"/.test(attrs)) continue;
+      assert.fail(`${pagina}: <script> en línea que la política de contenido bloquearía: <script${attrs}>`);
+    }
+    assert.ok(!/\son(click|load|error|submit|change|input)\s*=/i.test(html), `${pagina}: manejador de evento en línea (onclick=...) bloqueado por la política de contenido`);
+    assert.ok(!/href="javascript:/i.test(html), `${pagina}: enlace javascript:`);
+  }
+});
 console.log(`\n${pass} pruebas OK (direcciones con huella)`);
