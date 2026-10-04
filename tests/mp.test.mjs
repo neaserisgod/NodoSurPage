@@ -45,6 +45,7 @@ function simular() {
       const off = Number(u.searchParams.get('offset') || 0); const todos = m.pagos || [];
       return r({ paging: { total: todos.length, limit: 50, offset: off }, results: todos.slice(off, off + 50) });
     }
+    if (u.pathname === '/users/me') return r({ id: m.cuentaNodoSur ?? 111 });
     if (/^\/users\/[^/]+\/mercadopago_account\/balance$/.test(u.pathname)) return m.saldoNegado ? r({ message: 'Public access not allowed', error: 'forbidden' }, 403) : r({ available_balance: 1344.21, total_amount: 2000, unavailable_balance: 655.79 });
     if (u.pathname === '/v1/account/release_report/list') return r([{ file_name: 'liq-2026-10-03.csv', status: 'processed' }]);
     if (u.pathname === '/v1/account/release_report/config' && init.method === 'POST') {
@@ -353,10 +354,17 @@ await t('prueba de saldo (admin): solo administradores, solo lecturas, y el toke
   assert.equal(j.negocios.length, 1); const x = j.negocios[0];
   assert.equal(x.orgId, n.org.id); assert.equal(x.negocio, 'La Plazoleta'); assert.equal(x.permisos, 'read write offline_access');
   assert.equal(x.saldoDirecto.status, 200); assert.equal(x.saldoDirecto.respuesta.available_balance, 1344.21);
+  assert.equal(x.esLaCuentaDeNodoSur, false); assert.deepEqual(x.acreditacion, { status: 200, cobros: 0 });
   assert.equal(x.reporteLiquidaciones.listar.cantidad, 1); assert.equal(x.reporteLiquidaciones.configuracion.status, 200);
   assert.ok(m.llamadas.some((c) => c.path === '/users/241983636/mercadopago_account/balance'));
   assert.ok(m.llamadas.every((c) => c.metodo === 'GET'), 'no genera ni cambia nada en Mercado Pago');
   assert.ok(!texto.includes('token-falso'), 'el token no sale');
+  m.cuentaNodoSur = 241983636;
+  assert.equal((await (await get(mpSaldo.onRequestGet, env, '/api/admin/mp-saldo', { cookie: admin })).json()).negocios[0].esLaCuentaDeNodoSur, true, 'avisa si la cuenta conectada es la de Nodo Sur');
+  assert.deepEqual(mpSaldo.acreditacionDe({ status: 200, j: { results: [
+    { date_approved: '2026-10-03T12:37:14.000-04:00', money_release_date: '2026-10-03T12:37:14.000-04:00' },
+    { date_approved: '2026-10-03T12:37:14.000-04:00', money_release_date: '2026-10-13T12:37:14.000-04:00' }] } }),
+  { status: 200, cobros: 2, alInstante: 1, aDias: 1, demoraMaximaHoras: 240 });
   m.saldoNegado = true;
   const negado = await (await get(mpSaldo.onRequestGet, env, '/api/admin/mp-saldo?orgId=' + n.org.id, { cookie: admin })).json();
   assert.equal(negado.negocios[0].saldoDirecto.status, 403); assert.equal(negado.negocios[0].saldoDirecto.respuesta.message, 'Public access not allowed');
