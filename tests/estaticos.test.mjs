@@ -43,4 +43,11 @@ await t('la política de contenido no permite scripts en línea y ninguna págin
     assert.ok(!/href="javascript:/i.test(html), `${pagina}: enlace javascript:`);
   }
 });
+await t('los scripts que muestran datos de la base o del servidor (nombres, mails, importes) no arman HTML con ellos', () => {
+  // home.js / main.js / descargar.js usan innerHTML solo con texto fijo del propio archivo (íconos, la animación del titular).
+  for (const js of ['cuenta.js', 'admin.js', 'device.js', 'vincular.js', 'pagar.js', 'unirse.js', 'negocio.js']) {
+    const src = readFileSync(new URL(`../${js}`, import.meta.url), 'utf8');
+    assert.ok(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval\(/.test(src), `${js}: solo textContent / createElement`);
+  }
+});
 console.log(`\n${pass} pruebas OK (direcciones con huella)`);
