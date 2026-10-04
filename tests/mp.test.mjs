@@ -6,6 +6,7 @@ import { upsertDevice, signDeviceToken } from '../functions/_lib/devices.js';
 import { sha256b64u } from '../functions/_lib/util.js';
 import * as conexion from '../functions/api/mp/conexion.js';
 import * as orden from '../functions/api/mp/orden.js';
+import * as mpSaldo from '../functions/api/admin/mp_saldo.js';
 import { tokenDe, detalleError, registrarActividad, ensureMpTables } from '../functions/_lib/mp_conexion.js';
 import { mkEnv, addUser, sess, req, web, mp, mpSub, mockMP, nowS } from './helpers-nube.mjs';
 
@@ -43,6 +44,9 @@ function simular() {
       const off = Number(u.searchParams.get('offset') || 0); const todos = m.pagos || [];
       return r({ paging: { total: todos.length, limit: 50, offset: off }, results: todos.slice(off, off + 50) });
     }
+    if (/^\/users\/[^/]+\/mercadopago_account\/balance$/.test(u.pathname)) return m.saldoNegado ? r({ message: 'Public access not allowed', error: 'forbidden' }, 403) : r({ available_balance: 1344.21, total_amount: 2000, unavailable_balance: 655.79 });
+    if (u.pathname === '/v1/account/release_report/list') return r([{ file_name: 'liq-2026-10-03.csv', status: 'processed' }]);
+    if (u.pathname === '/v1/account/release_report/config') return r({ file_name_prefix: 'liq', columns: [{ key: 'BALANCE_AMOUNT' }] });
     const g = /^\/v1\/orders\/([^/]+)(\/cancel)?$/.exec(u.pathname);
     if (g && m.ordenes.has(g[1])) { if (g[2]) m.ordenes.set(g[1], 'canceled'); return r({ id: g[1], status: m.ordenes.get(g[1]), status_detail: g[2] ? 'canceled' : 'created' }); }
     return r({ message: 'not found' }, 404);
@@ -328,5 +332,27 @@ await t('cobros: pagina de a 50 hasta el total, y rechaza rangos raros, sin disp
   assert.equal(j.cobros.length, 120); assert.equal(m.busquedas.length, 3); assert.deepEqual(m.busquedas.map((x) => x.offset), ['0', '50', '100']);
   for (const q of ['', '?desde=10', '?desde=100&hasta=50', '?desde=1&hasta=99999999', '?desde=abc&hasta=200']) assert.equal((await get(orden.onRequestCobros, env, '/api/mp/cobros' + q, { headers: cel })).status, 400, q);
   assert.equal((await get(orden.onRequestCobros, env, ok, { headers: {} })).status, 401);
+});
+await t('prueba de saldo (admin): solo administradores, solo lecturas, y el token nunca sale en la respuesta', async () => {
+  const env = mkEnv(MP_ENV); const n = await negocio(env); const m = simular(); const cookie = await sess(env, 'duena@x.com', 'sd');
+  await conectar(env, n, m, cookie);
+  assert.equal((await get(mpSaldo.onRequestGet, env, '/api/admin/mp-saldo', { cookie })).status, 403, 'la dueña no es administradora de la plataforma');
+  assert.equal((await get(mpSaldo.onRequestGet, env, '/api/admin/mp-saldo')).status, 401);
+  addUser(env, 'admin@x.com', 'sa'); const admin = await sess(env, 'admin@x.com', 'sa');
+  m.llamadas.length = 0;
+  const res = await get(mpSaldo.onRequestGet, env, '/api/admin/mp-saldo', { cookie: admin });
+  assert.equal(res.status, 200);
+  const texto = await res.text(); const j = JSON.parse(texto);
+  assert.equal(j.negocios.length, 1); const x = j.negocios[0];
+  assert.equal(x.orgId, n.org.id); assert.equal(x.negocio, 'La Plazoleta'); assert.equal(x.permisos, 'read write offline_access');
+  assert.equal(x.saldoDirecto.status, 200); assert.equal(x.saldoDirecto.respuesta.available_balance, 1344.21);
+  assert.equal(x.reporteLiquidaciones.listar.cantidad, 1); assert.equal(x.reporteLiquidaciones.configuracion.status, 200);
+  assert.ok(m.llamadas.some((c) => c.path === '/users/241983636/mercadopago_account/balance'));
+  assert.ok(m.llamadas.every((c) => c.metodo === 'GET'), 'no genera ni cambia nada en Mercado Pago');
+  assert.ok(!texto.includes('token-falso'), 'el token no sale');
+  m.saldoNegado = true;
+  const negado = await (await get(mpSaldo.onRequestGet, env, '/api/admin/mp-saldo?orgId=' + n.org.id, { cookie: admin })).json();
+  assert.equal(negado.negocios[0].saldoDirecto.status, 403); assert.equal(negado.negocios[0].saldoDirecto.respuesta.message, 'Public access not allowed');
+  assert.equal((await (await get(mpSaldo.onRequestGet, env, '/api/admin/mp-saldo?orgId=999', { cookie: admin })).json()).negocios.length, 0);
 });
 console.log(`\n${pass} pruebas OK (Mercado Pago por negocio)`);
