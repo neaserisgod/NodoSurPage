@@ -97,6 +97,7 @@ const ROUTES = {
   'POST /api/mp/desconectar': mpConexion.onRequestDisconnect,
   'GET /api/mp/terminales': mpConexion.onRequestTerminales,
   'POST /api/mp/terminal': mpConexion.onRequestElegirTerminal,
+  'POST /api/mp/terminal/modo': mpConexion.onRequestModoTerminal,
   'POST /api/mp/probar': mpConexion.onRequestProbar,
   'POST /api/mp/probar/cancelar': mpConexion.onRequestProbarCancelar,
   'POST /api/mp/orden': mpOrden.onRequestPost,

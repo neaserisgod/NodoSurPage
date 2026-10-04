@@ -216,6 +216,7 @@
       var ul = el('ul', 'pays');
       (e.branches || []).forEach(function (b) {
         var li = el('li'), n = el('span'); n.appendChild(el('strong', null, b.name)); n.appendChild(document.createTextNode(' · ' + (b.terminalId ? 'terminal ' + b.terminalId : 'sin terminal')));
+        if (b.terminalId && b.terminalMode === 'STANDALONE') { n.appendChild(document.createTextNode(' ')); n.appendChild(chip('Autónoma', 'wait')); }
         li.appendChild(n); var ac = el('span', 'acts');
         if (b.terminalId) ac.appendChild(lnk('Probar cobro de $100', function () {
           msg.textContent = ''; api('POST', '/api/mp/probar', { orgId: o.id, branchId: b.id }).then(function (x) {
@@ -224,6 +225,18 @@
               boton: 'Cancelar la prueba', accion: function () { return api('POST', '/api/mp/probar/cancelar', { orgId: o.id, id: x.j.id }).then(function (y) { return y.ok ? {} : { error: 'No se pudo cancelar desde acá: cancelalo en la terminal.' }; }); } });
           });
         }));
+        // Modo autónomo (etapa C): por si la PC o la app fallan, la terminal cobra sola; después se vuelve al modo del sistema.
+        if (b.terminalId && b.terminalMode) {
+          var autonoma = b.terminalMode === 'STANDALONE';
+          ac.appendChild(lnk(autonoma ? 'Volver a cobrar desde el sistema' : 'Pasar a modo autónomo', function () {
+            confirmar(autonoma ? '¿Volver a cobrar desde el sistema?' : '¿Pasar la terminal a modo autónomo?',
+              autonoma ? 'La terminal de «' + b.name + '» vuelve a recibir los cobros de la PC y los celulares. Lo que cobraste mientras estuvo autónoma no está en el sistema: cargalo a mano si hace falta.'
+                : 'La terminal de «' + b.name + '» va a cobrar sola, como un posnet común, y el sistema NO le va a poder mandar cobros hasta que la vuelvas al modo del sistema. Usalo si la PC o la app fallan.',
+              autonoma ? 'Sí, volver' : 'Sí, pasar a autónomo',
+              function () { return api('POST', '/api/mp/terminal/modo', { orgId: o.id, branchId: b.id, modo: autonoma ? 'PDV' : 'STANDALONE' }).then(function (y) { return y.ok ? {} : { error: msgError(y.j) }; }); },
+              function () { refrescarMp(o, c); });
+          }));
+        }
         ac.appendChild(lnk(b.terminalId ? 'Cambiar terminal' : 'Elegir terminal', function () {
           api('GET', '/api/mp/terminales?org=' + o.id).then(function (x) {
             if (!x.ok) { msg.textContent = msgError(x.j); return; }

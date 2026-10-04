@@ -5,7 +5,7 @@ import { readJson } from '../../_lib/miembros.js';
 import { syncAccess } from '../../_lib/sync.js';
 import { getMembership } from '../../_lib/orgs.js';
 import { puede } from '../../_lib/permisos.js';
-import { mpConfigurado, ensureMpTables, crearOrden, consultarOrden, cancelarOrden, devolverOrden, imprimirTicket, registrarActividad, MAX_CONTENIDO_TICKET, detalleError, cobrosDe } from '../../_lib/mp_conexion.js';
+import { CANALES, mpConfigurado, ensureMpTables, crearOrden, consultarOrden, cancelarOrden, devolverOrden, imprimirTicket, registrarActividad, MAX_CONTENIDO_TICKET, detalleError, cobrosDe } from '../../_lib/mp_conexion.js';
 
 // Cobrar con la terminal Point DESDE EL SERVIDOR: la PC o el celular piden la orden acá y el sitio la crea con el token del
 // negocio (que nunca sale del servidor). Pueden quienes operan la sucursal del dispositivo con el negocio al día.
@@ -27,12 +27,12 @@ const salida = (r) => {
   return json({ id: r.j.id ? String(r.j.id) : null, status: r.j.status || null, statusDetail: r.j.status_detail || null });
 };
 
-// Crear la orden. Cuerpo: { externalReference, idempotencyKey, montoCentavos, canal: 'qr' | 'debit_card' }.
+// Crear la orden. Cuerpo: { externalReference, idempotencyKey, montoCentavos, canal: 'qr' | 'debit_card' | 'credit_card' (1 pago) }.
 export async function onRequestPost({ request, env }) {
   const w = await quien(request, env); if (w.error) return w.error;
   const b = await readJson(request);
   if (!b || typeof b.externalReference !== 'string' || !/^[\w-]{1,64}$/.test(b.externalReference) || typeof b.idempotencyKey !== 'string' || !/^[\w-]{8,64}$/.test(b.idempotencyKey)
-    || !Number.isInteger(b.montoCentavos) || b.montoCentavos < 100 || b.montoCentavos > 1e10 || !['qr', 'debit_card'].includes(b.canal)) return json({ error: 'bad_request' }, 400);
+    || !Number.isInteger(b.montoCentavos) || b.montoCentavos < 100 || b.montoCentavos > 1e10 || !CANALES.includes(b.canal)) return json({ error: 'bad_request' }, 400);
   const r = await crearOrden(env, w.orgId, w.branchId, b);
   await registrarActividad(env, w, { accion: 'orden', canal: b.canal, montoCentavos: b.montoCentavos, referencia: b.externalReference, r });
   return salida(r);

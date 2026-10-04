@@ -182,6 +182,19 @@ export async function elegirTerminal(env, orgId, branchId, terminalId, t = now()
   return { ok: true };
 }
 
+// Modo de la terminal de una sucursal (etapa C, el dueño 2026-10-04): 'PDV' cobra lo que manda el sistema; 'STANDALONE' cobra
+// sola, sin la app (por si la PC o la app fallan). Mientras está en autónomo, el sistema no le puede mandar cobros.
+export const MODOS_TERMINAL = ['PDV', 'STANDALONE'];
+export async function cambiarModoTerminal(env, orgId, branchId, modo) {
+  if (!MODOS_TERMINAL.includes(modo)) return { error: 'bad_request' };
+  const terminal = await terminalDeSucursal(env, orgId, branchId);
+  if (!terminal) return { error: 'mp_sin_terminal' };
+  const r = await mpFetch(env, orgId, '/terminals/v1/setup', { method: 'PATCH', body: JSON.stringify({ terminals: [{ id: terminal, operating_mode: modo }] }) });
+  if (r.status === 409) return { error: 'mp_no_conectado' };
+  if (r.status !== 200) return { error: 'mp_error', status: r.status, detalle: detalleError(r.j) };
+  return { ok: true, modo };
+}
+
 // El motivo con que Mercado Pago rechazó algo, tal cual lo dice: sus APIs usan formatos distintos (`message`, `error`, `cause[]`, o
 // `errors[]` con código y detalle en las órdenes). Sin esto el dueño ve solo "no se pudo" y no hay forma de arreglarlo.
 export function detalleError(j) {
@@ -202,6 +215,11 @@ const decimal = (centavos) => `${Math.trunc(centavos / 100)}.${String(centavos %
 // esperando en la terminal, y la app siempre termina sabiendo el resultado (vencida = no cobrada) en vez de quedarse con
 // "no sé si se cobró". Misma duración que la app de la PC (`vencimientoOrdenCobroPosnet`, `domain/cobro_posnet.dart`).
 export const VENCIMIENTO_ORDEN = 'PT2M';
+// Canales de la Point. Crédito (etapa C, el dueño 2026-10-04) va siempre en 1 pago y sin recargo: Mercado Pago solo deja limitar
+// las cuotas si la orden es de crédito, y con `default_installments: 1` la terminal no muestra la pantalla de cuotas (con 1 cuota no
+// hace falta `installments_cost`). Misma regla que la app (`medioDePagoOrden`, `domain/cobro_posnet.dart`).
+export const CANALES = ['qr', 'debit_card', 'credit_card'];
+export const medioDePagoOrden = (canal) => (canal === 'credit_card' ? { default_type: 'credit_card', default_installments: 1 } : { default_type: canal });
 export const MAX_ORDENES_GUARDADAS_DIAS = 30;
 export async function crearOrden(env, orgId, branchId, { externalReference, idempotencyKey, montoCentavos, canal }, t = now()) {
   const terminal = await terminalDeSucursal(env, orgId, branchId);
@@ -210,7 +228,7 @@ export async function crearOrden(env, orgId, branchId, { externalReference, idem
     method: 'POST', headers: { 'X-Idempotency-Key': idempotencyKey },
     body: JSON.stringify({ type: 'point', external_reference: externalReference, expiration_time: VENCIMIENTO_ORDEN,
       transactions: { payments: [{ amount: decimal(montoCentavos) }] },
-      config: { point: { terminal_id: terminal, print_on_terminal: 'no_ticket' }, payment_method: { default_type: canal } } }),
+      config: { point: { terminal_id: terminal, print_on_terminal: 'no_ticket' }, payment_method: medioDePagoOrden(canal) } }),
   });
   if (r.status >= 200 && r.status < 300 && r.j && r.j.id) await anotarOrden(env, { orderId: String(r.j.id), orgId, branchId, externalReference, estado: r.j.status || null }, t);
   return r;
