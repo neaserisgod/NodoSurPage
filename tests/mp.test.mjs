@@ -38,7 +38,7 @@ function simular() {
     }
     if (m.respuesta401Una && u.pathname.startsWith('/v1/orders')) { m.respuesta401Una = false; return r({ message: 'invalid access token' }, 401); }
     if (u.pathname === '/terminals/v1/list') return r({ data: { terminals: m.terminales }, paging: { total: m.terminales.length } });
-    if (u.pathname === '/terminals/v1/setup') return r({ terminals: cuerpo.terminals.map((x) => ({ id: x.id, operating_mode: x.operating_mode })) });
+    if (u.pathname === '/terminals/v1/setup') { for (const x of cuerpo.terminals) { const tt = m.terminales.find((y) => y.id === x.id); if (tt) tt.operating_mode = x.operating_mode; } return r({ terminals: cuerpo.terminals.map((x) => ({ id: x.id, operating_mode: x.operating_mode })) }); }
     if (u.pathname === '/v1/orders' && init.method === 'POST' && m.rechazarOrden) return r(m.rechazarOrden, 400);
     if (u.pathname === '/v1/orders' && init.method === 'POST') { const id = 'ORD' + (m.ordenes.size + 1); m.ordenes.set(id, 'created'); return r({ id, status: 'created', secreto_interno: 'no-se-filtra' }, 201); }
     if (u.pathname === '/terminals/v1/actions' && init.method === 'POST') return m.rechazarImpresion ? r({ errors: [{ code: 'property_value', message: 'Invalid value for property', details: ["'$.config.point.terminal_id' - does not match pattern"] }] }, 400) : r({ id: 'ACT1', status: 'created' }, 201);
@@ -203,7 +203,7 @@ await t('órdenes: una sucursal sin terminal, un negocio sin conectar, un dispos
   await conectar(env, n, m, cookie);
   assert.equal((await post(orden.onRequestPost, env, '/api/mp/orden', null, cuerpo, cel)).status, 409, 'sin terminal en la sucursal');
   await post(conexion.onRequestElegirTerminal, env, '/api/mp/terminal', cookie, { orgId: n.org.id, branchId: n.a, terminalId: 'PAX_A910__SERIE1' });
-  for (const malo of [{ ...cuerpo, canal: 'credit_card' }, { ...cuerpo, montoCentavos: 12.5 }, { ...cuerpo, montoCentavos: 0 }, { ...cuerpo, idempotencyKey: 'x' }, { ...cuerpo, externalReference: '../..' }]) {
+  for (const malo of [{ ...cuerpo, canal: 'cuotas' }, { ...cuerpo, montoCentavos: 12.5 }, { ...cuerpo, montoCentavos: 0 }, { ...cuerpo, idempotencyKey: 'x' }, { ...cuerpo, externalReference: '../..' }]) {
     assert.equal((await post(orden.onRequestPost, env, '/api/mp/orden', null, malo, cel)).status, 400, JSON.stringify(malo));
   }
   assert.equal((await post(orden.onRequestPost, env, '/api/mp/orden', null, cuerpo, {})).status, 401, 'sin dispositivo');
@@ -470,5 +470,34 @@ await t('devolver (etapa B): solo dueño y encargado, solo una orden cobrada de 
   assert.equal(m.devoluciones.length, 1);
   assert.equal((await devolver(celEnc, { id: 'ORDAJENA', idempotencyKey: 'devolver-venta-8' })).status, 404, 'una orden de otra cuenta');
   assert.equal((await devolver(celEnc, { id, idempotencyKey: 'x' })).status, 400);
+});
+await t('crédito (etapa C): siempre en 1 pago, sin pantalla de cuotas; un canal desconocido se rechaza', async () => {
+  const env = mkEnv(MP_ENV); const n = await negocio(env); const m = simular(); const cookie = await sess(env, 'duena@x.com', 'sd'); await conectar(env, n, m, cookie);
+  await post(conexion.onRequestElegirTerminal, env, '/api/mp/terminal', cookie, { orgId: n.org.id, branchId: n.b, terminalId: 'PAX_A910__SERIE1' });
+  const cel = await celular(env, n, n.b, 'sd', 'duena@x.com', 'cel-dueno-0123456789abcdefg');
+  const crear = (canal, ref) => post(orden.onRequestPost, env, '/api/mp/orden', null, { externalReference: ref, idempotencyKey: `clave-${ref}`, montoCentavos: 5000, canal }, cel);
+  assert.equal((await crear('credit_card', 'venta-cred')).status, 200);
+  const pedido = m.llamadas.filter((x) => x.path === '/v1/orders' && x.metodo === 'POST').pop();
+  assert.deepEqual(pedido.cuerpo.config.payment_method, { default_type: 'credit_card', default_installments: 1 });
+  assert.equal((await crear('debit_card', 'venta-deb')).status, 200);
+  assert.deepEqual(m.llamadas.filter((x) => x.path === '/v1/orders' && x.metodo === 'POST').pop().cuerpo.config.payment_method, { default_type: 'debit_card' });
+  assert.equal((await crear('credit_card_12_cuotas', 'venta-x')).status, 400);
+});
+await t('modo de la terminal (etapa C): la dueña la pasa a autónomo y la vuelve; un empleado no; se ve en /negocio', async () => {
+  const env = mkEnv(MP_ENV); const n = await negocio(env); const m = simular(); const cookie = await sess(env, 'duena@x.com', 'sd'); await conectar(env, n, m, cookie);
+  await post(conexion.onRequestElegirTerminal, env, '/api/mp/terminal', cookie, { orgId: n.org.id, branchId: n.b, terminalId: 'PAX_A910__SERIE1' });
+  const modo = (c, cuerpo) => post(conexion.onRequestModoTerminal, env, '/api/mp/terminal/modo', c, cuerpo);
+  const verModo = async () => (await (await get(conexion.onRequestGet, env, `/api/mp/estado?org=${n.org.id}`, { cookie })).json()).branches.find((b) => b.id === n.b).terminalMode;
+  assert.equal(await verModo(), 'PDV');
+  const r = await modo(cookie, { orgId: n.org.id, branchId: n.b, modo: 'STANDALONE' });
+  assert.equal(r.status, 200);
+  assert.deepEqual(m.llamadas.filter((x) => x.path === '/terminals/v1/setup').pop().cuerpo, { terminals: [{ id: 'PAX_A910__SERIE1', operating_mode: 'STANDALONE' }] });
+  assert.equal(await verModo(), 'STANDALONE');
+  assert.equal((await modo(cookie, { orgId: n.org.id, branchId: n.b, modo: 'PDV' })).status, 200);
+  assert.equal(await verModo(), 'PDV');
+  assert.equal((await modo(cookie, { orgId: n.org.id, branchId: n.b, modo: 'OTRO' })).status, 400);
+  assert.equal((await modo(cookie, { orgId: n.org.id, branchId: n.a, modo: 'PDV' })).status, 409, 'una sucursal sin terminal');
+  miembro(env, n, 'emp@x.com', 'sm', 'employee', { branches: [n.b] });
+  assert.notEqual((await modo(await sess(env, 'emp@x.com', 'sm'), { orgId: n.org.id, branchId: n.b, modo: 'STANDALONE' })).status, 200, 'un empleado no');
 });
 console.log(`\n${pass} pruebas OK (Mercado Pago por negocio)`);

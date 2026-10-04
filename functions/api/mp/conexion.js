@@ -5,7 +5,7 @@ import { hasDB } from '../../_lib/db.js';
 import { guard, readJson } from '../../_lib/miembros.js';
 import { listBranches, getMembership } from '../../_lib/orgs.js';
 import { puede } from '../../_lib/permisos.js';
-import { mpConfigurado, ensureMpTables, iniciarConexion, completarConexion, estadoConexion, desconectar, terminalesDe, terminalDeSucursal, elegirTerminal, crearOrden, cancelarOrden, actividadDe, detalleError } from '../../_lib/mp_conexion.js';
+import { mpConfigurado, ensureMpTables, iniciarConexion, completarConexion, estadoConexion, desconectar, terminalesDe, terminalDeSucursal, elegirTerminal, cambiarModoTerminal, MODOS_TERMINAL, crearOrden, cancelarOrden, actividadDe, detalleError } from '../../_lib/mp_conexion.js';
 import { randomHex } from '../../_lib/util.js';
 
 const noConfig = () => json({ error: 'mp_no_configurado' }, 503);
@@ -30,8 +30,14 @@ export async function onRequestGet({ request, env }) {
   if (g.error) return g.error;
   if (!mpConfigurado(env)) return noConfig();
   const e = await estadoConexion(env, g.org.id);
+  // El modo actual de cada terminal (PDV o autónomo), para el botón de /negocio. Si Mercado Pago no contesta, queda null.
+  const modos = e.connected ? await terminalesDe(env, g.org.id) : null;
+  const modoDe = (id) => (modos && modos.terminals ? (modos.terminals.find((x) => x.id === id) || {}).mode || null : null);
   const sucursales = [];
-  for (const b of (await listBranches(env, g.org.id)).filter((x) => x.active)) sucursales.push({ id: b.id, name: b.name, terminalId: await terminalDeSucursal(env, g.org.id, b.id) });
+  for (const b of (await listBranches(env, g.org.id)).filter((x) => x.active)) {
+    const terminalId = await terminalDeSucursal(env, g.org.id, b.id);
+    sucursales.push({ id: b.id, name: b.name, terminalId, terminalMode: terminalId ? modoDe(terminalId) : null });
+  }
   return json({ ...e, branches: sucursales });
 }
 
@@ -86,6 +92,20 @@ export async function onRequestElegirTerminal({ request, env }) {
   const r = await elegirTerminal(env, g.org.id, b.branchId, b.terminalId);
   if (r.ok) return json({ ok: true });
   return json({ error: r.error, detalle: r.detalle }, r.error === 'terminal_desconocida' ? 400 : r.error === 'mp_no_conectado' ? 409 : 502);
+}
+
+// Pasar la terminal de una sucursal a modo autónomo o volverla al modo del sistema (PDV). Cuerpo: { orgId, branchId, modo }.
+// Solo el dueño (permiso `mercadopago`), como elegir la terminal.
+export async function onRequestModoTerminal({ request, env }) {
+  const b = await readJson(request);
+  const g = await guard(request, env, { write: true, orgId: b && b.orgId, accion: 'mercadopago' });
+  if (g.error) return g.error;
+  if (!mpConfigurado(env)) return noConfig();
+  if (!Number.isInteger(b.branchId) || !MODOS_TERMINAL.includes(b.modo)) return json({ error: 'bad_request' }, 400);
+  if (!(await listBranches(env, g.org.id)).some((x) => x.id === b.branchId && x.active)) return json({ error: 'bad_branch' }, 400);
+  const r = await cambiarModoTerminal(env, g.org.id, b.branchId, b.modo);
+  if (r.ok) return json({ ok: true, modo: r.modo });
+  return json({ error: r.error, detalle: r.detalle }, r.error === 'mp_sin_terminal' ? 409 : r.error === 'mp_no_conectado' ? 409 : 502);
 }
 
 // $1 queda por debajo del mínimo que acepta la terminal Point: la prueba cobra $100 (se puede cancelar sin pagar).
