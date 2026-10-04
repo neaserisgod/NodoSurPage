@@ -26,6 +26,7 @@ import * as deviceMe from './functions/api/device/me.js';
 import * as devicePcLocal from './functions/api/device/pc_local.js';
 import * as mpConexion from './functions/api/mp/conexion.js';
 import * as mpOrden from './functions/api/mp/orden.js';
+import * as mpWebhook from './functions/api/mp/webhook.js';
 import * as devices from './functions/api/devices.js';
 import * as backup from './functions/api/backup.js';
 import * as backups from './functions/api/backups.js';
@@ -103,6 +104,7 @@ const ROUTES = {
   'POST /api/mp/orden/cancelar': mpOrden.onRequestCancelar,
   'POST /api/mp/imprimir': mpOrden.onRequestImprimir,
   'GET /api/mp/cobros': mpOrden.onRequestCobros,
+  'POST /api/mp/webhook': mpWebhook.onRequestPost,
   'GET /api/mp/actividad': mpConexion.onRequestActividad,
   'POST /api/sync': sync.onRequestPost,
   'GET /api/sync': sync.onRequestGet,

@@ -17,7 +17,10 @@ export class SyncHub {
     if (request.method === 'POST' && url.pathname === '/avisar') {
       let datos;
       try { datos = await request.json(); } catch { return new Response(null, { status: 400 }); }
-      this.difundir(datos.seq, datos.de);
+      // `mp`: aviso de Mercado Pago de una orden de cobro (`/api/mp/webhook`). Va a TODOS los equipos de la sucursal y
+      // solo lleva el id de la orden: cada uno consulta el estado real antes de dar nada por cobrado.
+      if (datos && datos.mp) this.enviar(JSON.stringify({ mp: { orden: String(datos.mp.orden || ''), accion: String(datos.mp.accion || '') } }), null);
+      else this.difundir(datos.seq, datos.de);
       return new Response(null, { status: 204 });
     }
     if (url.pathname === '/escuchar' && request.headers.get('Upgrade') === 'websocket') return this.aceptar(request);
@@ -31,8 +34,9 @@ export class SyncHub {
     return new Response(null, { status: 101, webSocket: par[0] });
   }
 
-  difundir(seq, de) {
-    const mensaje = JSON.stringify({ seq });
+  difundir(seq, de) { return this.enviar(JSON.stringify({ seq }), de); }
+
+  enviar(mensaje, de) {
     let enviados = 0;
     for (const ws of this.state.getWebSockets()) {
       if (de && this.state.getTags(ws).includes(de)) continue;

@@ -8,6 +8,8 @@ import * as conexion from '../functions/api/mp/conexion.js';
 import * as orden from '../functions/api/mp/orden.js';
 import * as mpSaldo from '../functions/api/admin/mp_saldo.js';
 import * as mpReporte from '../functions/api/admin/mp_reporte.js';
+import * as mpWebhook from '../functions/api/mp/webhook.js';
+import { createHmac } from 'node:crypto';
 import { tokenDe, detalleError, registrarActividad, ensureMpTables } from '../functions/_lib/mp_conexion.js';
 import { mkEnv, addUser, sess, req, web, mp, mpSub, mockMP, nowS } from './helpers-nube.mjs';
 
@@ -186,6 +188,8 @@ await t('órdenes: el celular de quien opera la sucursal crea, consulta y cancel
   assert.equal(pedido.auth, 'Bearer token-falso-acceso-1'); assert.equal(pedido.headers['X-Idempotency-Key'], 'clave-idem-0001');
   assert.equal(pedido.cuerpo.type, 'point'); assert.equal(pedido.cuerpo.transactions.payments[0].amount, '1234.50', 'decimal, nunca centavos');
   assert.deepEqual(pedido.cuerpo.config, { point: { terminal_id: 'PAX_A910__SERIE1', print_on_terminal: 'no_ticket' }, payment_method: { default_type: 'qr' } });
+  assert.equal(pedido.cuerpo.expiration_time, 'PT2M', 'la orden vence sola si nadie la paga');
+  assert.deepEqual({ ...one(env, 'SELECT org_id, branch_id, external_reference, estado FROM mp_ordenes WHERE order_id = ?', 'ORD1') }, { org_id: n.org.id, branch_id: n.b, external_reference: 'venta-1', estado: 'created' }, 'queda anotada de qué sucursal es');
   assert.deepEqual(await (await get(orden.onRequestGet, env, '/api/mp/orden?id=ORD1', { headers: cel })).json(), { id: 'ORD1', status: 'created', statusDetail: 'created' });
   assert.equal((await (await post(orden.onRequestCancelar, env, '/api/mp/orden/cancelar', null, { id: 'ORD1' }, cel)).json()).status, 'canceled');
 });
@@ -387,5 +391,53 @@ await t('reporte de liquidaciones (admin): lista, genera el día argentino crean
   assert.equal(csv.filas, 2); assert.equal(csv.contenido[1].DESCRIPTION, 'payout'); assert.equal(csv.contenido[1].BALANCE_AMOUNT, '85133.00');
   assert.equal((await get(mpReporte.onRequestGet, env, `/api/admin/mp-reporte?orgId=${n.org.id}&archivo=../x`, { cookie: admin })).status, 400);
   assert.equal((await get(mpReporte.onRequestGet, env, '/api/admin/mp-reporte?orgId=999', { cookie: admin })).status, 404);
+});
+// Lo que mandaría Mercado Pago: firma HMAC-SHA256 de "id:<data.id>;request-id:<x-request-id>;ts:<ts>;" con la clave de la app.
+function avisoMp(secreto, { id, accion = 'order.processed', userId = 241983636, status = 'processed', firmaDe = id, requestId = 'req-1', ts = '1742505638683' }) {
+  const v1 = createHmac('sha256', secreto).update(`id:${String(firmaDe).toLowerCase()};request-id:${requestId};ts:${ts};`).digest('hex');
+  return req(`/api/mp/webhook?data.id=${id}&type=order`, { method: 'POST', headers: { 'x-signature': `ts=${ts},v1=${v1}`, 'x-request-id': requestId },
+    body: { action: accion, api_version: 'v1', type: 'order', user_id: userId, live_mode: true, data: { id, status } } });
+}
+function hubFalso() {
+  const avisos = [];
+  return { avisos, idFromName: (x) => x, get: (hubId) => ({ fetch: async (url, init) => { avisos.push({ hubId, url, cuerpo: JSON.parse(init.body) }); return new Response(null, { status: 204 }); } }) };
+}
+await t('avisos de Mercado Pago (webhook): con firma válida despiertan solo a la sucursal de la orden; sin firma, nada', async () => {
+  const env = mkEnv({ ...MP_ENV, MP_WEBHOOK_SECRET: 'clave-webhook' }); const n = await negocio(env); const m = simular(); const cookie = await sess(env, 'duena@x.com', 'sd');
+  await conectar(env, n, m, cookie); env.SYNC_HUB = hubFalso();
+  await post(conexion.onRequestElegirTerminal, env, '/api/mp/terminal', cookie, { orgId: n.org.id, branchId: n.b, terminalId: 'PAX_A910__SERIE1' });
+  const cel = await celular(env, n, n.b, 'sd', 'duena@x.com', 'cel-dueno-0123456789abcdefg');
+  const { id } = await (await post(orden.onRequestPost, env, '/api/mp/orden', null, { externalReference: 'venta-9', idempotencyKey: 'clave-idem-0009', montoCentavos: 5000, canal: 'qr' }, cel)).json();
+  const enviar = (rq) => mpWebhook.onRequestPost({ request: rq, env });
+
+  const ok = await enviar(avisoMp('clave-webhook', { id }));
+  assert.equal(ok.status, 200); assert.equal((await ok.json()).avisado, true);
+  assert.equal(env.SYNC_HUB.avisos.length, 1); assert.deepEqual(env.SYNC_HUB.avisos[0].cuerpo, { mp: { orden: id, accion: 'processed' } }, 'solo el id y qué pasó: la app consulta el estado real');
+  assert.match(env.SYNC_HUB.avisos[0].hubId, /^cuenta:[0-9a-f]{32}$/);
+  assert.equal(one(env, 'SELECT estado FROM mp_ordenes WHERE order_id = ?', id).estado, 'processed');
+  assert.equal(one(env, "SELECT COUNT(*) c FROM mp_actividad WHERE accion = 'aviso'").c, 1);
+
+  assert.equal((await enviar(avisoMp('otra-clave', { id }))).status, 401, 'firma con otra clave');
+  assert.equal((await enviar(avisoMp('clave-webhook', { id, firmaDe: 'ORD999' }))).status, 401, 'firma de otro id');
+  const sinFirma = req(`/api/mp/webhook?data.id=${id}`, { method: 'POST', body: { action: 'order.processed', type: 'order', user_id: 241983636, data: { id } } });
+  assert.equal((await enviar(sinFirma)).status, 401, 'sin firma');
+  assert.equal(env.SYNC_HUB.avisos.length, 1, 'ninguno de esos despertó a nadie');
+
+  assert.equal((await (await enviar(avisoMp('clave-webhook', { id: 'ORDAJENA' }))).json()).ignorado, true, 'una orden que no creó el servidor');
+  assert.equal((await (await enviar(avisoMp('clave-webhook', { id, userId: 999 }))).json()).ignorado, true, 'el aviso de otra cuenta con el id de esta orden');
+  assert.equal((await (await enviar(avisoMp('clave-webhook', { id, accion: 'payment.created' }))).json()).ignorado, true, 'otros temas');
+  assert.equal(env.SYNC_HUB.avisos.length, 1);
+
+  const sinClave = mkEnv(MP_ENV);
+  assert.equal((await mpWebhook.onRequestPost({ request: avisoMp('clave-webhook', { id }), env: sinClave })).status, 503, 'sin la clave configurada no se acepta nada');
+});
+await t('el hub de sync reenvía el aviso de una orden a TODOS los equipos de la sucursal, solo con id y acción', async () => {
+  const { SyncHub } = await import('../functions/_lib/sync_hub.js');
+  const enviados = []; const ws = (tag) => ({ tag, send: (x) => enviados.push([tag, x]) });
+  const sockets = [ws('pc-1'), ws('cel-1')];
+  const hub = new SyncHub({ getWebSockets: () => sockets, getTags: (w) => [w.tag], acceptWebSocket() {} }, {});
+  const r = await hub.fetch(new Request('https://hub/avisar', { method: 'POST', body: JSON.stringify({ mp: { orden: 'ORD1', accion: 'processed', extra: 'no-va' } }) }));
+  assert.equal(r.status, 204);
+  assert.deepEqual(enviados, [['pc-1', '{"mp":{"orden":"ORD1","accion":"processed"}}'], ['cel-1', '{"mp":{"orden":"ORD1","accion":"processed"}}']]);
 });
 console.log(`\n${pass} pruebas OK (Mercado Pago por negocio)`);
