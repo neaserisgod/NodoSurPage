@@ -28,6 +28,12 @@ const DDL = [
      canal TEXT, monto_centavos INTEGER, referencia TEXT, mp_id TEXT, http_status INTEGER, resultado TEXT NOT NULL, detalle TEXT, creado INTEGER NOT NULL)`,
   `CREATE INDEX IF NOT EXISTS idx_mp_actividad_org ON mp_actividad(org_id, id)`,
   `CREATE TABLE IF NOT EXISTS mp_terminales (org_id INTEGER NOT NULL, branch_id INTEGER NOT NULL, terminal_id TEXT NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY (org_id, branch_id))`,
+  // De qué negocio y sucursal es cada orden que creó el servidor: el aviso de Mercado Pago trae solo el id de la orden y la
+  // cuenta, y hay que saber a qué equipos despertar. `estado` es el último que avisó Mercado Pago (informativo: la app igual
+  // consulta la orden antes de dar nada por cobrado).
+  `CREATE TABLE IF NOT EXISTS mp_ordenes (order_id TEXT PRIMARY KEY, org_id INTEGER NOT NULL, branch_id INTEGER NOT NULL, external_reference TEXT,
+     estado TEXT, creado INTEGER NOT NULL, actualizado INTEGER NOT NULL)`,
+  `CREATE INDEX IF NOT EXISTS idx_mp_ordenes_creado ON mp_ordenes(creado)`,
 ];
 export const ensureMpTables = (env) => once(env, 'mp_conexion', async () => { for (const sql of DDL) await env.DB.prepare(sql).run(); });
 export const mpConfigurado = (env) => Boolean(env.DB && env.MP_CLIENT_ID && env.MP_CLIENT_SECRET && claveValida(env.BACKUP_KEY));
@@ -192,14 +198,65 @@ export function detalleError(j) {
 
 // --- órdenes Point (mismo cuerpo que ya armaba la app de la PC: `cobro_posnet.dart`)
 const decimal = (centavos) => `${Math.trunc(centavos / 100)}.${String(centavos % 100).padStart(2, '0')}`;
-export async function crearOrden(env, orgId, branchId, { externalReference, idempotencyKey, montoCentavos, canal }) {
+// Cada orden vence sola a los 2 minutos si nadie la paga (Orders API, `expiration_time`): un cobro olvidado no queda
+// esperando en la terminal, y la app siempre termina sabiendo el resultado (vencida = no cobrada) en vez de quedarse con
+// "no sé si se cobró". Misma duración que la app de la PC (`vencimientoOrdenCobroPosnet`, `domain/cobro_posnet.dart`).
+export const VENCIMIENTO_ORDEN = 'PT2M';
+export const MAX_ORDENES_GUARDADAS_DIAS = 30;
+export async function crearOrden(env, orgId, branchId, { externalReference, idempotencyKey, montoCentavos, canal }, t = now()) {
   const terminal = await terminalDeSucursal(env, orgId, branchId);
   if (!terminal) return { status: 409, j: { error: 'mp_sin_terminal' } };
-  return mpFetch(env, orgId, '/v1/orders', {
+  const r = await mpFetch(env, orgId, '/v1/orders', {
     method: 'POST', headers: { 'X-Idempotency-Key': idempotencyKey },
-    body: JSON.stringify({ type: 'point', external_reference: externalReference, transactions: { payments: [{ amount: decimal(montoCentavos) }] },
+    body: JSON.stringify({ type: 'point', external_reference: externalReference, expiration_time: VENCIMIENTO_ORDEN,
+      transactions: { payments: [{ amount: decimal(montoCentavos) }] },
       config: { point: { terminal_id: terminal, print_on_terminal: 'no_ticket' }, payment_method: { default_type: canal } } }),
   });
+  if (r.status >= 200 && r.status < 300 && r.j && r.j.id) await anotarOrden(env, { orderId: String(r.j.id), orgId, branchId, externalReference, estado: r.j.status || null }, t);
+  return r;
+}
+
+// Anotar nunca rompe un cobro: si falla, el cobro sigue y la app se entera igual consultando.
+async function anotarOrden(env, { orderId, orgId, branchId, externalReference, estado }, t) {
+  try {
+    await env.DB.prepare(
+      `INSERT INTO mp_ordenes (order_id, org_id, branch_id, external_reference, estado, creado, actualizado) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)
+       ON CONFLICT(order_id) DO UPDATE SET estado = COALESCE(excluded.estado, estado), actualizado = excluded.actualizado`,
+    ).bind(orderId, orgId, branchId, externalReference ?? null, estado, t).run();
+    await env.DB.prepare('DELETE FROM mp_ordenes WHERE creado < ?1').bind(t - MAX_ORDENES_GUARDADAS_DIAS * 86400).run();
+  } catch (e) { console.error('mp_orden_anotar', e && e.message); }
+}
+
+// --- avisos de Mercado Pago (webhook "Order"). Mercado Pago firma cada aviso con la clave secreta de la aplicación
+// (`MP_WEBHOOK_SECRET`): header `x-signature: ts=…,v1=<hmac>` sobre "id:<data.id>;request-id:<x-request-id>;ts:<ts>;".
+// Lo que no venga se saca de la plantilla (documentación de Mercado Pago, "Validar el origen de la notificación").
+const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
+function igualesEnTiempoConstante(a, b) {
+  if (typeof a !== 'string' || typeof b !== 'string' || a.length !== b.length) return false;
+  let d = 0;
+  for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  return d === 0;
+}
+export async function firmaWebhookValida(secreto, { xSignature, xRequestId, dataId }) {
+  if (!secreto || !xSignature) return false;
+  const partes = Object.fromEntries(String(xSignature).split(',').map((p) => p.trim().split('=').map((x) => x.trim())).filter((p) => p.length === 2));
+  if (!partes.ts || !partes.v1) return false;
+  const id = dataId == null ? null : (/^[a-z0-9]+$/i.test(String(dataId)) ? String(dataId).toLowerCase() : String(dataId));
+  const manifiesto = `${id != null ? `id:${id};` : ''}${xRequestId ? `request-id:${xRequestId};` : ''}ts:${partes.ts};`;
+  const clave = await crypto.subtle.importKey('raw', new TextEncoder().encode(secreto), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
+  const esperado = hex(await crypto.subtle.sign('HMAC', clave, new TextEncoder().encode(manifiesto)));
+  return igualesEnTiempoConstante(esperado, String(partes.v1).toLowerCase());
+}
+
+// Un aviso de orden: ¿de qué sucursal es? Solo órdenes que creó este servidor, y solo si la cuenta que avisa es la conectada
+// a ese negocio (un aviso de otra cuenta con un id ajeno no despierta a nadie). Devuelve null si no corresponde.
+export async function ordenDelAviso(env, { orderId, userId, estado }, t = now()) {
+  const f = await env.DB.prepare(
+    `SELECT o.org_id, o.branch_id, c.mp_user_id FROM mp_ordenes o JOIN mp_conexiones c ON c.org_id = o.org_id WHERE o.order_id = ?1`,
+  ).bind(String(orderId)).first();
+  if (!f || (userId != null && String(f.mp_user_id) !== String(userId))) return null;
+  if (estado) await env.DB.prepare('UPDATE mp_ordenes SET estado = ?2, actualizado = ?3 WHERE order_id = ?1').bind(String(orderId), String(estado).slice(0, 40), t).run();
+  return { orgId: f.org_id, branchId: f.branch_id };
 }
 export const consultarOrden = (env, orgId, id) => mpFetch(env, orgId, `/v1/orders/${encodeURIComponent(id)}`);
 export const cancelarOrden = (env, orgId, id) => mpFetch(env, orgId, `/v1/orders/${encodeURIComponent(id)}/cancel`, { method: 'POST', headers: { 'X-Idempotency-Key': randomHex(16) }, body: '{}' });

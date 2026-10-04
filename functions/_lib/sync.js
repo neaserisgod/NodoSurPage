@@ -116,6 +116,17 @@ export async function avisarCambio(env, { scope, deviceId, seq }) {
   } catch (e) { console.error('sync_aviso', e && e.message); }
 }
 
+// Aviso de Mercado Pago sobre una orden de cobro (`/api/mp/webhook`) a los equipos de la sucursal que la creó. Mismo canal que
+// los lotes; nunca tira: si se pierde, la app se entera igual en su próxima consulta de la orden.
+export async function avisarOrdenMp(env, { orgId, branchId, orden, accion }) {
+  if (!hubReady(env)) return false;
+  try {
+    const hub = await hubDeCuenta(env, `n${orgId}:${branchId ?? 0}`);
+    await hub.fetch('https://hub/avisar', { method: 'POST', body: JSON.stringify({ mp: { orden, accion } }) });
+    return true;
+  } catch (e) { console.error('mp_aviso', e && e.message); return false; }
+}
+
 // Lotes de OTROS dispositivos con seq > desde. `hasta` es el cursor que la app guarda para el próximo pedido
 // (avanza también sobre los lotes propios, que no se devuelven, para no volver a recorrerlos).
 export async function leerLotes(env, { scope, deviceId, desde }) {
