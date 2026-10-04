@@ -1,6 +1,7 @@
 // Aviso previo al borrado. Solo se considera "avisado" si el mail realmente salió.
 // Requiere RESEND_API_KEY y MAIL_FROM (dominio verificado en Resend). Sin eso => no hay aviso => no hay borrado.
 import { plantillaMail } from './mail_template.js';
+import { fetchConPlazo } from './util.js';
 
 export const notifierReady = (env) => Boolean(env.RESEND_API_KEY && env.MAIL_FROM);
 
@@ -23,7 +24,7 @@ export async function sendDeletionNotice(env, user, deleteAtEpoch) {
     sitio: site,
   });
   try {
-    const res = await fetch('https://api.resend.com/emails', {
+    const res = await fetchConPlazo('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ from: env.MAIL_FROM, to: [user.email], subject: 'Tu cuenta de Nodo Sur se eliminará en 3 días', html, text }),
@@ -47,7 +48,7 @@ export async function sendInvitation(env, { to, orgName, inviterName, link, role
     sitio: (env.SITE_URL || 'https://horsepos.com').replace(/\/$/, ''),
   });
   try {
-    const res = await fetch('https://api.resend.com/emails', {
+    const res = await fetchConPlazo('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ from: env.MAIL_FROM, to: [to], subject: `Te invitaron a ${orgName} en Nodo Sur`, html, text }),
@@ -70,7 +71,7 @@ export async function sendTransferNotice(env, { to, orgName, fromName, site }) {
     sitio: site,
   });
   try {
-    const res = await fetch('https://api.resend.com/emails', {
+    const res = await fetchConPlazo('https://api.resend.com/emails', {
       method: 'POST',
       headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({ from: env.MAIL_FROM, to: [to], subject: `Te quieren transferir "${orgName}" en Nodo Sur`, html, text }),

@@ -651,4 +651,67 @@ await t('saldo (etapa E): se pide, se pregunta hasta que está, suma lo cobrado 
   const otra = mkEnv(MP_ENV); void otra;
 });
 
+// --- Blindaje (revisión 2026-10-04)
+await t('webhook: un cuerpo enorme, un arreglo o algo que no es JSON se rechaza o se ignora sin tirar nada', async () => {
+  const env = mkEnv({ ...MP_ENV, MP_WEBHOOK_SECRET: 'clave-webhook' }); env.SYNC_HUB = hubFalso();
+  const enviar = (rq) => mpWebhook.onRequestPost({ request: rq, env });
+  const grande = 'x'.repeat(20 * 1024);
+  const conLargo = new Request('https://horsepos.com/api/mp/webhook?data.id=ORD1', { method: 'POST', headers: { 'content-length': String(grande.length) }, body: 'a' });
+  assert.equal((await enviar(conLargo)).status, 413, 'por Content-Length');
+  assert.equal((await enviar(req('/api/mp/webhook?data.id=ORD1', { method: 'POST', raw: JSON.stringify({ relleno: grande }) }))).status, 413, 'sin Content-Length confiable: por lo leído');
+  for (const raw of ['[]', '"hola"', 'null', '123', '{no es json', '']) {
+    const r = await enviar(req('/api/mp/webhook?data.id=ORD1', { method: 'POST', raw }));
+    assert.equal(r.status, 401, `sin firma, ${JSON.stringify(raw)} no pasa (y no tira)`);
+  }
+  assert.equal(env.SYNC_HUB.avisos.length, 0);
+});
+await t('timeouts: si Mercado Pago no contesta, el pedido termina (502 con motivo), no se marca reconectar y un refresh cortado no desconecta', async () => {
+  const env = mkEnv({ ...MP_ENV, PLAZO_EXTERNO_MS: 40 }); const n = await negocio(env); const m = simular(); const cookie = await sess(env, 'duena@x.com', 'sd'); await conectar(env, n, m, cookie);
+  await post(conexion.onRequestElegirTerminal, env, '/api/mp/terminal', cookie, { orgId: n.org.id, branchId: n.a, terminalId: 'PAX_A910__SERIE1' });
+  const cel = await celular(env, n, n.a, 'sd', 'duena@x.com', 'cel-dueno-0123456789abcdefg');
+  const buena = globalThis.fetch; let colgadas = 0;
+  const mantener = setInterval(() => {}, 10); // el temporizador de AbortSignal.timeout no mantiene vivo a Node: sin esto el proceso termina antes
+  globalThis.fetch = (url, init = {}) => {
+    if (new URL(url).host !== 'api.mercadopago.com' || new URL(url).pathname.startsWith('/preapproval')) return buena(url, init); // la suscripción responde; lo del cobro, no
+    colgadas++;
+    return new Promise((_, rechazar) => init.signal.addEventListener('abort', () => rechazar(init.signal.reason)));
+  };
+  const t0 = Date.now();
+  const r = await post(orden.onRequestPost, env, '/api/mp/orden', null, { externalReference: 'venta-t', idempotencyKey: 'clave-idem-t001', montoCentavos: 5000, canal: 'qr' }, cel);
+  assert.ok(Date.now() - t0 < 2000, 'no se queda esperando');
+  assert.equal(r.status, 502); const j = await r.json(); assert.equal(j.error, 'mp_rechazo'); assert.match(j.mensaje, /no respondió a tiempo/);
+  assert.ok(colgadas >= 1);
+  // Renovar el token con Mercado Pago colgado: se sigue con el token actual y la conexión NO queda marcada para reconectar.
+  env.DB.raw.prepare('UPDATE mp_conexiones SET expires_at = ?').run(nowS() + 3600);
+  assert.equal(await tokenDe(env, n.org.id), 'token-falso-acceso-1', 'sigue con el token vigente');
+  assert.equal(one(env, 'SELECT needs_reconnect n FROM mp_conexiones').n, 0, 'un corte no desconecta al negocio');
+  // La app que vuelve a preguntar la orden (mismo pedido) tampoco rompe: 502 prolijo.
+  const g = await get(orden.onRequestGet, env, '/api/mp/orden?id=ORD1', { headers: cel }); assert.equal(g.status, 502);
+  clearInterval(mantener); globalThis.fetch = buena;
+});
+await t('cancelar y devolver: una orden de OTRA sucursal del negocio no se toca desde este equipo', async () => {
+  const env = mkEnv(MP_ENV); const n = await negocio(env); const m = simular(); const cookie = await sess(env, 'duena@x.com', 'sd'); await conectar(env, n, m, cookie);
+  await post(conexion.onRequestElegirTerminal, env, '/api/mp/terminal', cookie, { orgId: n.org.id, branchId: n.a, terminalId: 'PAX_A910__SERIE1' });
+  const celA = await celular(env, n, n.a, 'sd', 'duena@x.com', 'cel-dueno-a-0123456789abcdefg');
+  const celB = await celular(env, n, n.b, 'sd', 'duena@x.com', 'cel-dueno-b-0123456789abcdefg');
+  const { id } = await (await post(orden.onRequestPost, env, '/api/mp/orden', null, { externalReference: 'venta-a1', idempotencyKey: 'clave-idem-a001', montoCentavos: 5000, canal: 'qr' }, celA)).json();
+  const antes = m.llamadas.length;
+  const c = await post(orden.onRequestCancelar, env, '/api/mp/orden/cancelar', null, { id }, celB);
+  assert.equal(c.status, 403); assert.equal((await c.json()).error, 'orden_de_otra_sucursal');
+  const d = await post(orden.onRequestDevolver, env, '/api/mp/orden/devolver', null, { id, idempotencyKey: 'devolver-venta-a1' }, celB);
+  assert.equal(d.status, 403); assert.equal((await d.json()).error, 'orden_de_otra_sucursal');
+  assert.equal(m.llamadas.length, antes, 'ni siquiera se le preguntó nada a Mercado Pago');
+  assert.equal((await post(orden.onRequestCancelar, env, '/api/mp/orden/cancelar', null, { id }, celA)).status, 200, 'la sucursal de la orden sí');
+});
+await t('admin mp-reporte: pedir un reporte (generar=si) no se puede disparar desde otro sitio', async () => {
+  const env = mkEnv(MP_ENV); const n = await negocio(env); const m = simular(); const cookie = await sess(env, 'duena@x.com', 'sd'); await conectar(env, n, m, cookie);
+  const admin = await sess(env, 'admin@x.com', 'sa'); addUser(env, 'admin@x.com', 'sa');
+  const antes = m.llamadas.length;
+  const ajeno = await get(mpReporte.onRequestGet, env, `/api/admin/mp-reporte?orgId=${n.org.id}&dia=2026-10-03&generar=si`, { cookie: admin, headers: { 'Sec-Fetch-Site': 'cross-site' } });
+  assert.equal(ajeno.status, 403); assert.equal(m.llamadas.length, antes, 'no se creó nada en Mercado Pago');
+  const propio = await get(mpReporte.onRequestGet, env, `/api/admin/mp-reporte?orgId=${n.org.id}&dia=2026-10-03&generar=si`, { cookie: admin, headers: { 'Sec-Fetch-Site': 'none' } });
+  assert.equal(propio.status, 200, 'escribir la dirección a mano sigue andando');
+  assert.ok(m.pedidos && m.pedidos.length === 1);
+});
+
 console.log(`\n${pass} pruebas OK (Mercado Pago por negocio)`);

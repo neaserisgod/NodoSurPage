@@ -1,4 +1,4 @@
-import { verify, sign, parseCookies, cookie, now, siteUrl, unb64u, safeNext, randomHex } from '../../_lib/util.js';
+import { verify, sign, parseCookies, cookie, now, siteUrl, unb64u, safeNext, randomHex, fetchConPlazo } from '../../_lib/util.js';
 import { hasDB, upsertLogin, setIntent } from '../../_lib/db.js';
 import { isPlan } from '../../_lib/plans.js';
 
@@ -17,20 +17,23 @@ export async function onRequestGet({ request, env }) {
   const code = url.searchParams.get('code');
   if (!flow || !code || url.searchParams.get('state') !== flow.state) return back(site, 'sesion');
 
-  const tokenRes = await fetch('https://oauth2.googleapis.com/token', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-    body: new URLSearchParams({
-      code,
-      client_id: env.GOOGLE_CLIENT_ID,
-      client_secret: env.GOOGLE_CLIENT_SECRET,
-      redirect_uri: `${site}/api/auth/callback`,
-      grant_type: 'authorization_code',
-      code_verifier: flow.verifier,
-    }),
-  });
-  if (!tokenRes.ok) return back(site, 'google');
-  const { id_token } = await tokenRes.json();
+  let id_token;
+  try {
+    const tokenRes = await fetchConPlazo('https://oauth2.googleapis.com/token', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        code,
+        client_id: env.GOOGLE_CLIENT_ID,
+        client_secret: env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: `${site}/api/auth/callback`,
+        grant_type: 'authorization_code',
+        code_verifier: flow.verifier,
+      }),
+    });
+    if (!tokenRes.ok) return back(site, 'google');
+    ({ id_token } = await tokenRes.json());
+  } catch { return back(site, 'google'); } // Google no contestó a tiempo o respondió algo que no es JSON
 
   // El id_token llega directo de Google por TLS: se validan los claims.
   let claims;

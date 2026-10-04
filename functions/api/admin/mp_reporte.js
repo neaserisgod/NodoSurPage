@@ -1,4 +1,4 @@
-import { json } from '../../_lib/util.js';
+import { json, fetchConPlazo } from '../../_lib/util.js';
 import { requireAdmin } from '../../_lib/auth.js';
 import { hasDB } from '../../_lib/db.js';
 import { ensureMpTables, mpFetch, tokenDe } from '../../_lib/mp_conexion.js';
@@ -34,8 +34,11 @@ export async function onRequestGet({ request, env }) {
     // El archivo es CSV, no JSON: no pasa por `mpFetch`, pero usa el mismo token del negocio.
     const token = await tokenDe(env, orgId);
     if (!token) return json({ error: 'mp_no_conectado' }, 409);
-    const r = await fetch(`${API}/v1/account/release_report/${encodeURIComponent(archivo)}`, { headers: { Authorization: `Bearer ${token}` } });
-    const texto = await r.text();
+    let r; let texto;
+    try {
+      r = await fetchConPlazo(`${API}/v1/account/release_report/${encodeURIComponent(archivo)}`, { headers: { Authorization: `Bearer ${token}` } }, 30_000);
+      texto = await r.text();
+    } catch { return json({ error: 'mp_sin_respuesta' }, 504); }
     if (r.status !== 200) return json({ status: r.status, respuesta: texto.slice(0, 2000) });
     const filas = filasDelCsv(texto);
     return json({ status: 200, archivo, filas: filas.length, columnas: filas[0] ? Object.keys(filas[0]) : [], contenido: filas });
@@ -44,6 +47,9 @@ export async function onRequestGet({ request, env }) {
   const salida = {};
   const dia = q.get('dia');
   if (q.get('generar') === 'si') {
+    // Esto SÍ crea algo en Mercado Pago y es un GET: un enlace o formulario de otro sitio no puede disparárselo a un
+    // administrador con la sesión abierta. Escribir la dirección a mano (`Sec-Fetch-Site: none`) y el mismo sitio siguen andando.
+    if (request.headers.get('Sec-Fetch-Site') === 'cross-site') return json({ error: 'forbidden' }, 403);
     const rango = rangoDelDia(dia);
     if (!rango) return json({ error: 'bad_request', detalle: 'Falta ?dia=AAAA-MM-DD' }, 400);
     salida.configuracion = await asegurarConfiguracion(env, orgId, conexion.mp_user_id);

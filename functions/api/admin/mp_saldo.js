@@ -1,4 +1,4 @@
-import { json } from '../../_lib/util.js';
+import { json, fetchConPlazo } from '../../_lib/util.js';
 import { requireAdmin } from '../../_lib/auth.js';
 import { hasDB } from '../../_lib/db.js';
 import { ensureMpTables, mpFetch } from '../../_lib/mp_conexion.js';
@@ -48,7 +48,7 @@ export async function onRequestGet({ request, env }) {
   let cuentaNodoSur = null;
   if (env.MP_ACCESS_TOKEN) {
     try {
-      const r = await fetch(`${API}/users/me`, { headers: { Authorization: `Bearer ${String(env.MP_ACCESS_TOKEN).trim()}` } });
+      const r = await fetchConPlazo(`${API}/users/me`, { headers: { Authorization: `Bearer ${String(env.MP_ACCESS_TOKEN).trim()}` } });
       if (r.ok) cuentaNodoSur = String((await r.json()).id);
     } catch { /* sin red: queda null */ }
   }

@@ -1,4 +1,5 @@
 // Cliente mínimo de Mercado Pago (suscripciones). El token vive en env.MP_ACCESS_TOKEN.
+import { fetchConPlazo } from './util.js';
 const API = 'https://api.mercadopago.com';
 
 // Planes propios: solo se muestran/cancelan suscripciones de estos planes.
@@ -9,7 +10,7 @@ export const PLANS = {
 };
 
 async function mp(env, path, init = {}) {
-  const go = () => fetch(API + path, {
+  const go = () => fetchConPlazo(API + path, {
     ...init,
     headers: { Authorization: `Bearer ${String(env.MP_ACCESS_TOKEN).trim()}`, 'Content-Type': 'application/json', ...(init.headers || {}) },
   });

@@ -15,14 +15,24 @@ import { TEMAS_AVISO, procesarAvisoMp } from '../../_lib/mp_avisos.js';
 //  * El aviso solo DESPIERTA a los equipos con el id de la orden: no aprueba ni rechaza nada. Cada equipo consulta la orden con
 //    Mercado Pago antes de grabar la venta, así que un aviso repetido, tardío o fuera de orden no cambia ningún resultado.
 //  * Solo órdenes que creó este servidor y de la cuenta conectada a ese negocio (`ordenDelAviso`).
+//  * Cuerpo acotado (`MAX_CUERPO`): este pedido llega sin sesión, así que antes de cualquier otra cosa se descarta lo que no
+//    puede ser un aviso de Mercado Pago (que pesa unos cientos de bytes) y no se lee lo demás.
 //  * Se contesta rápido (Mercado Pago espera 22 s y reintenta): lo único que se hace es buscar la orden y avisar.
 const ACCIONES = new Set(['order.processed', 'order.canceled', 'order.refunded', 'order.action_required', 'order.failed', 'order.expired']);
 
+export const MAX_CUERPO = 16 * 1024;
+
 export async function onRequestPost({ request, env }) {
   if (!env.MP_WEBHOOK_SECRET) return json({ error: 'webhook_no_configurado' }, 503);
+  if (Number(request.headers.get('content-length') || 0) > MAX_CUERPO) return json({ error: 'demasiado_grande' }, 413);
   const url = new URL(request.url);
   let cuerpo = null;
-  try { cuerpo = await request.json(); } catch { /* cuerpo roto: se rechaza abajo */ }
+  try {
+    const texto = await request.text();
+    if (texto.length > MAX_CUERPO) return json({ error: 'demasiado_grande' }, 413); // sin Content-Length (chunked)
+    cuerpo = JSON.parse(texto);
+  } catch { /* cuerpo roto: se rechaza abajo */ }
+  if (cuerpo !== null && (typeof cuerpo !== 'object' || Array.isArray(cuerpo))) cuerpo = null;
   const dataId = url.searchParams.get('data.id') ?? (cuerpo && cuerpo.data && cuerpo.data.id != null ? String(cuerpo.data.id) : null);
   const valida = await firmaWebhookValida(env.MP_WEBHOOK_SECRET, {
     xSignature: request.headers.get('x-signature'), xRequestId: request.headers.get('x-request-id'), dataId,
