@@ -3,6 +3,7 @@ import { actorOf } from '../../_lib/actor.js';
 import { readJson } from '../../_lib/miembros.js';
 import { syncReady, syncAccess, scopeDeSync } from '../../_lib/sync.js';
 import { guardarPcLocal, pcLocalDe, ipLocalValida } from '../../_lib/pc_local.js';
+import { orgsWith } from '../../_lib/orgs.js';
 
 // POST: la PC vinculada avisa dónde está en el wifi del local. GET: un celular de la misma sucursal lo pide para
 // conectarse solo. Mismas reglas que sincronizar: quien opera la sucursal, con el negocio al día. El alcance sale
@@ -17,8 +18,18 @@ async function quien(request, env, { subir }) {
   return { a, scope: scopeDeSync(a) };
 }
 
+// Solo una PC publica dónde está (2026-10-03): si cualquier dispositivo de la sucursal pudiera, el celular de un empleado
+// podría hacerse pasar por la PC y los demás celulares le mandarían las ventas a él. El tipo lo guarda el sitio al vincular
+// (y una PC solo la vincula quien tiene `vincular_pc`, el dueño). Los vinculados antes de guardar el tipo valen solo si
+// quien los vinculó puede vincular PC en ese negocio.
+async function esPcDelLocal(env, device) {
+  if (device.kind) return device.kind === 'pc';
+  return (await orgsWith(env, device.owner_sub, 'vincular_pc')).some((o) => o.org.id === device.owner_org);
+}
+
 export async function onRequestPost({ request, env }) {
   const w = await quien(request, env, { subir: true }); if (w.error) return w.error;
+  if (!(await esPcDelLocal(env, w.a.device))) return json({ error: 'solo_pc' }, 403);
   const b = await readJson(request);
   if (!b || !ipLocalValida(b.ip) || !Number.isInteger(b.puerto) || b.puerto < 1 || b.puerto > 65535
     || typeof b.token !== 'string' || !/^[A-Za-z0-9]{16,128}$/.test(b.token)) return json({ error: 'bad_request' }, 400);

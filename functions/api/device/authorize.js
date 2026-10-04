@@ -55,6 +55,7 @@ export async function onRequestPost({ request, env }) {
   }
   const code = await createDeviceCode(env, {
     sub, email: cu.session.email, deviceId: b.deviceId, name: cleanName(b.name), challenge: b.challenge, orgId: org.id, branchId: branch.id, personName: cu.session.name,
+    kind: celular ? 'celular' : 'pc',
   });
   return json({ redirect: `http://127.0.0.1:${b.port}/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(b.state)}` });
 }

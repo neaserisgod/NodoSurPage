@@ -18,9 +18,9 @@ async function negocio(env) {
   const b2 = env.DB.raw.prepare("INSERT INTO branches (org_id, name, active, created_at) VALUES (?, 'Centro', 1, ?)").run(r.org.id, nowS());
   return { org: r.org, a: r.branch.id, b: Number(b2.lastInsertRowid) };
 }
-async function disp(env, g, branch, quien = ['duena@x.com', 'sd'], nombre = 'pc') {
+async function disp(env, g, branch, quien = ['duena@x.com', 'sd'], nombre = 'pc', kind) {
   const id = `${nombre}-${++n}-0123456789abcdefghij`;
-  await upsertDevice(env, { id, sub: quien[1], email: quien[0], name: nombre, orgId: g.org.id, branchId: branch });
+  await upsertDevice(env, { id, sub: quien[1], email: quien[0], name: nombre, orgId: g.org.id, branchId: branch, kind });
   return signDeviceToken(env, { sub: quien[1], email: quien[0], deviceId: id });
 }
 const publicar = (env, tok, body) => pcLocal.onRequestPost({ request: req('/api/device/pc-local', { method: 'POST', headers: bearer(tok), body }), env });
@@ -63,5 +63,19 @@ await t('solo direcciones del wifi local y datos bien formados; una PC vieja dej
   await publicar(env, pc, DATOS);
   env.DB.raw.prepare('UPDATE pc_local SET actualizado = ?').run(nowS() - VIGENCIA_PC_LOCAL - 10);
   assert.equal((await pedir(env, cel)).status, 404);
+});
+await t('solo una PC publica su dirección: un celular no puede hacerse pasar por ella', async () => {
+  const env = mkEnv(); const g = await negocio(env); paga('duena@x.com');
+  addUser(env, 'emp@x.com', 'sm');
+  const mm = env.DB.raw.prepare("INSERT INTO memberships (org_id, user_sub, email, role, status, all_branches, created_at) VALUES (?,?,?,'employee','active',0,?)").run(g.org.id, 'sm', 'emp@x.com', nowS());
+  env.DB.raw.prepare('INSERT INTO membership_branches (membership_id, branch_id) VALUES (?,?)').run(mm.lastInsertRowid, g.a);
+  const celEmpleado = await disp(env, g, g.a, ['emp@x.com', 'sm'], 'cel-emp', 'celular');
+  const celEmpleadoViejo = await disp(env, g, g.a, ['emp@x.com', 'sm'], 'cel-emp-viejo'); // vinculado antes de guardar el tipo
+  const celDuena = await disp(env, g, g.a, undefined, 'cel-duena', 'celular');
+  const pc = await disp(env, g, g.a, undefined, 'PC-LOCAL', 'pc');
+  for (const tok of [celEmpleado, celEmpleadoViejo, celDuena]) assert.equal((await publicar(env, tok, DATOS)).status, 403);
+  assert.equal((await pedir(env, celEmpleado)).status, 404, 'nada quedó publicado');
+  assert.equal((await publicar(env, pc, DATOS)).status, 200);
+  assert.equal((await (await pedir(env, celEmpleado)).json()).nombre, 'PC-LOCAL');
 });
 console.log(`\n${pass} pruebas OK (PC del local)`);

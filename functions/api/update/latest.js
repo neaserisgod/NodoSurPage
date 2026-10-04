@@ -1,5 +1,5 @@
 import { json, siteUrl } from '../../_lib/util.js';
-import { PLATFORMS, CHANNELS, hasR2, validVersion, latestForUpdate } from '../../_lib/releases.js';
+import { PLATFORMS, CHANNELS, hasR2, validVersion, latestForUpdate, urlArchivo } from '../../_lib/releases.js';
 import { hasDB } from '../../_lib/db.js';
 import { cidIsPrivileged } from '../../_lib/devices.js';
 
@@ -14,7 +14,7 @@ export async function onRequestGet({ request, env }) {
   const r = await latestForUpdate(env, platform, channel, current, cid, { conBeta: await cidIsPrivileged(env, cid) });
   if (!r) return json({ update: false });
   return json({
-    update: true, version: r.version, mandatory: Boolean(r.mandatory), url: `${siteUrl(env)}/api/update/file?id=${r.id}`,
+    update: true, version: r.version, mandatory: Boolean(r.mandatory), url: await urlArchivo(env, `${siteUrl(env)}/api/update/file?id=${r.id}`, r),
     sha256: r.sha256, size: r.size, signature: r.signature, signatureType: r.sig_type || 'ed', notes: r.notes, publishedAt: r.published_at,
   });
 }

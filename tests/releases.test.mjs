@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { DatabaseSync } from 'node:sqlite';
 import { sign } from '../functions/_lib/util.js';
-import { cmpVersion, validVersion, validKey, podarVersiones, ensureTables } from '../functions/_lib/releases.js';
+import { cmpVersion, validVersion, validKey, podarVersiones, ensureTables, permisoArchivo } from '../functions/_lib/releases.js';
 import { clearMpCache } from '../functions/_lib/mp.js';
 import * as adminRel from '../functions/api/admin/releases.js';
 import * as latest from '../functions/api/update/latest.js';
@@ -94,7 +94,7 @@ await t('actualizaciones: solo si hay algo más nuevo, por plataforma y canal', 
   assert.equal((await ask('platform=windows&version=1.0.0%2B9999')).update, false);
   assert.equal((await ask('platform=windows')).update, true); // sin versión actual: ofrece la más nueva
   assert.equal((await ask('platform=android&version=1.0.0%2B1')).update, false);
-  assert.equal((await ask('platform=windows&channel=beta&version=1.0.0%2B1')).update, true);
+  assert.equal((await ask('platform=windows&channel=beta&version=1.0.0%2B1')).update, false, 'el canal beta no se pide a mano: es solo para cuentas de pruebas');
   for (const qs of ['', 'platform=ps5', 'platform=windows&channel=dev', 'platform=windows&version=rara']) assert.equal((await latest.onRequestGet({ request: req('/api/update/latest.json?' + qs), env })).status, 400, qs);
   assert.deepEqual(await (await latest.onRequestGet({ request: req('/api/update/latest.json?platform=windows'), env: { ...env, RELEASES: undefined } })).json(), { update: false });
 });
@@ -269,5 +269,25 @@ await t('poda: borra del R2 los archivos sin versión registrada, pero no los re
   env.RELEASES.put('beta/9.9.9.8/reciente.exe', 'x');
   const r = await podarVersiones(env);
   assert.equal(r.huerfanos, 1); assert.equal(env.RELEASES.files.has('beta/9.9.9.9/huerfano.exe'), false); assert.equal(env.RELEASES.files.has('beta/9.9.9.8/reciente.exe'), true);
+});
+await t('archivos: la estable al 100 % se baja libre; una beta o una a medio liberar, solo con el permiso del feed', async () => {
+  const env = mkEnv(); await publish(env, '1.0.0+1'); await publish(env, '1.0.0+2', { rollout: 30 }); await publish(env, '1.1.0-beta.1', { channel: 'beta' });
+  const rows = (await (await ciGet(env)).json()).releases; const id = (v) => rows.find((r) => r.version === v).id;
+  const bajar = async (qs) => (await file.onRequest({ request: req(`/api/update/file?${qs}`), env })).status;
+  assert.equal(await bajar(`id=${id('1.0.0+1')}`), 200, 'estable al 100 %: libre (la recibe cualquier instalación, aunque no tenga cuenta)');
+  assert.equal(await bajar(`id=${id('1.1.0-beta.1')}`), 404, 'beta sin permiso: no');
+  assert.equal(await bajar(`id=${id('1.0.0+2')}`), 404, 'a medio liberar sin permiso: no');
+  assert.equal(await bajar(`id=${id('1.0.0+2')}&p=${encodeURIComponent(await permisoArchivo(env, id('1.1.0-beta.1')))}`), 404, 'el permiso de otra versión no sirve');
+  assert.equal(await bajar(`id=${id('1.0.0+2')}&p=basura`), 404);
+  // El feed le da el permiso a la instalación a la que le toca, y esa dirección anda tal cual.
+  let url = null;
+  for (let i = 0; i < 200 && !url; i++) {
+    const j = await (await latest.onRequestGet({ request: req(`/api/update/latest.json?platform=windows&version=1.0.0%2B1&cid=pc-${i}`), env })).json();
+    if (j.update) url = j.url;
+  }
+  assert.ok(url && url.includes('&p='), 'a medio liberar: la dirección lleva el permiso');
+  assert.equal(await bajar(new URL(url).search.slice(1)), 200);
+  const vieja = await (await latest.onRequestGet({ request: req('/api/update/latest.json?platform=windows'), env })).json();
+  assert.ok(!vieja.url.includes('p='), 'la estable al 100 % sigue con la dirección de siempre');
 });
 console.log(`\n${pass} pruebas OK (versiones y descargas)`);

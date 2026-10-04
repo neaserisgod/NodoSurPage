@@ -1,4 +1,4 @@
-import { verify, sign, parseCookies, cookie, now, siteUrl, unb64u, safeNext } from '../../_lib/util.js';
+import { verify, sign, parseCookies, cookie, now, siteUrl, unb64u, safeNext, randomHex } from '../../_lib/util.js';
 import { hasDB, upsertLogin, setIntent } from '../../_lib/db.js';
 import { isPlan } from '../../_lib/plans.js';
 
@@ -55,6 +55,7 @@ export async function onRequestGet({ request, env }) {
     email: String(claims.email).toLowerCase(),
     name: claims.name || claims.email,
     iat, exp: iat + 30 * 24 * 3600,
+    jti: randomHex(16), // para poder cerrarla de verdad (`cerrarSesion`)
   }, env.SESSION_SECRET);
   const first = encodeURIComponent(String(claims.given_name || claims.name || claims.email).split(' ')[0]);
   // Con plan elegido se vuelve al pago con ese plan ya seleccionado; si no, a Mi cuenta.

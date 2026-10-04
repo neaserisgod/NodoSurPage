@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
-import { sign, verify, parseCookies } from '../functions/_lib/util.js';
+import { sign, verify, parseCookies, getSession } from '../functions/_lib/util.js';
+import { mkEnv } from './helpers-nube.mjs';
 import * as google from '../functions/api/auth/google.js';
 import * as callback from '../functions/api/auth/callback.js';
 import * as me from '../functions/api/me.js';
@@ -139,5 +140,17 @@ await t('logout: borra cookies y exige mismo origen', async () => {
   const r = await logout.onRequestPost({ request: new Request('https://horsepos.com/api/auth/logout', { method: 'POST', headers: { Origin: 'https://horsepos.com' } }), env });
   assert.equal(r.status, 303); assert.ok(r.headers.getSetCookie().every((c) => /Max-Age=0/.test(c)));
   assert.equal((await logout.onRequestPost({ request: new Request('https://horsepos.com/api/auth/logout', { method: 'POST', headers: { Origin: 'https://evil.com' } }), env })).status, 403);
+});
+await t('logout: la sesión queda cerrada en el servidor (una copia de la cookie ya no entra); las demás siguen', async () => {
+  const envDb = mkEnv();
+  const ahora = Math.floor(Date.now() / 1000);
+  const cookieDe = async (jti) => `ns_session=${await sign({ sub: 's1', email: 'ana@x.com', name: 'Ana', iat: ahora, exp: ahora + 999, jti }, envDb.SESSION_SECRET)}`;
+  const esta = await cookieDe('sesion-a'), otra = await cookieDe('sesion-b');
+  const con = (cookie) => new Request('https://horsepos.com/api/me', { headers: { Cookie: cookie } });
+  assert.ok(await getSession(con(esta), envDb));
+  const r = await logout.onRequestPost({ request: new Request('https://horsepos.com/api/auth/logout', { method: 'POST', headers: { Origin: 'https://horsepos.com', Cookie: esta } }), env: envDb });
+  assert.equal(r.status, 303);
+  assert.equal(await getSession(con(esta), envDb), null, 'la cookie copiada ya no vale');
+  assert.ok(await getSession(con(otra), envDb), 'la sesión de otro navegador sigue');
 });
 console.log(`\n${pass} pruebas OK`);
