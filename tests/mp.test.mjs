@@ -7,6 +7,7 @@ import { sha256b64u } from '../functions/_lib/util.js';
 import * as conexion from '../functions/api/mp/conexion.js';
 import * as orden from '../functions/api/mp/orden.js';
 import * as mpSaldo from '../functions/api/admin/mp_saldo.js';
+import * as mpReporte from '../functions/api/admin/mp_reporte.js';
 import { tokenDe, detalleError, registrarActividad, ensureMpTables } from '../functions/_lib/mp_conexion.js';
 import { mkEnv, addUser, sess, req, web, mp, mpSub, mockMP, nowS } from './helpers-nube.mjs';
 
@@ -46,7 +47,13 @@ function simular() {
     }
     if (/^\/users\/[^/]+\/mercadopago_account\/balance$/.test(u.pathname)) return m.saldoNegado ? r({ message: 'Public access not allowed', error: 'forbidden' }, 403) : r({ available_balance: 1344.21, total_amount: 2000, unavailable_balance: 655.79 });
     if (u.pathname === '/v1/account/release_report/list') return r([{ file_name: 'liq-2026-10-03.csv', status: 'processed' }]);
-    if (u.pathname === '/v1/account/release_report/config') return r({ file_name_prefix: 'liq', columns: [{ key: 'BALANCE_AMOUNT' }] });
+    if (u.pathname === '/v1/account/release_report/config' && init.method === 'POST') {
+      if (cuerpo.columns.some((c) => c.key === 'BALANCE_AMOUNT') && m.rechazarBalance) return r({ message: 'invalid column' }, 400);
+      m.config = cuerpo; return r(cuerpo, 201);
+    }
+    if (u.pathname === '/v1/account/release_report/config') return m.sinConfig && !m.config ? r({ message: 'Configuration not found for user', error: 'config_not_found_for_user' }, 404) : r(m.config || { file_name_prefix: 'liq', columns: [{ key: 'BALANCE_AMOUNT' }] });
+    if (u.pathname === '/v1/account/release_report' && init.method === 'POST') { m.pedidos = (m.pedidos || []).concat([cuerpo]); return r({ id: 77, status: 'pending' }, 202); }
+    if (u.pathname === '/v1/account/release_report/liq-2026-10-03.csv') return new Response('DATE;RECORD_TYPE;DESCRIPTION;NET_CREDIT_AMOUNT;NET_DEBIT_AMOUNT;BALANCE_AMOUNT\n2026-10-03T00:00:00;initial_available_balance;;286149.00;0.00;286149.00\n2026-10-03T11:13:00;release;payout;0.00;201016.00;85133.00\n', { status: 200 });
     const g = /^\/v1\/orders\/([^/]+)(\/cancel)?$/.exec(u.pathname);
     if (g && m.ordenes.has(g[1])) { if (g[2]) m.ordenes.set(g[1], 'canceled'); return r({ id: g[1], status: m.ordenes.get(g[1]), status_detail: g[2] ? 'canceled' : 'created' }); }
     return r({ message: 'not found' }, 404);
@@ -354,5 +361,23 @@ await t('prueba de saldo (admin): solo administradores, solo lecturas, y el toke
   const negado = await (await get(mpSaldo.onRequestGet, env, '/api/admin/mp-saldo?orgId=' + n.org.id, { cookie: admin })).json();
   assert.equal(negado.negocios[0].saldoDirecto.status, 403); assert.equal(negado.negocios[0].saldoDirecto.respuesta.message, 'Public access not allowed');
   assert.equal((await (await get(mpSaldo.onRequestGet, env, '/api/admin/mp-saldo?orgId=999', { cookie: admin })).json()).negocios.length, 0);
+});
+await t('reporte de liquidaciones (admin): lista, genera el día argentino creando la configuración, y baja el CSV como filas', async () => {
+  assert.deepEqual(mpReporte.rangoDelDia('2026-10-03'), { begin_date: '2026-10-03T03:00:00Z', end_date: '2026-10-04T03:00:00Z' });
+  assert.equal(mpReporte.rangoDelDia('03/10/2026'), null);
+  const env = mkEnv(MP_ENV); const n = await negocio(env); const m = simular(); m.sinConfig = true; m.rechazarBalance = true;
+  await conectar(env, n, m, await sess(env, 'duena@x.com', 'sd'));
+  assert.equal((await get(mpReporte.onRequestGet, env, `/api/admin/mp-reporte?orgId=${n.org.id}`, { cookie: await sess(env, 'duena@x.com', 'sd') })).status, 403);
+  addUser(env, 'admin@x.com', 'sa'); const admin = await sess(env, 'admin@x.com', 'sa');
+  m.llamadas.length = 0;
+  const solo = await (await get(mpReporte.onRequestGet, env, `/api/admin/mp-reporte?orgId=${n.org.id}&dia=2026-10-03`, { cookie: admin })).json();
+  assert.equal(solo.reportes.status, 200); assert.ok(m.llamadas.every((c) => c.metodo === 'GET'), 'sin generar=si solo lee');
+  const gen = await (await get(mpReporte.onRequestGet, env, `/api/admin/mp-reporte?orgId=${n.org.id}&dia=2026-10-03&generar=si`, { cookie: admin })).json();
+  assert.equal(gen.configuracion.creada, true); assert.ok(!m.config.columns.some((c) => c.key === 'BALANCE_AMOUNT'), 'si rechaza BALANCE_AMOUNT, la pide sin ella');
+  assert.equal(gen.pedido.status, 202); assert.deepEqual(m.pedidos, [{ begin_date: '2026-10-03T03:00:00Z', end_date: '2026-10-04T03:00:00Z' }]);
+  const csv = await (await get(mpReporte.onRequestGet, env, `/api/admin/mp-reporte?orgId=${n.org.id}&archivo=liq-2026-10-03.csv`, { cookie: admin })).json();
+  assert.equal(csv.filas, 2); assert.equal(csv.contenido[1].DESCRIPTION, 'payout'); assert.equal(csv.contenido[1].BALANCE_AMOUNT, '85133.00');
+  assert.equal((await get(mpReporte.onRequestGet, env, `/api/admin/mp-reporte?orgId=${n.org.id}&archivo=../x`, { cookie: admin })).status, 400);
+  assert.equal((await get(mpReporte.onRequestGet, env, '/api/admin/mp-reporte?orgId=999', { cookie: admin })).status, 404);
 });
 console.log(`\n${pass} pruebas OK (Mercado Pago por negocio)`);

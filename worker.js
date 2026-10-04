@@ -17,6 +17,7 @@ import * as updAppcast from './functions/api/update/appcast.js';
 import * as updFile from './functions/api/update/file.js';
 import * as adminReleases from './functions/api/admin/releases.js';
 import * as adminMpSaldo from './functions/api/admin/mp_saldo.js';
+import * as adminMpReporte from './functions/api/admin/mp_reporte.js';
 import * as deviceWhoami from './functions/api/device/whoami.js';
 import * as deviceAuthorize from './functions/api/device/authorize.js';
 import * as deviceToken from './functions/api/device/token.js';
@@ -53,6 +54,7 @@ const ROUTES = {
   'POST /api/subscription/cancel': cancel.onRequestPost,
   'GET /api/admin/overview': adminOverview.onRequestGet,
   'GET /api/admin/mp-saldo': adminMpSaldo.onRequestGet,
+  'GET /api/admin/mp-reporte': adminMpReporte.onRequestGet,
   'POST /api/admin/user': adminUser.onRequestPost,
   'POST /api/admin/sweep': adminSweep.onRequestPost,
   'POST /api/admin/subscription': adminSubscription.onRequestPost,
