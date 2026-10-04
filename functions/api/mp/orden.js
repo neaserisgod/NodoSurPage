@@ -22,9 +22,19 @@ async function quien(request, env) {
   await ensureMpTables(env);
   return { orgId: a.device.owner_org, branchId: a.device.branch_id, deviceId: a.device.id, deviceName: a.device.name, sub: a.sub };
 }
+// Una orden de OTRA sucursal del mismo negocio no se toca desde este equipo: el cobro de una caja no lo cancela ni lo devuelve
+// otra caja. Solo se sabe de las que creó este servidor (30 días); de una desconocida no hay nada que comparar.
+async function esDeOtraSucursal(env, w, id) {
+  const f = await env.DB.prepare('SELECT org_id, branch_id FROM mp_ordenes WHERE order_id = ?1').bind(id).first();
+  return Boolean(f) && (f.org_id !== w.orgId || f.branch_id !== w.branchId);
+}
 // Lo que se le devuelve a la app: solo lo que necesita para seguir la orden; nada del token ni de la cuenta.
 const salida = (r) => {
   if (r.status === 409 || !r.j) return json({ error: (r.j && r.j.error) || 'mp_error' }, r.status === 409 ? 409 : 502);
+  // Un 5xx de Mercado Pago, o que no haya contestado a tiempo (504 propio), no dice si la orden se creó o no. Se distingue de un
+  // rechazo (4xx: Mercado Pago NO la creó) para que la app sepa si puede dar el cobro por fallido o tiene que reintentar con la
+  // MISMA clave de idempotencia.
+  if (r.status >= 500) return json({ error: 'mp_sin_respuesta', status: r.status, mensaje: detalleError(r.j) }, 504);
   if (r.status < 200 || r.status >= 300) return json({ error: 'mp_rechazo', status: r.status, mensaje: detalleError(r.j) }, r.status === 404 ? 404 : 502);
   return json({ id: r.j.id ? String(r.j.id) : null, status: r.j.status || null, statusDetail: r.j.status_detail || null });
 };
@@ -53,6 +63,7 @@ export async function onRequestCancelar({ request, env }) {
   const w = await quien(request, env); if (w.error) return w.error;
   const b = await readJson(request);
   if (!b || typeof b.id !== 'string' || !/^[\w-]{1,64}$/.test(b.id)) return json({ error: 'bad_request' }, 400);
+  if (await esDeOtraSucursal(env, w, b.id)) return json({ error: 'orden_de_otra_sucursal' }, 403);
   const r = await cancelarOrden(env, w.orgId, b.id);
   await registrarActividad(env, w, { accion: 'cancelar', referencia: b.id, r });
   return salida(r);
@@ -71,6 +82,7 @@ export async function onRequestDevolver({ request, env }) {
   if (!m || m.status !== 'active' || !puede(m, 'devolver', w.branchId)) return json({ error: 'sin_permiso_devolver' }, 403);
   const b = await readJson(request);
   if (!b || typeof b.id !== 'string' || !/^[\w-]{1,64}$/.test(b.id) || typeof b.idempotencyKey !== 'string' || !/^[\w-]{8,64}$/.test(b.idempotencyKey)) return json({ error: 'bad_request' }, 400);
+  if (await esDeOtraSucursal(env, w, b.id)) return json({ error: 'orden_de_otra_sucursal' }, 403);
   const actual = await consultarOrden(env, w.orgId, b.id);
   if (actual.status !== 200 || !actual.j) return salida(actual);
   if (actual.j.status === 'refunded') return json({ error: 'ya_devuelta', id: b.id, status: 'refunded' }, 409);

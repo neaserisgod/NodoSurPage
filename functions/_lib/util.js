@@ -39,6 +39,13 @@ export async function verify(token, secret) {
   } catch { return null; }
 }
 
+// `fetch` con tope de espera: un servicio externo que no contesta (Mercado Pago, Google, Resend) no puede dejar un pedido colgado
+// hasta el límite de la plataforma. Vencido el plazo `fetch` tira (AbortError/TimeoutError): quien llama decide qué hacer.
+export const PLAZO_EXTERNO_MS = 20_000;
+export const fetchConPlazo = (url, init = {}, ms = PLAZO_EXTERNO_MS) => fetch(url, { ...init, signal: init.signal ?? AbortSignal.timeout(ms) });
+// `PLAZO_EXTERNO_MS` en el entorno lo pisa (las pruebas lo bajan para no esperar 20 segundos).
+export const plazoDe = (env) => (Number(env && env.PLAZO_EXTERNO_MS) > 0 ? Number(env.PLAZO_EXTERNO_MS) : PLAZO_EXTERNO_MS);
+
 export const randomHex = (n) => [...crypto.getRandomValues(new Uint8Array(n))].map((b) => b.toString(16).padStart(2, '0')).join('');
 export const sha256b64u = async (s) => b64u(await crypto.subtle.digest('SHA-256', enc.encode(s)));
 export const now = () => Math.floor(Date.now() / 1000);

@@ -1,0 +1,28 @@
+name: Pruebas del sitio
+
+# El sitio se publica solo al mezclar a main (Cloudflare): estas pruebas corren antes, en cada PR, para que un cambio roto
+# no llegue a producción sin que se vea. Mercado Pago, Google y Resend están simulados; no hace falta ningún secreto.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  pruebas:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Pruebas (una por archivo, se muestran todas las que fallan)
+        run: |
+          fallo=0
+          for f in tests/*.test.mjs; do
+            node --experimental-sqlite "$f" || { echo "::error::FALLA $f"; fallo=1; }
+          done
+          exit $fallo

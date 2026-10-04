@@ -9,7 +9,7 @@
 //    refresh, la conexión queda marcada para reconectar en vez de reintentar para siempre.
 //  * Sin el permiso `offline_access` Mercado Pago no entrega refresh_token: se avisa en vez de conectar a medias.
 //  * Qué terminal usa cada sucursal se guarda aparte (`mp_terminales`): una cuenta puede tener varias.
-import { now, once, randomHex, sha256b64u, siteUrl } from './util.js';
+import { now, once, randomHex, sha256b64u, siteUrl, fetchConPlazo, plazoDe } from './util.js';
 import { cifrar, descifrar, claveValida } from './backups.js';
 
 const API = 'https://api.mercadopago.com';
@@ -66,11 +66,17 @@ export async function iniciarConexion(env, { orgId, sub }, t = now()) {
   return `${AUTH}?${p}`;
 }
 
+// Sin respuesta de Mercado Pago (corte de red o plazo vencido) se contesta 504, nunca 400/401: esos dos significan "el refresh_token
+// ya no sirve" y marcan la conexión para reconectar; un corte no puede desconectar a un negocio. El plazo es el doble que el
+// de una consulta común: renovar ENTREGA un refresh_token nuevo y invalida el anterior, así que cortar la espera justo cuando
+// Mercado Pago ya lo rotó dejaría guardado uno que no sirve.
 async function pedirToken(env, cuerpo) {
-  const r = await fetch(`${API}/oauth/token`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-    body: JSON.stringify({ client_id: env.MP_CLIENT_ID, client_secret: env.MP_CLIENT_SECRET, ...cuerpo }) });
-  let j = null; try { j = await r.json(); } catch { /* sin cuerpo */ }
-  return { ok: r.ok, status: r.status, j };
+  try {
+    const r = await fetchConPlazo(`${API}/oauth/token`, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ client_id: env.MP_CLIENT_ID, client_secret: env.MP_CLIENT_SECRET, ...cuerpo }) }, 2 * plazoDe(env));
+    let j = null; try { j = await r.json(); } catch { /* sin cuerpo */ }
+    return { ok: r.ok, status: r.status, j };
+  } catch { return { ok: false, status: 504, j: null }; }
 }
 
 // Paso 2: Mercado Pago vuelve con `code` y `state`. `sub` es quien tiene la sesión en este navegador.
@@ -146,9 +152,15 @@ export async function mpFetch(env, orgId, path, init = {}) {
   let token = await tokenDe(env, orgId);
   if (!token) return { status: 409, j: { error: 'mp_no_conectado' } };
   const llamar = async (tk) => {
-    const r = await fetch(`${API}${path}`, { ...init, headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...(init.headers || {}), Authorization: `Bearer ${tk}` } });
-    let j = null; try { j = await r.json(); } catch { /* sin cuerpo */ }
-    return { status: r.status, j };
+    try {
+      const r = await fetchConPlazo(`${API}${path}`, { ...init, headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...(init.headers || {}), Authorization: `Bearer ${tk}` } }, plazoDe(env));
+      let j = null; try { j = await r.json(); } catch { /* sin cuerpo */ }
+      return { status: r.status, j };
+    } catch {
+      // Corte de red o plazo vencido: no se sabe si Mercado Pago llegó a hacerlo. La app reintenta con la misma clave de
+      // idempotencia (cobrar, devolver) o consulta la orden, así que un reintento nunca duplica nada.
+      return { status: 504, j: { message: 'Mercado Pago no respondió a tiempo' } };
+    }
   };
   let r = await llamar(token);
   if (r.status === 401) {

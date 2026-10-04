@@ -52,11 +52,23 @@ export async function aceptarTraspaso(env, { transferId, sub }, t = now()) {
   if (!nueva) return { status: 409, error: 'not_member' };
   const reclamo = await env.DB.prepare("UPDATE org_transfers SET status = 'accepted', resolved_at = ?2 WHERE id = ?1 AND status = 'pending'").bind(tr.id, t).run();
   if (!reclamo.meta || reclamo.meta.changes !== 1) return { status: 410, error: 'used' };
-  // Orden pensado para no dejar nunca un negocio sin dueño: primero se suma el nuevo, después se baja al anterior.
-  await env.DB.prepare("UPDATE memberships SET role = 'owner', all_branches = 1 WHERE id = ?1").bind(nueva.id).run();
-  await env.DB.prepare('DELETE FROM membership_branches WHERE membership_id = ?1').bind(nueva.id).run();
-  await env.DB.prepare('UPDATE orgs SET owner_sub = ?2 WHERE id = ?1').bind(org.id, sub).run();
-  await env.DB.prepare("UPDATE memberships SET role = 'manager', all_branches = 1 WHERE org_id = ?1 AND user_sub = ?2").bind(org.id, tr.from_sub).run();
+  // Los cuatro cambios van juntos (`DB.batch` de D1 es una transacción: o pasan todos o ninguno): a medias quedaban dos dueños, o
+  // un negocio cuyo `owner_sub` no coincide con ningún miembro dueño. El orden dentro del lote sigue pensado para no dejar nunca un
+  // negocio sin dueño (primero se suma el nuevo, después se baja al anterior) por si el entorno no tiene `batch`.
+  const pasos = [
+    env.DB.prepare("UPDATE memberships SET role = 'owner', all_branches = 1 WHERE id = ?1").bind(nueva.id),
+    env.DB.prepare('DELETE FROM membership_branches WHERE membership_id = ?1').bind(nueva.id),
+    env.DB.prepare('UPDATE orgs SET owner_sub = ?2 WHERE id = ?1').bind(org.id, sub),
+    env.DB.prepare("UPDATE memberships SET role = 'manager', all_branches = 1 WHERE org_id = ?1 AND user_sub = ?2").bind(org.id, tr.from_sub),
+  ];
+  try {
+    if (typeof env.DB.batch === 'function') await env.DB.batch(pasos);
+    else for (const p of pasos) await p.run();
+  } catch (e) {
+    // El lote es atómico: no cambió nada. La propuesta vuelve a quedar pendiente para poder aceptarla de nuevo.
+    await env.DB.prepare("UPDATE org_transfers SET status = 'pending', resolved_at = NULL WHERE id = ?1 AND status = 'accepted'").bind(tr.id).run();
+    throw e;
+  }
   return { orgId: org.id, orgName: org.name };
 }
 

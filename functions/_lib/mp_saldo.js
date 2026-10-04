@@ -9,7 +9,7 @@
 // movimiento liberado con el saldo después de él (`BALANCE_AMOUNT`). Trae TODOS los egresos (pagos a proveedores, transferencias),
 // y cada pago propio viene con un par `reserve_for_*` (débito y crédito) que se anula: se ignora. Lo cobrado y todavía no
 // liberado (`money_release_date` a futuro) NO está en el reporte: se suma aparte desde los pagos.
-import { now } from './util.js';
+import { now, fetchConPlazo } from './util.js';
 import { ensureMpTables, mpFetch, tokenDe, cobrosDe } from './mp_conexion.js';
 
 const API = 'https://api.mercadopago.com';
@@ -167,10 +167,14 @@ export async function estadoSaldo(env, orgId, id, t = now()) {
   const token = await tokenDe(env, orgId);
   if (!token) return { error: 'mp_no_conectado', status: 409 };
   if (!/^[\w.-]{1,200}$/.test(rep.file_name)) return { estado: 'error', motivo: 'archivo_invalido' };
-  const r = await fetch(`${API}/v1/account/release_report/${encodeURIComponent(rep.file_name)}`, { headers: { Authorization: `Bearer ${token}` } });
+  let r; let texto;
+  try {
+    r = await fetchConPlazo(`${API}/v1/account/release_report/${encodeURIComponent(rep.file_name)}`, { headers: { Authorization: `Bearer ${token}` } }, 30_000);
+    if (r.status === 200) texto = await r.text();
+  } catch { return { error: 'mp_error', status: 502, http: 504 }; } // sin respuesta: la app vuelve a preguntar
   if (r.status === 404) return { estado: 'pendiente' };
   if (r.status !== 200) return { error: 'mp_error', status: 502, http: r.status };
-  const p = parsearReporte(filasDelCsv(await r.text(), { max: MAX_FILAS_SALDO }));
+  const p = parsearReporte(filasDelCsv(texto, { max: MAX_FILAS_SALDO }));
   if (p.error) return { estado: 'error', motivo: p.error };
   const liberar = await aLiberarDe(env, orgId, t);
   return {
