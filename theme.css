@@ -172,7 +172,7 @@ h1,.h2,.ph h1,.prose h2,.cta-b h2,.login-card h1{font-weight:450;letter-spacing:
 .halo{margin:0;padding:clamp(16px,3vw,48px);border-radius:var(--rr);background:linear-gradient(135deg,#dbe6ff,#efe3ff 55%,#ffe7da);display:flex;flex-direction:column;gap:18px}
 .halo:nth-of-type(2){background:linear-gradient(135deg,#d8f5ec,#dbe9ff 55%,#efe3ff)}
 .halo:nth-of-type(3){background:linear-gradient(135deg,#fff1c9,#ffe0d6 50%,#dfe8ff)}
-.halo img{width:100%;border-radius:clamp(10px,1.4vw,20px);box-shadow:0 0 0 1px rgba(18,19,23,.06),0 30px 70px -20px rgba(18,19,23,.35)}
+.halo img{width:100%;height:auto;border-radius:clamp(10px,1.4vw,20px);box-shadow:0 0 0 1px rgba(18,19,23,.06),0 30px 70px -20px rgba(18,19,23,.35)}
 .halo figcaption{font-size:15px;color:var(--ink);opacity:.7}
 .halo-ph{align-items:center}
 .halo-ph .phones{justify-content:center;width:100%}
