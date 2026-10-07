@@ -19,7 +19,8 @@ cubre lo propio del sitio. Los detalles de cada función del servidor están en 
   (`/api/backup`); sync por sucursal (`/api/sync` + WebSocket); versiones y actualizaciones (`/api/update`,
   `scripts/publicar-release.mjs`, se conservan 2 por plataforma y canal); **Mercado Pago del negocio** (`/api/mp/*`:
   conectar por OAuth, terminal por sucursal, órdenes Point, imprimir en la terminal, cobros reales para el cierre y
-  registro de actividad); mails con Resend (`functions/_lib/mail_template.js`).
+  registro de actividad); **IA de Google del negocio** (`/api/ia/*`, 2026-10-07: el dueño carga la clave de Gemini una vez desde
+  su PC o celular, queda cifrada en `ia_claves` y todos los equipos del negocio piden a la IA por `/api/ia/generar` sin verla); mails con Resend (`functions/_lib/mail_template.js`).
 
 ## Cómo se trabaja
 
