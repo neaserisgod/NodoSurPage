@@ -85,7 +85,7 @@ await t('sin clave, sin dispositivo, con datos raros o sin suscripción se recha
   assert.equal((await post(ia.onRequestGenerar, env, '/api/ia/generar', pedido, pc)).status, 409, 'el negocio todavía no cargó la clave');
   assert.equal((await post(ia.onRequestGenerar, env, '/api/ia/generar', pedido, {})).status, 401, 'sin dispositivo');
   assert.equal((await get(ia.onRequestGet, env, '/api/ia/estado', {})).status, 401);
-  for (const malo of [{ clave: 'corta' }, { clave: 'con espacios y cosas raras 1234567890' }, { clave: CLAVE, modelo: '../../otra' }, {}]) {
+  for (const malo of [{ clave: 'corta' }, { clave: 'con espacios y cosas raras 1234567890' }, { clave: 'AIza-con-salto\r\nX-Otra: valor-123456' }, { clave: CLAVE, modelo: '../../otra' }, {}]) {
     assert.equal((await post(ia.onRequestClave, env, '/api/ia/clave', malo, pc)).status, 400, JSON.stringify(malo));
   }
   await post(ia.onRequestClave, env, '/api/ia/clave', { clave: CLAVE }, pc);
@@ -97,6 +97,15 @@ await t('sin clave, sin dispositivo, con datos raros o sin suscripción se recha
   const pc2 = await equipo(env2, n2, 'sd', 'duena@x.com', 'pc-duena-0123456789abcdefgh');
   await post(ia.onRequestClave, env2, '/api/ia/clave', { clave: CLAVE }, pc2);
   assert.notEqual((await post(ia.onRequestGenerar, env2, '/api/ia/generar', pedido, pc2)).status, 200, 'con la suscripción vencida no se usa la IA del negocio');
+});
+
+await t('acepta las claves de Google con el formato nuevo (con punto), no solo las "AIza…"', async () => {
+  const env = mkEnv(); const n = await negocio(env); const g = simular();
+  const pc = await equipo(env, n, 'sd', 'duena@x.com', 'pc-duena-0123456789abcdefgh');
+  const nueva = 'AQ.Ab8RN6KfalsaDePrueba_0123456789-abcdefghijklmnop';
+  assert.equal((await post(ia.onRequestClave, env, '/api/ia/clave', { clave: nueva, modelo: 'gemini-3.5-flash-lite' }, pc)).status, 200);
+  await post(ia.onRequestGenerar, env, '/api/ia/generar', { modelo: 'gemini-3.5-flash-lite', cuerpo: '{}' }, pc);
+  assert.equal(g.pedidos.at(-1).headers['x-goog-api-key'], nueva);
 });
 
 await t('el dueño la borra y deja de usarse', async () => {
