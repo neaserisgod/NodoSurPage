@@ -2,7 +2,7 @@
 
 Puerta de entrada para una sesión nueva (otra cuenta de Claude, otra persona). Actualizado al **2026-10-03**.
 
-**El contexto completo del proyecto está en el otro repo: `neaserisgod/P41---POS-` → `CONTEXTO.md`.** Ahí está el
+**El contexto completo del proyecto está en el otro repo: `neaserisgod/Nodo-Sur-Pos` → `CONTEXTO.md`.** Ahí está el
 sistema entero (PC, celular y este sitio), cómo trabaja el dueño, cómo se publica y qué quedó pendiente. Este archivo
 cubre lo propio del sitio. Los detalles de cada función del servidor están en `README.md`.
 
@@ -37,7 +37,7 @@ cubre lo propio del sitio. Los detalles de cada función del servidor están en 
 
 Mismo lenguaje que el POS: estilo antigravity.google (fondo blanco, bloques `#F3F4F7`, tinta `#121317`, pastillas,
 Figtree, poco texto). Home con `home.css`/`home.js`; páginas internas con `styles.css` + `theme.css`/`theme.js` +
-`fx.js`. Mocks del rediseño en `mocks/antigravity/` (no se publican). Detalle en `README.md` ("Rediseño del index").
+`fx.js`. Mocks del rediseño en `mocks/antigravity/` (no se publican). Las capturas del POS que muestra el sitio (`img/pos/*-v4.webp`, 2026-10-07) salen del mock v4 de la PC (`Nodo-Sur-Pos/docs/mock-pc/NodoSurPC-v4.html`) y de las capturas reales del celular (`flutter test test/companion/capturas_mock_test.dart`); `/img/*` tiene caché inmutable, así que una imagen nueva lleva nombre nuevo. Detalle en `README.md` ("Rediseño del index").
 
 ## Estado al 2026-10-03
 
@@ -45,7 +45,7 @@ Figtree, poco texto). Home con `home.css`/`home.js`; páginas internas con `styl
   reales para el cierre, actividad), herencia de lo del dueño a sus miembros (cuentas admin/eximidas = suscripción
   activa sin vencimiento), plantilla de mails, retención de 2 versiones, caché de 2 minutos del estado de pago y caché
   larga de `.js`/`.css` con huella.
-- Versiones del POS publicadas: Windows estable 1.0.0.2127 y Android estable 1.0.0+2128.
-- Pendiente que toca este repo (ver la lista completa en `P41---POS-/CONTEXTO.md`): webhooks de Mercado Pago (avisos de
+- Versiones del POS publicadas: no se anotan acá (quedan viejas); mirarlas en `/admin/` → Versiones o en la tabla `releases`.
+- Pendiente que toca este repo (ver la lista completa en `Nodo-Sur-Pos/CONTEXTO.md`): webhooks de Mercado Pago (avisos de
   pagos en vivo), devoluciones desde el POS y saldo real del negocio en el cierre. El MCP de Mercado Pago sirve para
   configurar webhooks de la app y leer documentación, no para ver la cuenta real.

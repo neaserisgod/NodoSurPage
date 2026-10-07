@@ -1,6 +1,6 @@
 # horsepos.com
 
-Sitio de Nodo Sur (sistema POS, bot de WhatsApp y páginas web) y servidor del POS. Sin build: los archivos de la raíz se publican tal cual. **Para retomar el trabajo, empezá por [`CONTEXTO.md`](./CONTEXTO.md)** (y el de `neaserisgod/P41---POS-`).
+Sitio de Nodo Sur (sistema POS, bot de WhatsApp y páginas web) y servidor del POS. Sin build: los archivos de la raíz se publican tal cual. **Para retomar el trabajo, empezá por [`CONTEXTO.md`](./CONTEXTO.md)** (y el de `neaserisgod/Nodo-Sur-Pos`).
 
 - Hosting: Cloudflare Worker con archivos estáticos (`wrangler.jsonc`), se publica al mezclar a `main`.
 - Dominio canónico: `https://horsepos.com`.
