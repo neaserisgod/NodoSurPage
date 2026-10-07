@@ -2,7 +2,7 @@
 
 > Sistema POS (de caja) y bot de WhatsApp para kioscos, almacenes y comercios chicos. Hecho en Bariloche, Río Negro, Argentina, por el dueño de un almacén que lo creó para su propio negocio y lo usa todos los días.
 
-- [Sistema POS](https://horsepos.com/sistema-pos/): ventas, cierre de caja, stock, proveedores y ganancia; varias ventas a la vez, promos, precios por proveedor con margen en vivo, cobro con QR/débito Point, turnos y empleados, fiado, fiambres por peso, punto de equilibrio. $ 35.000/mes, sin costo de alta.
+- [Sistema POS](https://horsepos.com/sistema-pos/): ventas, cierre de caja, stock, proveedores y ganancia; varias ventas a la vez, promos, precios por proveedor con margen en vivo, cobro con QR/débito/crédito Point, app para el celular, pagos y pedidos a proveedores, encargues con seña, turnos y empleados, fiado, fiambres por peso, punto de equilibrio. $ 35.000/mes, sin costo de alta.
 - [Bot de WhatsApp](https://horsepos.com/bot-whatsapp/): turnos, catálogo y pedidos, disponibilidad. $ 35.000/mes + alta $ 70.000.
 - [Diferencias](https://horsepos.com/diferencias-sistema-pos-y-bot-whatsapp/): sistema POS vs bot de WhatsApp.
 - [Guía para elegir un sistema POS](https://horsepos.com/como-elegir-sistema-pos-kiosco-almacen/)
