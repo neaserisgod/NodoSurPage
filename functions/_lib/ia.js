@@ -22,9 +22,11 @@ export const iaConfigurada = (env) => Boolean(env.DB && claveValida(env.BACKUP_K
 const b64 = (bytes) => { let s = ''; for (const b of bytes) s += String.fromCharCode(b); return btoa(s); };
 const unb64 = (s) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
 
-// Una clave de Google: letras, números, guion y guion bajo (las de AI Studio empiezan con "AIza" y tienen 39). Se acepta cualquier
-// largo razonable para no atarse a un formato que Google puede cambiar.
-export const claveConForma = (c) => typeof c === 'string' && /^[\w-]{20,200}$/.test(c);
+// Una clave de Google: las clásicas de AI Studio son "AIza…" (letras, números, guion y guion bajo), pero Google también entrega claves
+// con otro formato, con punto ("AQ.Ab8…"): el primer guardado real se rechazó por eso (El dueño, 2026-10-07). Se acepta cualquier texto
+// visible sin espacios, de largo razonable: va solo en un encabezado hacia Google, así que lo único que importa es que no pueda cortar
+// el encabezado (ni espacios, ni saltos de línea, ni caracteres de control).
+export const claveConForma = (c) => typeof c === 'string' && /^[\x21-\x7e]{20,300}$/.test(c);
 export const modeloConForma = (m) => typeof m === 'string' && /^[\w.-]{1,64}$/.test(m);
 
 export async function guardarClaveIa(env, orgId, { clave, modelo, sub }, t = now()) {
