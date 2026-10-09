@@ -60,5 +60,5 @@ export async function onRequestEscuchar({ request, env }) {
   if (acc.error || !acc.bajar) return denied(acc, 'no_download');
   const hub = await hubDeCuenta(env, scopeDeSync(a));
   // Pedido nuevo con solo lo necesario: la credencial del dispositivo no sigue viaje hacia el Durable Object.
-  return hub.fetch('https://hub/escuchar', { headers: { Upgrade: 'websocket', 'X-Dispositivo': a.device.id } });
+  return hub.fetch('https://hub/escuchar', { headers: { Upgrade: 'websocket', 'X-Dispositivo': a.device.id, ...(a.device.kind === 'bot' ? { 'X-Tipo': 'bot' } : {}) } });
 }

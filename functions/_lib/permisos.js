@@ -9,14 +9,16 @@
 export const ROLES = ['owner', 'manager', 'employee'];
 // `devolver`: devolverle plata a un cliente por Mercado Pago al anular una venta (etapa B, el dueño 2026-10-04: "dueño y
 // encargado"; un empleado anula, pero la devolución queda para ellos). Es de sucursal.
-export const ACCIONES = ['facturacion', 'miembros', 'sucursales', 'vincular_pc', 'transferir', 'descargar', 'copias', 'operar', 'vincular_celular', 'mercadopago', 'devolver'];
+// `configurar_bot`: cambiar la configuración del bot de WhatsApp de una sucursal y vincular el celular donde corre (El dueño,
+// 2026-10-09, `Nodo-Sur-Pos/docs/PLAN-BOT.md`). Dueño y encargado, como devolver: un empleado opera, pero no decide cómo atiende el bot.
+export const ACCIONES = ['facturacion', 'miembros', 'sucursales', 'vincular_pc', 'transferir', 'descargar', 'copias', 'operar', 'vincular_celular', 'mercadopago', 'devolver', 'configurar_bot'];
 
 const DE_NEGOCIO = new Set(['facturacion', 'miembros', 'sucursales', 'vincular_pc', 'transferir', 'mercadopago']);
 
 // Qué acciones permite cada rol. El dueño tiene todas.
 const POR_ROL = {
   owner: new Set(ACCIONES),
-  manager: new Set(['descargar', 'copias', 'operar', 'vincular_celular', 'devolver']),
+  manager: new Set(['descargar', 'copias', 'operar', 'vincular_celular', 'devolver', 'configurar_bot']),
   // El celular es personal: cada quien lo vincula con SU cuenta, en SU sucursal, y ahí queda su perfil (no hay selector).
   employee: new Set(['operar', 'vincular_celular']),
 };
