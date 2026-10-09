@@ -29,6 +29,7 @@ import * as mpConexion from './functions/api/mp/conexion.js';
 import * as mpOrden from './functions/api/mp/orden.js';
 import * as mpWebhook from './functions/api/mp/webhook.js';
 import * as ia from './functions/api/ia.js';
+import * as bot from './functions/api/bot.js';
 import * as devices from './functions/api/devices.js';
 import * as backup from './functions/api/backup.js';
 import * as backups from './functions/api/backups.js';
@@ -117,6 +118,14 @@ const ROUTES = {
   'GET /api/ia/estado': ia.onRequestGet,
   'POST /api/ia/clave': ia.onRequestClave,
   'POST /api/ia/generar': ia.onRequestGenerar,
+  'GET /api/bot/estado': bot.onRequestEstado,
+  'GET /api/bot/config': bot.onRequestConfigGet,
+  'POST /api/bot/config': bot.onRequestConfigPost,
+  'GET /api/bot/catalogo': bot.onRequestCatalogoGet,
+  'POST /api/bot/catalogo': bot.onRequestCatalogoPost,
+  'POST /api/bot/pedido': bot.onRequestPedidoPost,
+  'GET /api/bot/pedidos': bot.onRequestPedidosGet,
+  'POST /api/bot/pedido/resolver': bot.onRequestResolver,
   'POST /api/sync': sync.onRequestPost,
   'GET /api/sync': sync.onRequestGet,
   'GET /api/sync/escuchar': sync.onRequestEscuchar,

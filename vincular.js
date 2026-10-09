@@ -9,28 +9,34 @@
   // `tipo=celular`: lo abre la app del celular. Ahí no se vincula "la PC del dueño": cada persona (dueño, encargado o empleado)
   // entra con SU cuenta y el celular queda con su perfil, sin selector.
   var celular = q.get('tipo') === 'celular';
-  var name = (q.get('name') || (celular ? 'Mi celular' : 'Mi PC')).slice(0, 60);
+  // `tipo=bot`: lo abre el instalador del bot de WhatsApp (un celular con Termux). Lo vincula el dueño o un encargado.
+  var bot = q.get('tipo') === 'bot';
+  var name = (q.get('name') || (bot ? 'Bot de WhatsApp' : celular ? 'Mi celular' : 'Mi PC')).slice(0, 60);
   var valido = port >= 1024 && port <= 65535 && /^[A-Za-z0-9_-]{16,128}$/.test(state) && /^[A-Za-z0-9_-]{43}$/.test(challenge) && /^[A-Za-z0-9_-]{16,64}$/.test(device);
 
   function error(msg) { done(); var c = card('No se pudo vincular'); c.appendChild(el('p', 'acc-note', msg)); root.appendChild(c); }
   if (!valido) { error('El enlace no es válido. Volvé a abrir la vinculación desde la app.'); return; }
 
-  fetch('/api/device/whoami' + (celular ? '?tipo=celular' : ''), { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } }).then(function (r) {
+  fetch('/api/device/whoami' + (bot ? '?tipo=bot' : celular ? '?tipo=celular' : ''), { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } }).then(function (r) {
     if (r.status === 401) { location.replace('/ingresar/?next=' + encodeURIComponent(location.pathname + location.search)); return null; }
     return r.ok ? r.json() : Promise.reject();
   }).then(function (u) {
     if (!u) return;
     done();
     if (u.canLink === false) {
-      var nc = card(celular ? 'Todavía no tenés una sucursal asignada' : 'Solo el dueño puede vincular un dispositivo');
-      nc.appendChild(el('p', 'acc-note', celular
+      var nc = card(bot ? 'Solo el dueño o un encargado pueden vincular el bot' : celular ? 'Todavía no tenés una sucursal asignada' : 'Solo el dueño puede vincular un dispositivo');
+      nc.appendChild(el('p', 'acc-note', bot
+        ? 'Ingresaste como ' + u.email + ', que no es dueño ni encargado de un negocio en Nodo Sur. Entrá con la cuenta del dueño.'
+        : celular
         ? 'Ingresaste como ' + u.email + ', pero ese mail todavía no tiene una sucursal donde trabajar. Pedile al dueño que te la asigne en Mi negocio.'
         : 'Ingresaste como ' + u.email + ', que es parte de un negocio pero no es su dueño. Pedile al dueño que vincule el dispositivo con su cuenta.'));
       var na = el('a', 'btn btn-w', 'Ir a mi cuenta'); na.href = '/cuenta/'; nc.appendChild(na); root.appendChild(nc); return;
     }
     var orgs = u.orgs || [];
-    var c = card(celular ? '¿Entrar en este celular con tu cuenta?' : '¿Vincular este dispositivo a tu cuenta?');
-    c.appendChild(el('p', 'acc-note', celular
+    var c = card(bot ? '¿Vincular el bot de WhatsApp a tu negocio?' : celular ? '¿Entrar en este celular con tu cuenta?' : '¿Vincular este dispositivo a tu cuenta?');
+    c.appendChild(el('p', 'acc-note', bot
+      ? 'Vas a vincular «' + name + '» como el bot de WhatsApp de tu negocio, con la cuenta ' + u.email + '. Va a atender con la configuración que cargues en la app de Nodo Sur.'
+      : celular
       ? 'Vas a entrar en «' + name + '» como ' + (u.name || u.email) + ' (' + u.email + '). Lo que hagas desde este celular queda a tu nombre, y no se puede cambiar de perfil desde acá.'
       : 'Vas a vincular «' + name + '» con la cuenta ' + u.email + '. Desde ahí la app puede guardar copias de tu base y, si reinstalás, recuperarlas entrando con esta cuenta.'));
     // Si tiene más de un negocio o más de una sucursal, elige a cuál pertenece este dispositivo.
@@ -47,7 +53,9 @@
       if (orgs.length > 1 || orgs[0].branches.length > 1) {
         c.appendChild(frm);
         // La sincronización entre dispositivos es por sucursal: la PC y el celular tienen que quedar en la misma para verse.
-        c.appendChild(el('p', 'acc-note', 'Para que la PC y el celular se sincronicen entre sí, vinculá los dos a la misma sucursal.'));
+        c.appendChild(el('p', 'acc-note', bot
+          ? 'Elegí la sucursal que va a atender el bot: usa sus productos, sus precios y sus pedidos.'
+          : 'Para que la PC y el celular se sincronicen entre sí, vinculá los dos a la misma sucursal.'));
       }
     }
     c.appendChild(el('p', 'acc-note', 'Si no abriste esto desde la app de Nodo Sur POS (en tu PC o en tu celular), cerrá esta página.'));
@@ -59,7 +67,7 @@
     ok.addEventListener('click', function () {
       ok.disabled = true; ok.textContent = celular ? 'Entrando…' : 'Vinculando…'; msg.textContent = '';
       fetch('/api/device/authorize', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' },
-        body: JSON.stringify(Object.assign({ port: port, state: state, challenge: challenge, deviceId: device, name: name }, celular ? { tipo: 'celular' } : {},
+        body: JSON.stringify(Object.assign({ port: port, state: state, challenge: challenge, deviceId: device, name: name }, bot ? { tipo: 'bot' } : celular ? { tipo: 'celular' } : {},
           orgs.length ? { orgId: parseInt(selOrg ? selOrg.value : orgs[0].id, 10), branchId: parseInt(selBr.value, 10) } : {})) })
         .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
         .then(function (x) {

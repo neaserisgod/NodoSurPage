@@ -12,6 +12,8 @@ import { puede } from '../../_lib/permisos.js';
 // recibe el suyo, con su "Sucursal principal". Un encargado o un empleado no vinculan PC.
 // Un CELULAR (`tipo: 'celular'`) lo vincula cada miembro con SU cuenta, en una de SUS sucursales: así el celular sabe quién es
 // (no hay selector de perfil) y sincroniza la sucursal donde trabaja.
+// El BOT de WhatsApp (`tipo: 'bot'`, un celular con Termux; `Nodo-Sur-Pos/docs/PLAN-BOT.md`) lo vincula el dueño o un encargado
+// (`configurar_bot`), en una sucursal de un negocio que ya existe: vincular un bot no crea un negocio.
 export async function onRequestPost({ request, env }) {
   if (!sameOriginPost(request, env) || request.headers.get('X-Requested-With') !== 'fetch') return json({ error: 'forbidden' }, 403);
   const cu = await currentUser(request, env);
@@ -22,7 +24,11 @@ export async function onRequestPost({ request, env }) {
   const sub = cu.session.sub;
   await ensureOrgTables(env);
   const celular = b.tipo === 'celular';
-  const propios = await orgsWith(env, sub, celular ? 'vincular_celular' : 'vincular_pc');
+  const bot = b.tipo === 'bot';
+  // El bot se vincula con las mismas reglas que un celular (en una sucursal donde la persona tiene el permiso), pero con otro permiso.
+  const accion = bot ? 'configurar_bot' : celular ? 'vincular_celular' : 'vincular_pc';
+  const porSucursal = celular || bot;
+  const propios = await orgsWith(env, sub, accion);
   let org;
   if (b.orgId != null) {
     if (!Number.isInteger(b.orgId)) return json({ error: 'bad_request' }, 400);
@@ -30,7 +36,7 @@ export async function onRequestPost({ request, env }) {
     if (!elegido) return json({ error: 'forbidden' }, 403);
     org = elegido.org;
   } else if (propios.length) org = propios[0].org;
-  else if ((await membershipsOf(env, sub)).length) return json({ error: 'forbidden' }, 403); // es miembro de otro negocio, no dueña
+  else if (bot || (await membershipsOf(env, sub)).length) return json({ error: 'forbidden' }, 403); // es miembro de otro negocio, no dueña
   else {
     const personal = await ensurePersonalOrg(env, { sub, email: cu.session.email, name: cu.session.name });
     org = personal.org;
@@ -42,20 +48,20 @@ export async function onRequestPost({ request, env }) {
     if (!Number.isInteger(b.branchId)) return json({ error: 'bad_request' }, 400);
     branch = (await listBranches(env, org.id)).find((x) => x.id === b.branchId && x.active);
     if (!branch) return json({ error: 'bad_request' }, 400);
-  } else if (celular) {
+  } else if (porSucursal) {
     // Sin sucursal indicada: la primera activa de las suyas (el dueño, la principal).
     const m = (propios.find((o) => o.org.id === org.id) || {}).membership;
-    branch = m ? (await listBranches(env, org.id)).find((x) => x.active && puede(m, 'vincular_celular', x.id)) : await mainBranch(env, org.id);
+    branch = m ? (await listBranches(env, org.id)).find((x) => x.active && puede(m, accion, x.id)) : await mainBranch(env, org.id);
     if (!branch) return json({ error: 'forbidden' }, 403);
   } else branch = await mainBranch(env, org.id);
-  // Un celular solo se vincula a una sucursal donde la persona trabaja (el dueño, a cualquiera).
-  if (celular) {
+  // Un celular (o el bot) solo se vincula a una sucursal donde la persona trabaja (el dueño, a cualquiera).
+  if (porSucursal) {
     const m = (propios.find((o) => o.org.id === org.id) || {}).membership;
-    if (m && !puede(m, 'vincular_celular', branch.id)) return json({ error: 'forbidden' }, 403);
+    if (m && !puede(m, accion, branch.id)) return json({ error: 'forbidden' }, 403);
   }
   const code = await createDeviceCode(env, {
     sub, email: cu.session.email, deviceId: b.deviceId, name: cleanName(b.name), challenge: b.challenge, orgId: org.id, branchId: branch.id, personName: cu.session.name,
-    kind: celular ? 'celular' : 'pc',
+    kind: bot ? 'bot' : celular ? 'celular' : 'pc',
   });
   return json({ redirect: `http://127.0.0.1:${b.port}/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(b.state)}` });
 }
