@@ -31,9 +31,16 @@
     var dev = window.NS_DEVICE || { id: 'other', name: '' };
     var mine = null;
     d.releases.forEach(function (r) { if (!mine && r.platform === dev.id) mine = r; });
-    var rest = d.releases.filter(function (r) { return r !== mine; });
+    // En Android hay dos apps: la de almacén y Nodo Sur Servicios (turnos, con el bot adentro). Las dos al frente, cada una
+    // diciendo para quién es, así nadie baja la que no es.
+    var servicios = dev.id === 'android' ? d.releases.filter(function (r) { return r.platform === 'android-servicios'; })[0] : null;
+    var rest = d.releases.filter(function (r) { return r !== mine && r !== servicios; });
     if (mine) {
       root.appendChild(heroCard(mine, dev));
+      if (servicios) {
+        root.appendChild(el('p', 'dl-sep', '¿Das servicios con turno (uñas, peluquería, barbería)? Bajá esta otra:'));
+        root.appendChild(heroCard(servicios, dev));
+      }
     } else if (dev.id !== 'other' && d.releases.length) {
       root.appendChild(el('p', 'dl-detect', 'Estás en ' + dev.name + ' y todavía no hay una versión para ese dispositivo. Estas son las disponibles:'));
     }
@@ -88,14 +95,16 @@
   function heroCard(r, dev) {
     var n = NAMES[r.platform] || [r.platform, ''];
     var c = el('article', 'dl-hero');
-    c.appendChild(el('p', 'dl-detect on', 'Detectamos tu dispositivo: ' + dev.name));
-    c.appendChild(el('h2', null, 'Descargar para ' + n[0]));
+    var app = r.platform === 'android-servicios'; // una app, no un dispositivo: "Descargar Nodo Sur Servicios"
+    if (!app) c.appendChild(el('p', 'dl-detect on', 'Detectamos tu dispositivo: ' + dev.name));
+    c.appendChild(el('h2', null, (app ? 'Descargar ' : 'Descargar para ') + n[0]));
+    if (app) c.appendChild(el('p', 'acc-note', n[1]));
     var meta = el('div', 'dl-meta');
     meta.appendChild(el('span', null, 'Versión ' + r.version.split('+')[0]));
     meta.appendChild(el('span', null, mb(r.size)));
     meta.appendChild(el('span', null, 'Publicada el ' + date(r.publishedAt)));
     c.appendChild(meta);
-    var a = el('a', 'btn', 'Descargar para ' + n[0]);
+    var a = el('a', 'btn', (app ? 'Descargar ' : 'Descargar para ') + n[0]);
     a.href = '/api/download?platform=' + r.platform;
     c.appendChild(a);
     if (r.platform.indexOf('android') === 0) c.appendChild(el('p', 'dl-hint', 'Al abrir el archivo, Android puede pedirte permiso para instalar desde este navegador: aceptalo y seguí.'));
