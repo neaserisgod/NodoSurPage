@@ -95,7 +95,9 @@ export async function avisarSucursal(env, orgId, branchId, { titulo, cuerpo, dat
           token: d.token,
           notification: { title: titulo.slice(0, 100), body: cuerpo.slice(0, 300) },
           data: Object.fromEntries(Object.entries(datos).map(([k, v]) => [k, String(v)])),
-          android: { priority: 'high' },
+          // El canal de importancia alta que crea la app (`MainActivity.kt`): salta en pantalla con sonido, como WhatsApp. Una app
+          // anterior que no lo tiene usa el canal genérico de Firebase (solo en la barra).
+          android: { priority: 'high', notification: { channel_id: 'pedidos_turnos', notification_priority: 'PRIORITY_HIGH', default_sound: true, default_vibrate_timings: true } },
         } }),
       });
       if (r.ok) enviados++;

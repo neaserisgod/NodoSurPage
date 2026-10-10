@@ -85,6 +85,8 @@ await t('un turno nuevo del bot le llega al celular de la sucursal, firmado con 
   assert.equal(m.notification.title, '📅 Turno por WhatsApp (espera la seña)');
   assert.match(m.notification.body, /^Ana · Semipermanente · \S+ \d+ a las 10:00$/);
   assert.deepEqual(m.data, { tipo: 'turno', id: 'turno-0001-aaaa' });
+  assert.equal(m.android.notification.channel_id, 'pedidos_turnos', 'el canal que salta en pantalla');
+  assert.equal(m.android.priority, 'high');
   // El JWT: firmado con la clave de la cuenta, para el alcance de FCM.
   const [enc, cuerpo, firma] = google.jwt.split('.');
   const ok = await crypto.subtle.verify('RSASSA-PKCS1-v1_5', par.publicKey, Buffer.from(firma, 'base64url'), new TextEncoder().encode(`${enc}.${cuerpo}`));
