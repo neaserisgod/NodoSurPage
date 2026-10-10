@@ -15,8 +15,9 @@
   // ID de la aplicación de Mercado Pago "Nodo Sur POS" (no es secreto). El secreto va aparte: MP_CLIENT_SECRET, cargado en Cloudflare.
   "vars": { "MP_CLIENT_ID": "7309232869105658" },
   "observability": { "enabled": true },
-  // Limpieza diaria, 12:00 UTC (09:00 Argentina). Solo actúa si D1 y Mercado Pago están configurados.
-  "triggers": { "crons": ["0 12 * * *"] },
+  // Limpieza diaria, 12:00 UTC (09:00 Argentina; solo actúa si D1 y Mercado Pago están configurados), y cada 5 minutos el
+  // reintento de las notificaciones que no salieron (`functions/_lib/push.js`).
+  "triggers": { "crons": ["0 12 * * *", "*/5 * * * *"] },
   // Instaladores y actualizaciones del sistema POS (bucket privado; hay que crearlo antes en R2).
   "r2_buckets": [{ "binding": "RELEASES", "bucket_name": "nodosur-releases" }],
   // Aviso en vivo de la sync entre dispositivos: un Durable Object por cuenta, con WebSockets que hibernan (un
