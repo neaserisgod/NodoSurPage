@@ -12,6 +12,7 @@
 import { now } from './util.js';
 import { ensureMpTables, mpFetch } from './mp_conexion.js';
 import { hubReady, hubDeCuenta } from './sync.js';
+import { senaPagada, turnoDeReferencia } from './mp_servicios.js';
 
 export const TIPOS_AVISO = ['cobro', 'contracargo', 'reclamo'];
 export const TEMAS_AVISO = { payment: 'cobro', topic_chargebacks_wh: 'contracargo', topic_claims_integration_wh: 'reclamo' };
@@ -135,6 +136,10 @@ export async function procesarAvisoMp(env, { tema, id, userId }) {
   for (const orgId of await orgsDeCuenta(env, userId)) {
     const a = await cargarAviso(env, orgId, userId, tipo, String(id));
     if (!a) continue;
+    // La seña de un turno del bot (link de Nodo Sur Servicios): confirma el turno en vez de quedar como "cobro sin venta".
+    if (tipo === 'cobro' && turnoDeReferencia(a.referencia)) {
+      if (await senaPagada(env, orgId, { referencia: a.referencia, pagoId: a.pagoId, montoCentavos: a.montoCentavos })) { guardados++; continue; }
+    }
     const sucursal = await sucursalDeOrden(env, orgId, a);
     const fila = await guardarAviso(env, orgId, a, sucursal);
     if (!fila) continue;

@@ -2,7 +2,8 @@
   var root = document.getElementById('descargar');
   if (!root) return;
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
-  var NAMES = { windows: ['Windows', 'La versión para la compu del local.'], macos: ['macOS', 'Para Mac.'], linux: ['Linux', 'Para Linux.'], android: ['Android', 'La app para el celular.'] };
+  var NAMES = { windows: ['Windows', 'La versión para la compu del local.'], macos: ['macOS', 'Para Mac.'], linux: ['Linux', 'Para Linux.'], android: ['Android', 'La app para el celular.'],
+    'android-servicios': ['Nodo Sur Servicios', 'La app de turnos para Android, con el bot de WhatsApp adentro.'] };
   var MSG = {
     no_subscription: ['Todavía no tenés una suscripción activa.', 'La descarga está disponible para quienes ya tienen su suscripción. Elegí tu sistema y probalo 7 días sin costo.'],
     mp_error: ['No pudimos verificar tu suscripción en este momento.', 'Mercado Pago no respondió. Probá de nuevo en unos minutos.'],
@@ -30,9 +31,16 @@
     var dev = window.NS_DEVICE || { id: 'other', name: '' };
     var mine = null;
     d.releases.forEach(function (r) { if (!mine && r.platform === dev.id) mine = r; });
-    var rest = d.releases.filter(function (r) { return r !== mine; });
+    // En Android hay dos apps: la de almacén y Nodo Sur Servicios (turnos, con el bot adentro). Las dos al frente, cada una
+    // diciendo para quién es, así nadie baja la que no es.
+    var servicios = dev.id === 'android' ? d.releases.filter(function (r) { return r.platform === 'android-servicios'; })[0] : null;
+    var rest = d.releases.filter(function (r) { return r !== mine && r !== servicios; });
     if (mine) {
       root.appendChild(heroCard(mine, dev));
+      if (servicios) {
+        root.appendChild(el('p', 'dl-sep', '¿Das servicios con turno (uñas, peluquería, barbería)? Bajá esta otra:'));
+        root.appendChild(heroCard(servicios, dev));
+      }
     } else if (dev.id !== 'other' && d.releases.length) {
       root.appendChild(el('p', 'dl-detect', 'Estás en ' + dev.name + ' y todavía no hay una versión para ese dispositivo. Estas son las disponibles:'));
     }
@@ -87,17 +95,19 @@
   function heroCard(r, dev) {
     var n = NAMES[r.platform] || [r.platform, ''];
     var c = el('article', 'dl-hero');
-    c.appendChild(el('p', 'dl-detect on', 'Detectamos tu dispositivo: ' + dev.name));
-    c.appendChild(el('h2', null, 'Descargar para ' + n[0]));
+    var app = r.platform === 'android-servicios'; // una app, no un dispositivo: "Descargar Nodo Sur Servicios"
+    if (!app) c.appendChild(el('p', 'dl-detect on', 'Detectamos tu dispositivo: ' + dev.name));
+    c.appendChild(el('h2', null, (app ? 'Descargar ' : 'Descargar para ') + n[0]));
+    if (app) c.appendChild(el('p', 'acc-note', n[1]));
     var meta = el('div', 'dl-meta');
     meta.appendChild(el('span', null, 'Versión ' + r.version.split('+')[0]));
     meta.appendChild(el('span', null, mb(r.size)));
     meta.appendChild(el('span', null, 'Publicada el ' + date(r.publishedAt)));
     c.appendChild(meta);
-    var a = el('a', 'btn', 'Descargar para ' + n[0]);
+    var a = el('a', 'btn', (app ? 'Descargar ' : 'Descargar para ') + n[0]);
     a.href = '/api/download?platform=' + r.platform;
     c.appendChild(a);
-    if (r.platform === 'android') c.appendChild(el('p', 'dl-hint', 'Al abrir el archivo, Android puede pedirte permiso para instalar desde este navegador: aceptalo y seguí.'));
+    if (r.platform.indexOf('android') === 0) c.appendChild(el('p', 'dl-hint', 'Al abrir el archivo, Android puede pedirte permiso para instalar desde este navegador: aceptalo y seguí.'));
     var det = el('details'); det.appendChild(el('summary', null, 'Verificar la descarga'));
     var p = el('p', 'acc-note', 'SHA-256: '); var code = el('code', null, r.sha256); code.style.overflowWrap = 'anywhere'; p.appendChild(code); det.appendChild(p);
     c.appendChild(det);
@@ -109,7 +119,7 @@
     var n = NAMES[r.platform] || [r.platform, ''];
     var c = el('article', 'acc dl' + (beta ? ' beta' : ''));
     var head = el('div', 'dl-h');
-    var ic = el('span', 'dl-ic'); ic.setAttribute('aria-hidden', 'true'); ic.innerHTML = ICON[r.platform] || ICON.linux;
+    var ic = el('span', 'dl-ic'); ic.setAttribute('aria-hidden', 'true'); ic.innerHTML = ICON[r.platform] || (r.platform.indexOf('android') === 0 ? ICON.android : ICON.linux);
     head.appendChild(ic);
     var t = el('div'); t.appendChild(el('h2', null, n[0])); t.appendChild(el('p', 'dl-sub', n[1])); head.appendChild(t);
     if (beta) head.appendChild(el('span', 'chip wait', 'Versión de prueba'));

@@ -124,4 +124,28 @@ await t('lo raro no entra; cada sucursal ve lo suyo; sin plan con bot, nada', as
   assert.equal((await post(bot.onRequestTurnoPost, x.env, '/api/bot/turno', turno('turno-0001-aaaa'), x.robot)).status, 403);
 });
 
+
+await t('la app Nodo Sur Servicios pide el token de su bot sin navegador; repetir renueva el mismo; un id ajeno no', async () => {
+  const { env, app, robot } = await armar();
+  const pedir = (body, h = app) => post(bot.onRequestTokenPost, env, '/api/bot/token', body, h);
+  const r = await pedir({ deviceId: 'bot-enlaapp-0123456789abcdef' });
+  assert.equal(r.status, 200);
+  const j = await r.json();
+  assert.ok(j.token); assert.equal(j.deviceId, 'bot-enlaapp-0123456789abcdef');
+  const d = env.DB.raw.prepare('SELECT * FROM devices WHERE id = ?').get('bot-enlaapp-0123456789abcdef');
+  assert.equal(d.kind, 'bot'); assert.equal(d.owner_sub, 'sd');
+  // Con ese token el bot ya opera como cualquier bot vinculado.
+  const comoBot = { Authorization: `Bearer ${j.token}` };
+  assert.equal((await post(bot.onRequestTurnoPost, env, '/api/bot/turno', turno('turno-enapp-0001'), comoBot)).status, 201);
+  assert.equal((await pedir({ deviceId: 'bot-enlaapp-0123456789abcdef' })).status, 200, 'renovar');
+  assert.equal(env.DB.raw.prepare("SELECT COUNT(*) AS n FROM devices WHERE kind = 'bot'").get().n, 3, 'no crea otro');
+  assert.equal((await pedir({ deviceId: 'cel-caro-0123456789abcdefgh' })).status, 403, 'el id de un celular');
+  assert.equal((await pedir({ deviceId: 'corto' })).status, 400);
+  assert.equal((await pedir({ deviceId: 'bot-otro-0123456789abcdefg' }, robot)).status, 403, 'un bot no pide tokens');
+});
+
+await t('sin el plan con bot no hay token', async () => {
+  const { env, app } = await armar(PLAN_POS);
+  assert.equal((await post(bot.onRequestTokenPost, env, '/api/bot/token', { deviceId: 'bot-enlaapp-0123456789abcdef' }, app)).status, 403);
+});
 console.log(`\n${pass} pruebas de turnos del bot OK`);

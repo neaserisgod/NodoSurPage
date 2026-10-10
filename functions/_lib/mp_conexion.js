@@ -254,7 +254,7 @@ export async function crearOrden(env, orgId, branchId, { externalReference, idem
 }
 
 // Anotar nunca rompe un cobro: si falla, el cobro sigue y la app se entera igual consultando.
-async function anotarOrden(env, { orderId, orgId, branchId, externalReference, estado }, t) {
+export async function anotarOrden(env, { orderId, orgId, branchId, externalReference, estado }, t) {
   try {
     await env.DB.prepare(
       `INSERT INTO mp_ordenes (order_id, org_id, branch_id, external_reference, estado, creado, actualizado) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6)
