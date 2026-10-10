@@ -1,5 +1,6 @@
 import { json, now } from '../../_lib/util.js';
 import { avisosDe } from '../../_lib/mp_avisos.js';
+import { crearOrdenQrPantalla, devolverSena } from '../../_lib/mp_servicios.js';
 import { pedirSaldo, estadoSaldo, MAX_RANGO_SALDO } from '../../_lib/mp_saldo.js';
 import { actorOf } from '../../_lib/actor.js';
 import { hasDB } from '../../_lib/db.js';
@@ -36,16 +37,20 @@ const salida = (r) => {
   // MISMA clave de idempotencia.
   if (r.status >= 500) return json({ error: 'mp_sin_respuesta', status: r.status, mensaje: detalleError(r.j) }, 504);
   if (r.status < 200 || r.status >= 300) return json({ error: 'mp_rechazo', status: r.status, mensaje: detalleError(r.j) }, r.status === 404 ? 404 : 502);
-  return json({ id: r.j.id ? String(r.j.id) : null, status: r.j.status || null, statusDetail: r.j.status_detail || null });
+  // QR en la pantalla (Nodo Sur Servicios): la trama EMVCo que la app dibuja como QR.
+  const qrData = r.j.type_response && typeof r.j.type_response.qr_data === 'string' ? r.j.type_response.qr_data : null;
+  return json({ id: r.j.id ? String(r.j.id) : null, status: r.j.status || null, statusDetail: r.j.status_detail || null, ...(qrData ? { qrData } : {}) });
 };
 
-// Crear la orden. Cuerpo: { externalReference, idempotencyKey, montoCentavos, canal: 'qr' | 'debit_card' | 'credit_card' (1 pago) }.
+// Crear la orden. Cuerpo: { externalReference, idempotencyKey, montoCentavos, canal: 'qr' | 'debit_card' | 'credit_card' (1 pago)
+// | 'qr_pantalla' (QR dinámico para mostrar en el celular: la respuesta trae `qrData`) }.
 export async function onRequestPost({ request, env }) {
   const w = await quien(request, env); if (w.error) return w.error;
   const b = await readJson(request);
   if (!b || typeof b.externalReference !== 'string' || !/^[\w-]{1,64}$/.test(b.externalReference) || typeof b.idempotencyKey !== 'string' || !/^[\w-]{8,64}$/.test(b.idempotencyKey)
-    || !Number.isInteger(b.montoCentavos) || b.montoCentavos < 100 || b.montoCentavos > 1e10 || !CANALES.includes(b.canal)) return json({ error: 'bad_request' }, 400);
-  const r = await crearOrden(env, w.orgId, w.branchId, b);
+    || !Number.isInteger(b.montoCentavos) || b.montoCentavos < 100 || b.montoCentavos > 1e10 || !(CANALES.includes(b.canal) || b.canal === 'qr_pantalla')) return json({ error: 'bad_request' }, 400);
+  // 'qr_pantalla': el QR lo muestra el celular (Nodo Sur Servicios, sin terminal), no la Point.
+  const r = b.canal === 'qr_pantalla' ? await crearOrdenQrPantalla(env, w.orgId, w.branchId, b) : await crearOrden(env, w.orgId, w.branchId, b);
   await registrarActividad(env, w, { accion: 'orden', canal: b.canal, montoCentavos: b.montoCentavos, referencia: b.externalReference, r });
   return salida(r);
 }
@@ -149,4 +154,17 @@ export async function onRequestSaldo({ request, env }) {
   const r = await estadoSaldo(env, w.orgId, id);
   if (r.error) return json({ error: r.error, status: r.http ?? null }, r.status);
   return json(r);
+}
+
+// POST /api/mp/sena/devolver (Nodo Sur Servicios): `{ turnoId }`. Devuelve por Mercado Pago la seña que la clienta pagó con el link
+// del bot; la dueña lo confirmó en la app. Reintentar no devuelve dos veces.
+export async function onRequestDevolverSena({ request, env }) {
+  const w = await quien(request, env); if (w.error) return w.error;
+  const b = await readJson(request);
+  if (!b || typeof b.turnoId !== 'string' || !/^[A-Za-z0-9_-]{8,64}$/.test(b.turnoId)) return json({ error: 'bad_request' }, 400);
+  const r = await devolverSena(env, w.orgId, w.branchId, b.turnoId);
+  await registrarActividad(env, w, { accion: 'devolver_sena', referencia: b.turnoId, montoCentavos: r.centavos ?? null, r: { status: r.ok ? 200 : (r.status || 409), j: r } });
+  if (r.ok) return json({ ok: true, centavos: r.centavos });
+  const codigos = { no_existe: 404, sin_sena_mp: 409, mp_sin_respuesta: 504, mp_rechazo: 502 };
+  return json({ error: r.error }, codigos[r.error] || 502);
 }

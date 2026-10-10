@@ -111,6 +111,7 @@ const ROUTES = {
   'GET /api/mp/orden': mpOrden.onRequestGet,
   'POST /api/mp/orden/cancelar': mpOrden.onRequestCancelar,
   'POST /api/mp/orden/devolver': mpOrden.onRequestDevolver,
+  'POST /api/mp/sena/devolver': mpOrden.onRequestDevolverSena,
   'POST /api/mp/imprimir': mpOrden.onRequestImprimir,
   'GET /api/mp/cobros': mpOrden.onRequestCobros,
   'GET /api/mp/avisos': mpOrden.onRequestAvisos,

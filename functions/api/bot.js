@@ -16,6 +16,7 @@ import {
   anotarLector, pedidoConGramosPermitido, pedidoTieneGramos,
 } from '../_lib/bot.js';
 import { avisarConReintento, cuandoTexto } from '../_lib/push.js';
+import { linkDeSena } from '../_lib/mp_servicios.js';
 import { upsertDevice, signDeviceToken, getDevice, validDeviceId, DEVICE_TTL } from '../_lib/devices.js';
 import { turnoDesdeBot, reservarTurno, ocupadosDesdeApp, publicarOcupados, cambiarTurno, turnosDesde, turnoIdValido, horarioValido, ESTADOS_TURNO } from '../_lib/bot_turnos.js';
 
@@ -168,7 +169,13 @@ export async function onRequestTurnoPost({ request, env, ctx }) {
       datos: { tipo: 'turno', id: turno.turnoId },
     }));
   }
-  return json({ ok: true, id: turno.turnoId, repetido: res.repetido }, res.repetido ? 200 : 201);
+  // La seña por link de Mercado Pago (Nodo Sur Servicios): el bot se la manda a la clienta. Sin Mercado Pago conectado no hay link y
+  // el bot sigue con el alias. Si falla, el turno queda reservado igual.
+  let sena = null;
+  if (turno.estado === 'esperando_sena') {
+    try { sena = await linkDeSena(env, w.orgId, w.branchId, turno.turnoId); } catch (e) { console.error('link_sena', e && e.message); }
+  }
+  return json({ ok: true, id: turno.turnoId, repetido: res.repetido, ...(sena ? { sena } : {}) }, res.repetido ? 200 : 201);
 }
 
 // POST /api/bot/turno/cambio (la app o el bot): `{ id, estado?, inicio?, fin? }`. La app mueve, cancela, cobra o marca "no vino" un
