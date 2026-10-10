@@ -15,7 +15,7 @@ import {
   pedidoDesdeBot, crearPedido, pedidosDesde, resolverPedido, avisarBot, botsDeSucursal, MAX_CONFIG_BYTES,
   anotarLector, pedidoConGramosPermitido, pedidoTieneGramos,
 } from '../_lib/bot.js';
-import { avisarSucursal, cuandoTexto } from '../_lib/push.js';
+import { avisarConReintento, cuandoTexto } from '../_lib/push.js';
 import { turnoDesdeBot, reservarTurno, ocupadosDesdeApp, publicarOcupados, cambiarTurno, turnosDesde, turnoIdValido, horarioValido, ESTADOS_TURNO } from '../_lib/bot_turnos.js';
 
 // Lo más grande que se acepta: un catálogo de 5.000 productos entra holgado en 1 MB.
@@ -112,7 +112,7 @@ export async function onRequestPedidoPost({ request, env, ctx }) {
     await esperar(ctx, avisarBot(env, w.orgId, w.branchId, { para: 'equipos', aviso: { pedido: p.id } }));
     // Con la app cerrada también: la notificación del celular (si el negocio configuró Firebase).
     const d = pedido.datos;
-    await esperar(ctx, avisarSucursal(env, w.orgId, w.branchId, {
+    await esperar(ctx, avisarConReintento(env, w.orgId, w.branchId, `pedido:${p.id}`, {
       titulo: '🛒 Pedido por WhatsApp',
       cuerpo: `${d.cliente.nombre}: ${d.items.map((x) => (x.gramos ? `${x.gramos} g ${x.nombre}` : `${x.cantidad} × ${x.nombre}`)).join(', ')}`,
       datos: { tipo: 'pedido', id: p.id },
@@ -161,7 +161,7 @@ export async function onRequestTurnoPost({ request, env, ctx }) {
   if (res.ocupado) return json({ error: 'ocupado' }, 409);
   if (!res.repetido) {
     await esperar(ctx, avisarBot(env, w.orgId, w.branchId, { para: 'equipos', aviso: { turno: turno.turnoId } }));
-    await esperar(ctx, avisarSucursal(env, w.orgId, w.branchId, {
+    await esperar(ctx, avisarConReintento(env, w.orgId, w.branchId, `turno:${turno.turnoId}`, {
       titulo: turno.estado === 'esperando_sena' ? '📅 Turno por WhatsApp (espera la seña)' : '📅 Turno por WhatsApp',
       cuerpo: `${turno.datos.cliente.nombre} · ${turno.datos.servicio.nombre} · ${cuandoTexto(turno.inicio)}`,
       datos: { tipo: 'turno', id: turno.turnoId },

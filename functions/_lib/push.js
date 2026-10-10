@@ -5,6 +5,9 @@
 //  * Para mandar, el Worker firma un JWT con la cuenta de servicio del proyecto de Firebase (secreto `FCM_SERVICE_ACCOUNT`, el JSON
 //    entero) y lo cambia por un token de acceso de Google, que dura una hora y se reusa.
 //  * Sin el secreto no hace nada: el resto anda igual (la app ve los pedidos al abrirse).
+//  * Si un aviso no le llega a ningún celular (Google caído, ningún token, un error nuestro), queda en `push_pendientes` y el cron
+//    de cada 5 minutos lo reintenta mientras el pedido o el turno sigan sin resolver, cada vez más espaciado y hasta 24 horas
+//    (`avisarConReintento`, `reintentarAvisos`). El pedido o el turno en sí nunca se pierden: la app los ve al abrirse.
 //
 // Nunca tira: una notificación que no sale no puede frenar un pedido ni un turno.
 import { now, once } from './util.js';
@@ -13,6 +16,11 @@ const DDL = [
   `CREATE TABLE IF NOT EXISTS push_tokens (device_id TEXT PRIMARY KEY, org_id INTEGER NOT NULL, branch_id INTEGER NOT NULL,
      token TEXT NOT NULL, updated_at INTEGER NOT NULL)`,
   `CREATE INDEX IF NOT EXISTS idx_push_tokens_sucursal ON push_tokens(org_id, branch_id)`,
+  // `clave`: 'pedido:<id>' o 'turno:<turno_id>' (de qué es el aviso, para saber si sigue sin resolver). Tiempos en segundos.
+  `CREATE TABLE IF NOT EXISTS push_pendientes (id INTEGER PRIMARY KEY AUTOINCREMENT, org_id INTEGER NOT NULL, branch_id INTEGER NOT NULL,
+     clave TEXT NOT NULL, aviso TEXT NOT NULL, intentos INTEGER NOT NULL, creado INTEGER NOT NULL, proximo INTEGER NOT NULL,
+     UNIQUE (org_id, branch_id, clave))`,
+  `CREATE INDEX IF NOT EXISTS idx_push_pendientes_proximo ON push_pendientes(proximo)`,
 ];
 export const ensurePushTables = (env) => once(env, 'push', async () => { for (const sql of DDL) await env.DB.prepare(sql).run(); });
 
@@ -107,4 +115,62 @@ export function cuandoTexto(ms) {
   const f = new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', weekday: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: false });
   const p = Object.fromEntries(f.formatToParts(new Date(ms)).map((x) => [x.type, x.value]));
   return `${p.weekday} ${p.day} a las ${p.hour}:${p.minute}`;
+}
+
+// --- Reintentos -----------------------------------------------------------------------------------------------------------
+export const VIDA_PENDIENTE = 24 * 3600;
+export const MAX_INTENTOS = 30;
+// Espera antes del intento n (1 = el primero que reintenta el cron): 5, 10, 15… minutos, y nunca más de una hora.
+export const esperaReintento = (intentos) => Math.min(intentos * 5, 60) * 60;
+
+// Manda el aviso y, si no le llegó a ningún celular, lo deja para reintentar. Sin el secreto no hace nada (no hay a quién reintentar).
+export async function avisarConReintento(env, orgId, branchId, clave, aviso, t = now()) {
+  if (!cuentaDeServicio(env)) return 0;
+  const enviados = await avisarSucursal(env, orgId, branchId, aviso);
+  if (enviados > 0) return enviados;
+  try {
+    await ensurePushTables(env);
+    await env.DB.prepare(
+      `INSERT INTO push_pendientes (org_id, branch_id, clave, aviso, intentos, creado, proximo) VALUES (?1, ?2, ?3, ?4, 1, ?5, ?6)
+       ON CONFLICT(org_id, branch_id, clave) DO NOTHING`
+    ).bind(orgId, branchId, clave, JSON.stringify(aviso), t, t + esperaReintento(1)).run();
+  } catch (e) { console.error('push_pendiente', e && e.message); }
+  return 0;
+}
+
+// Si lo que avisa sigue sin resolver: un pedido por confirmar, o un turno que todavía ocupa su horario y no empezó.
+async function sigueSinResolver(env, f, tMs) {
+  const [tipo, id] = [f.clave.slice(0, f.clave.indexOf(':')), f.clave.slice(f.clave.indexOf(':') + 1)];
+  if (tipo === 'pedido') {
+    const p = await env.DB.prepare('SELECT estado FROM bot_pedidos WHERE id = ?1 AND org_id = ?2 AND branch_id = ?3').bind(Number(id), f.org_id, f.branch_id).first();
+    return Boolean(p && p.estado === 'por_confirmar');
+  }
+  if (tipo === 'turno') {
+    const x = await env.DB.prepare('SELECT estado, inicio FROM bot_turnos WHERE turno_id = ?1 AND org_id = ?2 AND branch_id = ?3').bind(id, f.org_id, f.branch_id).first();
+    return Boolean(x && ['esperando_sena', 'confirmado'].includes(x.estado) && x.inicio > tMs);
+  }
+  return false;
+}
+
+// Lo corre el cron cada 5 minutos. Devuelve cuántos avisos salieron ahora.
+export async function reintentarAvisos(env, t = now()) {
+  if (!cuentaDeServicio(env)) return 0;
+  await ensurePushTables(env);
+  await env.DB.prepare('DELETE FROM push_pendientes WHERE creado < ?1 OR intentos > ?2').bind(t - VIDA_PENDIENTE, MAX_INTENTOS).run();
+  const filas = (await env.DB.prepare('SELECT * FROM push_pendientes WHERE proximo <= ?1 ORDER BY proximo LIMIT 50').bind(t).all()).results;
+  let enviados = 0;
+  for (const f of filas) {
+    if (!(await sigueSinResolver(env, f, t * 1000))) {
+      await env.DB.prepare('DELETE FROM push_pendientes WHERE id = ?1').bind(f.id).run();
+      continue;
+    }
+    const n = await avisarSucursal(env, f.org_id, f.branch_id, JSON.parse(f.aviso));
+    if (n > 0) {
+      enviados += n;
+      await env.DB.prepare('DELETE FROM push_pendientes WHERE id = ?1').bind(f.id).run();
+    } else {
+      await env.DB.prepare('UPDATE push_pendientes SET intentos = intentos + 1, proximo = ?2 WHERE id = ?1').bind(f.id, t + esperaReintento(f.intentos + 1)).run();
+    }
+  }
+  return enviados;
 }

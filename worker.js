@@ -22,6 +22,7 @@ import * as deviceWhoami from './functions/api/device/whoami.js';
 import * as deviceAuthorize from './functions/api/device/authorize.js';
 import * as deviceToken from './functions/api/device/token.js';
 import * as devicePing from './functions/api/device/ping.js';
+import { reintentarAvisos } from './functions/_lib/push.js';
 import * as devicePush from './functions/api/device/push.js';
 import * as deviceMe from './functions/api/device/me.js';
 import * as deviceTeam from './functions/api/device/team.js';
@@ -148,6 +149,9 @@ const ROUTES = {
 };
 const NO_STORE = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' };
 
+// Debe coincidir con `triggers.crons` de wrangler.jsonc.
+const CRON_AVISOS = '*/5 * * * *';
+
 export default {
   async fetch(request, env, ctx) {
     const url = new URL(request.url);
@@ -171,8 +175,13 @@ export default {
   },
 
   // Cron diario: avisa y limpia cuentas inactivas sin suscripción (apagado por defecto, ver README).
-  async scheduled(_event, env, ctx) {
+  async scheduled(event, env, ctx) {
     if (!hasDB(env)) return;
+    // Cada 5 minutos solo se reintentan las notificaciones que no llegaron (sin secreto de Firebase, ni toca la base).
+    if (event && event.cron === CRON_AVISOS) {
+      ctx.waitUntil(reintentarAvisos(env).catch((e) => console.error('push_reintento', e && e.message)));
+      return;
+    }
     // Completa el negocio y la sucursal de lo que se vinculó/subió antes del modelo de negocios (idempotente).
     ctx.waitUntil(backfillOrgs(env).then((r) => (r.orgsCreadas || r.filasActualizadas) && console.log(`backfill_negocios:${r.orgsCreadas}:${r.filasActualizadas}`)).catch((e) => console.error('backfill_error', e && e.message)));
     if (!env.MP_ACCESS_TOKEN) return;
