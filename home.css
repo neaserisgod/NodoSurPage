@@ -204,7 +204,8 @@ header.px.lifted .nav{background:rgba(255,255,255,.88);box-shadow:inset 0 0 0 1p
 .plan.hl .price span,.plan.hl .alta{color:#aab1c2}
 .plan.hl .btn{background:#fff;color:var(--ink)}
 .plan.hl li svg{stroke:#6ff0d3}
-@media (min-width:900px){.plans{grid-template-columns:repeat(3,1fr)}}
+@media (min-width:700px){.plans{grid-template-columns:repeat(2,1fr)}}
+@media (min-width:1180px){.plans{grid-template-columns:repeat(4,1fr)}}
 .paynote{margin-top:28px;text-align:center;font-size:16px;color:var(--mute)}
 .found{margin-top:28px;padding:clamp(24px,3vw,40px);border-radius:var(--r);background:linear-gradient(120deg,#eef0ff,#e9f8f3);display:flex;flex-direction:column;gap:10px}
 .found[hidden]{display:none}

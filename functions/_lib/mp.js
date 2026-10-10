@@ -7,9 +7,11 @@ export const PLANS = {
   '6fe282d944ef4c018cb7904ce9e122f8': 'Sistema POS',
   '7652202c076c4cc180c72ade28d52924': 'Sistema + Bot',
   'e37aac4650334685873aa8e3920de4c0': 'Solo el bot',
+  // Nodo Sur Servicios con el bot adentro (El dueño, 2026-10-10, `Nodo-Sur-Pos/docs/PLAN-APP-SERVICIOS.md`).
+  'd28fa6d60f614b8c9a16bfc78ac31f0c': 'Emprendedor',
 };
 // Los planes que incluyen el bot de WhatsApp (por nombre, que es como `mapSub` devuelve el plan de cada suscripción).
-export const PLANES_CON_BOT = new Set([PLANS['7652202c076c4cc180c72ade28d52924'], PLANS['e37aac4650334685873aa8e3920de4c0']]);
+export const PLANES_CON_BOT = new Set([PLANS['7652202c076c4cc180c72ade28d52924'], PLANS['e37aac4650334685873aa8e3920de4c0'], PLANS['d28fa6d60f614b8c9a16bfc78ac31f0c']]);
 
 async function mp(env, path, init = {}) {
   const go = () => fetchConPlazo(API + path, {

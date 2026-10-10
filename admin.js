@@ -7,7 +7,7 @@
   var ago = function (s) { var d = Math.floor((Date.now() / 1000 - s) / 86400); return d <= 0 ? 'hoy' : d === 1 ? 'ayer' : 'hace ' + d + ' días'; };
   var ST = { authorized: ['Activa', 'ok'], pending: ['Pendiente', 'wait'], paused: ['Pausada', 'wait'], cancelled: ['Cancelada', 'bad'], canceled: ['Cancelada', 'bad'] };
   var HDR = { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' };
-  var PLAN_NAMES = { pos: 'Sistema POS', 'pos-bot': 'Sistema + Bot', bot: 'Solo el bot' };
+  var PLAN_NAMES = { pos: 'Sistema POS', 'pos-bot': 'Sistema + Bot', bot: 'Solo el bot', emprendedor: 'Emprendedor' };
   var ACTIVE = { authorized: 1, paused: 1, pending: 1 };
   var target = null, bajaTarget = null, cobroTarget = null;
 

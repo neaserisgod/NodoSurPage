@@ -13,6 +13,9 @@ export const PLAN_CATALOG = {
     href: 'https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=7652202c076c4cc180c72ade28d52924', promoHref: '' },
   bot: { nombre: 'Solo el bot', precio: 35000, promo: 24500, alta: true,
     href: 'https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=e37aac4650334685873aa8e3920de4c0', promoHref: '' },
+  // Nodo Sur Servicios (turnos) con el bot de WhatsApp adentro de la app: sin alta, se instala sola (El dueño, 2026-10-10).
+  emprendedor: { nombre: 'Emprendedor', precio: 18000, promo: 12600, alta: false,
+    href: 'https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=d28fa6d60f614b8c9a16bfc78ac31f0c', promoHref: '' },
 };
 
 export const isPlan = (k) => typeof k === 'string' && Object.hasOwn(PLAN_CATALOG, k);
