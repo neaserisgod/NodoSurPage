@@ -6,7 +6,7 @@ import { isPlan, checkoutTarget, ALTA_URL } from '../_lib/plans.js';
 const go = (location) => new Response(null, { status: 302, headers: { Location: location, 'Cache-Control': 'no-store' } });
 
 // Único camino para pagar: exige sesión. Sin sesión, recuerda el plan y manda a ingresar con Google.
-//   /api/checkout?plan=pos|pos-bot|bot[&promo=1]     -> suscripción (o WhatsApp si es precio de fundador)
+//   /api/checkout?plan=pos|pos-bot|bot|emprendedor[&promo=1]     -> suscripción (o WhatsApp si es precio de fundador)
 //   /api/checkout?item=alta&plan=pos-bot|bot         -> alta única del bot
 export async function onRequestGet({ request, env }) {
   const site = siteUrl(env);
