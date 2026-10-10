@@ -97,6 +97,15 @@ await t('un turno nuevo del bot le llega al celular de la sucursal, firmado con 
   assert.equal(google.tokens, 1, 'un solo token de acceso para los dos');
 });
 
+await t('un celular vinculado antes de que los equipos tuvieran tipo (kind NULL) también recibe', async () => {
+  const { env, cel, robot } = await armar();
+  await post(push.onRequestPost, env, '/api/device/push', { token: TOKEN_FCM }, cel);
+  env.DB.raw.prepare("UPDATE devices SET kind = NULL WHERE id = 'cel-caro-0123456789abcdefgh'").run();
+  await post(bot.onRequestPedidoPost, env, '/api/bot/pedido', { id: 'pedido-0002-abcd', cliente: { nombre: 'Sofi', telefono: '5492944555555' }, items: [{ nombre: 'Coca', cantidad: 1 }] }, robot);
+  assert.equal(google.enviados.length, 1);
+  assert.equal(google.enviados[0].token, TOKEN_FCM);
+});
+
 await t('un token que FCM ya no reconoce se borra; sin el secreto no se manda nada', async () => {
   const { env, cel, robot } = await armar();
   await post(push.onRequestPost, env, '/api/device/push', { token: TOKEN_FCM }, cel);
