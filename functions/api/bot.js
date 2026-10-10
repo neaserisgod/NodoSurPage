@@ -13,6 +13,7 @@ import { syncAccess } from '../_lib/sync.js';
 import {
   botConfigurado, tieneBot, configValida, leerConfig, guardarConfig, itemsDeCatalogo, guardarCatalogo, leerCatalogo,
   pedidoDesdeBot, crearPedido, pedidosDesde, resolverPedido, avisarBot, botsDeSucursal, MAX_CONFIG_BYTES,
+  anotarLector, pedidoConGramosPermitido, pedidoTieneGramos,
 } from '../_lib/bot.js';
 
 // Lo más grande que se acepta: un catálogo de 5.000 productos entra holgado en 1 MB.
@@ -94,24 +95,29 @@ export async function onRequestCatalogoGet({ request, env }) {
   return json(await leerCatalogo(env, w.orgId, w.branchId));
 }
 
-// POST /api/bot/pedido (el bot): `{ id, cliente: { nombre, telefono }, items: [{ gid?, nombre, cantidad, precioCentavos? }], nota? }`.
-// Entra "por confirmar" y despierta a la app. Reintentar con el mismo `id` no lo duplica.
+// POST /api/bot/pedido (el bot): `{ id, cliente: { nombre, telefono }, items: [{ gid?, nombre, cantidad | gramos, precioCentavos? }],
+// nota? }`. Entra "por confirmar" y despierta a la app. Reintentar con el mismo `id` no lo duplica. Con gramos, solo si las apps de la
+// sucursal los entienden (`pedidoConGramosPermitido`); si no, 400 `gramos_no_soportado` y el bot lo manda por WhatsApp.
 export async function onRequestPedidoPost({ request, env, ctx }) {
   const w = await equipo(request, env, { bot: true }); if (w.error) return w.error;
   const r = await cuerpo(request, 64 * 1024);
   if (r && r.grande) return json({ error: 'too_large' }, 413);
   const pedido = r && pedidoDesdeBot(r.b);
   if (!pedido) return json({ error: 'bad_request' }, 400);
+  if (pedidoTieneGramos(pedido) && !(await pedidoConGramosPermitido(env, w.orgId, w.branchId))) return json({ error: 'gramos_no_soportado' }, 400);
   const p = await crearPedido(env, w.orgId, w.branchId, pedido);
   if (!p.repetido) await esperar(ctx, avisarBot(env, w.orgId, w.branchId, { para: 'equipos', aviso: { pedido: p.id } }));
   return json({ ok: true, id: p.id, repetido: p.repetido }, p.repetido ? 200 : 201);
 }
 
-// GET /api/bot/pedidos?desde=<ms> (la app o el bot): lo que cambió después de `desde`, con `hasta` para la próxima vez.
+// GET /api/bot/pedidos?desde=<ms>[&gramos=1] (la app o el bot): lo que cambió después de `desde`, con `hasta` para la próxima vez.
+// `gramos=1`: la app entiende las líneas en gramos; queda anotado por equipo (`anotarLector`).
 export async function onRequestPedidosGet({ request, env }) {
   const w = await equipo(request, env); if (w.error) return w.error;
-  const desde = Number(new URL(request.url).searchParams.get('desde') ?? 0);
+  const q = new URL(request.url).searchParams;
+  const desde = Number(q.get('desde') ?? 0);
   if (!Number.isSafeInteger(desde) || desde < 0) return json({ error: 'bad_request' }, 400);
+  if (!w.esBot) await anotarLector(env, { deviceId: w.a.device.id, orgId: w.orgId, branchId: w.branchId, gramos: q.get('gramos') === '1' });
   return json(await pedidosDesde(env, w.orgId, w.branchId, desde));
 }
 

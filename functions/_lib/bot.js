@@ -22,6 +22,9 @@ export const MAX_ITEMS_PEDIDO = 50;
 export const MAX_PEDIDOS_LISTA = 200;
 export const VIDA_PEDIDO = 30 * 24 * 3600; // un pedido viejo (resuelto o no) se borra a los 30 días
 export const ESTADOS_PEDIDO = ['por_confirmar', 'aceptado', 'rechazado'];
+export const MAX_GRAMOS_ITEM = 50000;
+// Un equipo que no pidió los pedidos en este tiempo ya no cuenta para saber si la sucursal entiende gramos.
+export const LECTOR_VIGENTE = 30 * 24 * 3600;
 
 const DDL = [
   `CREATE TABLE IF NOT EXISTS bot_config (org_id INTEGER NOT NULL, branch_id INTEGER NOT NULL, datos_enc TEXT NOT NULL, version INTEGER NOT NULL,
@@ -34,6 +37,9 @@ const DDL = [
      pedido_id TEXT NOT NULL, estado TEXT NOT NULL, datos_enc TEXT NOT NULL, creado INTEGER NOT NULL, actualizado INTEGER NOT NULL,
      resuelto_por TEXT, UNIQUE (org_id, branch_id, pedido_id))`,
   `CREATE INDEX IF NOT EXISTS idx_bot_pedidos_cambio ON bot_pedidos(org_id, branch_id, actualizado)`,
+  // Qué equipos de la app leen los pedidos y si entienden gramos (`?gramos=1`, ver `pedidoConGramosPermitido`). `visto` en segundos.
+  `CREATE TABLE IF NOT EXISTS bot_lectores (device_id TEXT PRIMARY KEY, org_id INTEGER NOT NULL, branch_id INTEGER NOT NULL,
+     gramos INTEGER NOT NULL, visto INTEGER NOT NULL)`,
 ];
 export const ensureBotTables = (env) => once(env, 'bot', async () => { for (const sql of DDL) await env.DB.prepare(sql).run(); });
 export const botConfigurado = (env) => Boolean(env.DB && claveValida(env.BACKUP_KEY));
@@ -127,6 +133,9 @@ export const pedidoIdValido = (s) => typeof s === 'string' && /^[A-Za-z0-9_-]{8,
 
 // Lo que manda el bot, limpio. El precio de cada línea es el que dijo el bot en ese momento: el que vale es el del día que se
 // entrega (Regla 4 de Nodo Sur, como cualquier encargue), por eso es opcional y solo orienta.
+//
+// Cada línea lleva `cantidad` (unidades, o kilos enteros de un pesable) o `gramos` (lo que se pesa: "1/4 de jamón" son 250, con
+// `precioCentavos` POR KILO). Nunca las dos.
 export function pedidoDesdeBot(b) {
   if (!b || typeof b !== 'object' || !pedidoIdValido(b.id)) return null;
   const c = b.cliente;
@@ -138,9 +147,13 @@ export function pedidoDesdeBot(b) {
     if (!x || typeof x !== 'object') return null;
     if (x.gid !== undefined && (typeof x.gid !== 'string' || !/^[\w-]{1,64}$/.test(x.gid))) return null;
     if (typeof x.nombre !== 'string' || !x.nombre.trim() || x.nombre.length > 120) return null;
-    if (!Number.isInteger(x.cantidad) || x.cantidad < 1 || x.cantidad > 999) return null;
+    const porGramos = x.gramos !== undefined;
+    if (porGramos === (x.cantidad !== undefined)) return null;
+    if (porGramos && (!Number.isInteger(x.gramos) || x.gramos < 1 || x.gramos > MAX_GRAMOS_ITEM)) return null;
+    if (!porGramos && (!Number.isInteger(x.cantidad) || x.cantidad < 1 || x.cantidad > 999)) return null;
     if (x.precioCentavos !== undefined && (!Number.isInteger(x.precioCentavos) || x.precioCentavos < 0)) return null;
-    items.push({ ...(x.gid ? { gid: x.gid } : {}), nombre: x.nombre.trim(), cantidad: x.cantidad, ...(x.precioCentavos !== undefined ? { precioCentavos: x.precioCentavos } : {}) });
+    items.push({ ...(x.gid ? { gid: x.gid } : {}), nombre: x.nombre.trim(), ...(porGramos ? { gramos: x.gramos } : { cantidad: x.cantidad }),
+      ...(x.precioCentavos !== undefined ? { precioCentavos: x.precioCentavos } : {}) });
   }
   if (b.nota !== undefined && (typeof b.nota !== 'string' || b.nota.length > 300)) return null;
   return { pedidoId: b.id, datos: { cliente: { nombre: c.nombre.trim(), telefono: c.telefono }, items, ...(b.nota && b.nota.trim() ? { nota: b.nota.trim() } : {}) } };
@@ -174,6 +187,30 @@ export async function pedidosDesde(env, orgId, branchId, desde = 0) {
   for (const f of filas) pedidos.push(await pedidoPublico(env, f));
   return { pedidos, hasta: filas.length ? filas[filas.length - 1].actualizado : desde, mas: filas.length === MAX_PEDIDOS_LISTA };
 }
+
+// Un pedido con gramos solo entra si TODAS las apps que leen los pedidos de la sucursal los entienden: una app anterior a los gramos
+// descarta el pedido entero sin avisar (`pedidoBotDesdeJson`, Nodo-Sur-Pos) y el local no se enteraría nunca. Por eso hace falta al
+// menos una app que avisó que los entiende (si ninguna leyó todavía, una vieja podría leer después) y ninguna que haya leído sin
+// avisarlo en los últimos 30 días (las dos cosas con `?gramos=1` en `GET /api/bot/pedidos`). Si no, el bot recibe un 400 y le manda
+// ese pedido al local por WhatsApp, como hacía antes de que el sitio aceptara gramos.
+export async function anotarLector(env, { deviceId, orgId, branchId, gramos }, t = now()) {
+  await ensureBotTables(env);
+  await env.DB.prepare(
+    `INSERT INTO bot_lectores (device_id, org_id, branch_id, gramos, visto) VALUES (?1, ?2, ?3, ?4, ?5)
+     ON CONFLICT(device_id) DO UPDATE SET org_id = ?2, branch_id = ?3, gramos = ?4, visto = ?5`
+  ).bind(deviceId, orgId, branchId, gramos ? 1 : 0, t).run();
+}
+
+export async function pedidoConGramosPermitido(env, orgId, branchId, t = now()) {
+  await ensureBotTables(env);
+  const f = await env.DB.prepare(
+    `SELECT SUM(l.gramos = 1) AS si, SUM(l.gramos = 0) AS no FROM bot_lectores l JOIN devices d ON d.id = l.device_id
+     WHERE l.org_id = ?1 AND l.branch_id = ?2 AND l.visto > ?3 AND d.revoked = 0`
+  ).bind(orgId, branchId, t - LECTOR_VIGENTE).first();
+  return Boolean(f && f.si > 0 && !f.no);
+}
+
+export const pedidoTieneGramos = (pedido) => pedido.datos.items.some((x) => x.gramos !== undefined);
 
 // Aceptar o rechazar, una sola vez: un pedido ya resuelto no cambia (dos equipos tocando a la vez no lo resuelven dos veces).
 export async function resolverPedido(env, orgId, branchId, { id, estado, por }, tMs = Date.now()) {

@@ -153,6 +153,33 @@ await t('pedido: lo que el bot manda mal no entra', async () => {
   assert.equal(one(env, 'SELECT COUNT(*) c FROM bot_pedidos').c, 0);
 });
 
+await t('pedido con gramos: entra solo si todas las apps que leen pedidos los entienden (una vieja lo descartaría sin avisar)', async () => {
+  const { env, n, app, robot } = await armar();
+  const CON_GRAMOS = { ...PEDIDO, id: 'pedido-gramos-0001', items: [{ gid: 'g-jamon', nombre: 'Jamón cocido (por kg)', gramos: 250, precioCentavos: 1500000 }, PEDIDO.items[0]] };
+  const mandar = (id) => post(bot.onRequestPedidoPost, env, '/api/bot/pedido', { ...CON_GRAMOS, id }, robot);
+  const rechazo = async (r, por) => { assert.equal(r.status, 400, por); assert.equal((await r.json()).error, 'gramos_no_soportado', por); };
+  await rechazo(await mandar('pedido-gramos-0001'), 'ninguna app leyó todavía: una vieja podría leer después');
+  await get(bot.onRequestPedidosGet, env, '/api/bot/pedidos?desde=0&gramos=1', app);
+  assert.equal((await mandar('pedido-gramos-0002')).status, 201, 'la única app entiende gramos');
+  const pc = await equipo(env, n, { id: 'pc-local-0123456789abcdefghi', kind: 'pc' });
+  await get(bot.onRequestPedidosGet, env, '/api/bot/pedidos?desde=0', pc);
+  await rechazo(await mandar('pedido-gramos-0003'), 'una app vieja leyó los pedidos');
+  assert.equal((await post(bot.onRequestPedidoPost, env, '/api/bot/pedido', { ...PEDIDO, id: 'pedido-sin-gramos-1' }, robot)).status, 201, 'sin gramos entra siempre');
+  env.DB.raw.prepare('UPDATE bot_lectores SET visto = visto - ? WHERE device_id = ?').run(31 * 86400, 'pc-local-0123456789abcdefghi');
+  assert.equal((await mandar('pedido-gramos-0004')).status, 201, 'la app vieja no lee hace más de 30 días: ya no cuenta');
+  await get(bot.onRequestPedidosGet, env, '/api/bot/pedidos?desde=0', pc);
+  env.DB.raw.prepare('UPDATE devices SET revoked = 1 WHERE id = ?').run('pc-local-0123456789abcdefghi');
+  assert.equal((await mandar('pedido-gramos-0005')).status, 201, 'un equipo desvinculado no cuenta');
+  await get(bot.onRequestPedidosGet, env, '/api/bot/pedidos?desde=0', robot);
+  assert.equal(one(env, "SELECT COUNT(*) c FROM bot_lectores WHERE device_id LIKE 'bot-%'").c, 0, 'el bot no es un lector');
+  const p = (await (await get(bot.onRequestPedidosGet, env, '/api/bot/pedidos?desde=0&gramos=1', app)).json()).pedidos.find((x) => x.pedidoId === 'pedido-gramos-0002');
+  assert.deepEqual(p.items, CON_GRAMOS.items, 'la app recibe los gramos tal cual, con el precio por kilo');
+  const malos = [{ gramos: 0 }, { gramos: 50001 }, { gramos: 2.5 }, { gramos: 250, cantidad: 1 }, { gramos: '250' }];
+  for (const m of malos) {
+    assert.equal((await post(bot.onRequestPedidoPost, env, '/api/bot/pedido', { ...PEDIDO, id: 'pedido-malo-00001', items: [{ nombre: 'Jamón', ...m }] }, robot)).status, 400, JSON.stringify(m));
+  }
+});
+
 await t('resolver: la app acepta o rechaza una sola vez y el bot se entera; otra sucursal no lo ve ni lo toca', async () => {
   const { env, n, app, robot } = await armar();
   const { id } = await (await post(bot.onRequestPedidoPost, env, '/api/bot/pedido', PEDIDO, robot)).json();
