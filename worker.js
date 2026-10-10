@@ -22,6 +22,7 @@ import * as deviceWhoami from './functions/api/device/whoami.js';
 import * as deviceAuthorize from './functions/api/device/authorize.js';
 import * as deviceToken from './functions/api/device/token.js';
 import * as devicePing from './functions/api/device/ping.js';
+import * as devicePush from './functions/api/device/push.js';
 import * as deviceMe from './functions/api/device/me.js';
 import * as deviceTeam from './functions/api/device/team.js';
 import * as devicePcLocal from './functions/api/device/pc_local.js';
@@ -67,6 +68,7 @@ const ROUTES = {
   'POST /api/device/authorize': deviceAuthorize.onRequestPost,
   'POST /api/device/token': deviceToken.onRequestPost,
   'POST /api/device/ping': devicePing.onRequestPost,
+  'POST /api/device/push': devicePush.onRequestPost,
   'GET /api/device/me': deviceMe.onRequestGet,
   'GET /api/device/team': deviceTeam.onRequestGet,
   'POST /api/device/pc-local': devicePcLocal.onRequestPost,
@@ -126,6 +128,10 @@ const ROUTES = {
   'POST /api/bot/pedido': bot.onRequestPedidoPost,
   'GET /api/bot/pedidos': bot.onRequestPedidosGet,
   'POST /api/bot/pedido/resolver': bot.onRequestResolver,
+  'POST /api/bot/turno': bot.onRequestTurnoPost,
+  'POST /api/bot/turno/cambio': bot.onRequestTurnoCambio,
+  'POST /api/bot/ocupados': bot.onRequestOcupadosPost,
+  'GET /api/bot/turnos': bot.onRequestTurnosGet,
   'POST /api/sync': sync.onRequestPost,
   'GET /api/sync': sync.onRequestGet,
   'GET /api/sync/escuchar': sync.onRequestEscuchar,

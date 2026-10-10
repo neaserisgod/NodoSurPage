@@ -15,6 +15,8 @@ import {
   pedidoDesdeBot, crearPedido, pedidosDesde, resolverPedido, avisarBot, botsDeSucursal, MAX_CONFIG_BYTES,
   anotarLector, pedidoConGramosPermitido, pedidoTieneGramos,
 } from '../_lib/bot.js';
+import { avisarSucursal, cuandoTexto } from '../_lib/push.js';
+import { turnoDesdeBot, reservarTurno, ocupadosDesdeApp, publicarOcupados, cambiarTurno, turnosDesde, turnoIdValido, horarioValido, ESTADOS_TURNO } from '../_lib/bot_turnos.js';
 
 // Lo más grande que se acepta: un catálogo de 5.000 productos entra holgado en 1 MB.
 const MAX_CUERPO = 1024 * 1024;
@@ -106,7 +108,16 @@ export async function onRequestPedidoPost({ request, env, ctx }) {
   if (!pedido) return json({ error: 'bad_request' }, 400);
   if (pedidoTieneGramos(pedido) && !(await pedidoConGramosPermitido(env, w.orgId, w.branchId))) return json({ error: 'gramos_no_soportado' }, 400);
   const p = await crearPedido(env, w.orgId, w.branchId, pedido);
-  if (!p.repetido) await esperar(ctx, avisarBot(env, w.orgId, w.branchId, { para: 'equipos', aviso: { pedido: p.id } }));
+  if (!p.repetido) {
+    await esperar(ctx, avisarBot(env, w.orgId, w.branchId, { para: 'equipos', aviso: { pedido: p.id } }));
+    // Con la app cerrada también: la notificación del celular (si el negocio configuró Firebase).
+    const d = pedido.datos;
+    await esperar(ctx, avisarSucursal(env, w.orgId, w.branchId, {
+      titulo: '🛒 Pedido por WhatsApp',
+      cuerpo: `${d.cliente.nombre}: ${d.items.map((x) => (x.gramos ? `${x.gramos} g ${x.nombre}` : `${x.cantidad} × ${x.nombre}`)).join(', ')}`,
+      datos: { tipo: 'pedido', id: p.id },
+    }));
+  }
   return json({ ok: true, id: p.id, repetido: p.repetido }, p.repetido ? 200 : 201);
 }
 
@@ -133,6 +144,71 @@ export async function onRequestResolver({ request, env, ctx }) {
   if (res.error) return json({ error: res.error, estado: res.estado }, 409);
   await esperar(ctx, avisarBot(env, w.orgId, w.branchId, { para: 'bots', aviso: { pedido: b.id, estado: b.estado } }));
   return json({ ok: true });
+}
+
+// --- Turnos (negocios de servicios, `functions/_lib/bot_turnos.js`) ------------------------------------------------------------
+
+// POST /api/bot/turno (el bot): `{ id, inicio, fin, profesional?, estado: 'confirmado' | 'esperando_sena', cliente: { nombre, telefono },
+// servicio: { gid?, nombre }, senaPedidaCentavos?, senaVence?, nota? }`. Reserva el horario: 201, 200 si es un reintento, o 409
+// `ocupado` si otro lo tomó antes (el bot le ofrece otro horario al cliente). Despierta a la app.
+export async function onRequestTurnoPost({ request, env, ctx }) {
+  const w = await equipo(request, env, { bot: true }); if (w.error) return w.error;
+  const r = await cuerpo(request, 16 * 1024);
+  if (r && r.grande) return json({ error: 'too_large' }, 413);
+  const turno = r && turnoDesdeBot(r.b);
+  if (!turno) return json({ error: 'bad_request' }, 400);
+  const res = await reservarTurno(env, w.orgId, w.branchId, turno);
+  if (res.ocupado) return json({ error: 'ocupado' }, 409);
+  if (!res.repetido) {
+    await esperar(ctx, avisarBot(env, w.orgId, w.branchId, { para: 'equipos', aviso: { turno: turno.turnoId } }));
+    await esperar(ctx, avisarSucursal(env, w.orgId, w.branchId, {
+      titulo: turno.estado === 'esperando_sena' ? '📅 Turno por WhatsApp (espera la seña)' : '📅 Turno por WhatsApp',
+      cuerpo: `${turno.datos.cliente.nombre} · ${turno.datos.servicio.nombre} · ${cuandoTexto(turno.inicio)}`,
+      datos: { tipo: 'turno', id: turno.turnoId },
+    }));
+  }
+  return json({ ok: true, id: turno.turnoId, repetido: res.repetido }, res.repetido ? 200 : 201);
+}
+
+// POST /api/bot/turno/cambio (la app o el bot): `{ id, estado?, inicio?, fin? }`. La app mueve, cancela, cobra o marca "no vino" un
+// turno del bot; el bot confirma la seña, o el cliente lo cancela o lo cambia. Si lo mueve el bot no puede pisar otro (409
+// `ocupado`); la app sí (sobreturno, §21). Despierta al otro lado.
+export async function onRequestTurnoCambio({ request, env, ctx }) {
+  const w = await equipo(request, env); if (w.error) return w.error;
+  const r = await cuerpo(request, 4 * 1024);
+  if (r && r.grande) return json({ error: 'too_large' }, 413);
+  const b = r && r.b;
+  if (!b || !turnoIdValido(b.id)) return json({ error: 'bad_request' }, 400);
+  if (b.estado !== undefined && !ESTADOS_TURNO.includes(b.estado)) return json({ error: 'bad_request' }, 400);
+  const mueve = b.inicio !== undefined || b.fin !== undefined;
+  if (mueve && !horarioValido(b.inicio, b.fin)) return json({ error: 'bad_request' }, 400);
+  if (!mueve && b.estado === undefined) return json({ error: 'bad_request' }, 400);
+  const res = await cambiarTurno(env, w.orgId, w.branchId, { turnoId: b.id, estado: b.estado, inicio: b.inicio, fin: b.fin }, { controlarChoque: w.esBot && mueve });
+  if (res.error === 'no_existe') return json({ error: 'no_existe' }, 404);
+  if (res.ocupado) return json({ error: 'ocupado' }, 409);
+  await esperar(ctx, avisarBot(env, w.orgId, w.branchId, { para: w.esBot ? 'equipos' : 'bots', aviso: { turno: b.id } }));
+  return json({ ok: true });
+}
+
+// POST /api/bot/ocupados (la app): `{ turnos: [{ id, inicio, fin, profesional?, estado }] }`, lo que ocupa la agenda de la app de hoy
+// en adelante (sin nombres ni teléfonos). Reemplaza lo anterior de la app. Si cambió algo, despierta al bot.
+export async function onRequestOcupadosPost({ request, env, ctx }) {
+  const w = await equipo(request, env, { bot: false }); if (w.error) return w.error;
+  const r = await cuerpo(request, 256 * 1024);
+  if (r && r.grande) return json({ error: 'too_large' }, 413);
+  const lista = r && ocupadosDesdeApp(r.b.turnos);
+  if (!lista) return json({ error: 'bad_request' }, 400);
+  const cambiado = await publicarOcupados(env, w.orgId, w.branchId, lista);
+  if (cambiado) await esperar(ctx, avisarBot(env, w.orgId, w.branchId, { para: 'bots', aviso: { ocupados: true } }));
+  return json({ ok: true, cambiado });
+}
+
+// GET /api/bot/turnos?desde=<ms> (la app o el bot): lo que cambió después de `desde`, con `hasta` para la próxima vez.
+export async function onRequestTurnosGet({ request, env }) {
+  const w = await equipo(request, env); if (w.error) return w.error;
+  const desde = Number(new URL(request.url).searchParams.get('desde') ?? 0);
+  if (!Number.isSafeInteger(desde) || desde < 0) return json({ error: 'bad_request' }, 400);
+  return json(await turnosDesde(env, w.orgId, w.branchId, desde));
 }
 
 // El aviso no frena la respuesta: en el Worker sigue después de contestar; en las pruebas (sin `ctx`) se espera.
