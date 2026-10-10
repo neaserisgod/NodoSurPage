@@ -29,6 +29,7 @@ import * as mpConexion from './functions/api/mp/conexion.js';
 import * as mpOrden from './functions/api/mp/orden.js';
 import * as mpWebhook from './functions/api/mp/webhook.js';
 import * as ia from './functions/api/ia.js';
+import * as agenda from './functions/api/agenda.js';
 import * as bot from './functions/api/bot.js';
 import * as devices from './functions/api/devices.js';
 import * as backup from './functions/api/backup.js';
@@ -126,6 +127,9 @@ const ROUTES = {
   'POST /api/bot/pedido': bot.onRequestPedidoPost,
   'GET /api/bot/pedidos': bot.onRequestPedidosGet,
   'POST /api/bot/pedido/resolver': bot.onRequestResolver,
+  'POST /api/agenda/reservar': agenda.onRequestReservar,
+  'POST /api/agenda/liberar': agenda.onRequestLiberar,
+  'GET /api/agenda/ocupados': agenda.onRequestOcupados,
   'POST /api/sync': sync.onRequestPost,
   'GET /api/sync': sync.onRequestGet,
   'GET /api/sync/escuchar': sync.onRequestEscuchar,

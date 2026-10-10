@@ -1,6 +1,9 @@
-// Durable Object de la sync: uno por cuenta. Mantiene los WebSockets de los dispositivos de esa cuenta y, cuando
-// alguien sube un lote, les avisa a los demás con el número de orden (`{"seq":N}`) para que bajen. No guarda
-// datos ni lleva contenido: es solo la campanita.
+import { crearTablaAgenda, leerReserva, reservar, liberar, ocupados } from './agenda.js';
+
+// Durable Object de la sync: uno por sucursal (`scopeDeSync`). Mantiene los WebSockets de los dispositivos de esa sucursal y,
+// cuando alguien sube un lote, les avisa a los demás con el número de orden (`{"seq":N}`) para que bajen. De la sync no guarda
+// datos ni lleva contenido: es solo la campanita. Lo único que guarda es la agenda de turnos (`agenda.js`, 2026-10-10): los
+// horarios ocupados, para que dos equipos no den el mismo.
 //
 // Cuánto cuesta (Cloudflare, WebSocket Hibernation): conectar es 1 pedido; un socket quieto no consume tiempo de
 // cómputo (la clase hiberna); los mensajes salientes y los pings del protocolo no se cobran. Por eso el cliente
@@ -9,14 +12,24 @@
 // Etiqueta de los sockets del bot de WhatsApp. No choca con un id de dispositivo: esos no llevan ":".
 const TAG_BOT = 'tipo:bot';
 
+
 export class SyncHub {
   constructor(state, env) {
     this.state = state;
     this.env = env;
+    this.agendaLista = false;
+  }
+
+  // El SQLite del objeto, con la tabla de la agenda creada (una vez por vida del objeto).
+  get sql() {
+    const sql = this.state.storage.sql;
+    if (!this.agendaLista) { crearTablaAgenda(sql); this.agendaLista = true; }
+    return sql;
   }
 
   async fetch(request) {
     const url = new URL(request.url);
+    if (url.pathname.startsWith('/agenda/')) return this.agenda(request, url);
     if (request.method === 'POST' && url.pathname === '/avisar') {
       let datos;
       try { datos = await request.json(); } catch { return new Response(null, { status: 400 }); }
@@ -35,6 +48,27 @@ export class SyncHub {
       return new Response(null, { status: 204 });
     }
     if (url.pathname === '/escuchar' && request.headers.get('Upgrade') === 'websocket') return this.aceptar(request);
+    return new Response(null, { status: 404 });
+  }
+
+  // La agenda (`/api/agenda/*`, el Worker ya autenticó y eligió la sucursal). Leer el cuerpo es lo único que espera: el chequeo y
+  // la escritura de `reservar` van seguidos, sin nada en el medio.
+  async agenda(request, url) {
+    const responder = (cuerpo, status = 200) => new Response(JSON.stringify(cuerpo), { status, headers: { 'Content-Type': 'application/json' } });
+    if (request.method === 'GET' && url.pathname === '/agenda/ocupados') {
+      const lista = ocupados(this.sql, url.searchParams.get('desde'), url.searchParams.get('hasta'));
+      return lista ? responder({ ocupados: lista }) : responder({ error: 'bad_request' }, 400);
+    }
+    if (request.method !== 'POST') return new Response(null, { status: 404 });
+    let datos;
+    try { datos = await request.json(); } catch { return responder({ error: 'bad_request' }, 400); }
+    if (url.pathname === '/agenda/reservar') {
+      const r = leerReserva(datos);
+      if (!r) return responder({ error: 'bad_request' }, 400);
+      const hecho = reservar(this.sql, r, { por: datos.de ? String(datos.de).slice(0, 80) : null });
+      return hecho.ok ? responder({ ok: true }) : responder({ error: 'ocupado', choca: hecho.choca }, 409);
+    }
+    if (url.pathname === '/agenda/liberar') return liberar(this.sql, datos.id) ? responder({ ok: true }) : responder({ error: 'bad_request' }, 400);
     return new Response(null, { status: 404 });
   }
 
