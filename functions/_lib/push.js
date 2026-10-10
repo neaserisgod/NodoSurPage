@@ -74,7 +74,7 @@ export async function avisarSucursal(env, orgId, branchId, { titulo, cuerpo, dat
     await ensurePushTables(env);
     const destinos = (await env.DB.prepare(
       `SELECT p.device_id, p.token FROM push_tokens p JOIN devices d ON d.id = p.device_id
-       WHERE p.org_id = ?1 AND p.branch_id = ?2 AND d.revoked = 0 AND d.kind != 'bot'`
+       WHERE p.org_id = ?1 AND p.branch_id = ?2 AND d.revoked = 0 AND COALESCE(d.kind, '') != 'bot'`
     ).bind(orgId, branchId).all()).results;
     if (!destinos.length) return 0;
     const bearer = await tokenDeAcceso(cuenta);
