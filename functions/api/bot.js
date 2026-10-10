@@ -4,7 +4,7 @@
 // Quién hace qué:
 //  * la app ve el estado, cambia la configuración (dueño o encargado), publica el catálogo y acepta o rechaza pedidos;
 //  * el bot baja la configuración y el catálogo, manda pedidos y se entera de cómo se resolvieron.
-import { json } from '../_lib/util.js';
+import { json, now } from '../_lib/util.js';
 import { actorOf } from '../_lib/actor.js';
 import { hasDB } from '../_lib/db.js';
 import { getMembership } from '../_lib/orgs.js';
@@ -16,6 +16,7 @@ import {
   anotarLector, pedidoConGramosPermitido, pedidoTieneGramos,
 } from '../_lib/bot.js';
 import { avisarConReintento, cuandoTexto } from '../_lib/push.js';
+import { upsertDevice, signDeviceToken, getDevice, validDeviceId, DEVICE_TTL } from '../_lib/devices.js';
 import { turnoDesdeBot, reservarTurno, ocupadosDesdeApp, publicarOcupados, cambiarTurno, turnosDesde, turnoIdValido, horarioValido, ESTADOS_TURNO } from '../_lib/bot_turnos.js';
 
 // Lo más grande que se acepta: un catálogo de 5.000 productos entra holgado en 1 MB.
@@ -209,6 +210,23 @@ export async function onRequestTurnosGet({ request, env }) {
   const desde = Number(new URL(request.url).searchParams.get('desde') ?? 0);
   if (!Number.isSafeInteger(desde) || desde < 0) return json({ error: 'bad_request' }, 400);
   return json(await turnosDesde(env, w.orgId, w.branchId, desde));
+}
+
+// POST /api/bot/token (la app Nodo Sur Servicios, que trae el bot adentro; `Nodo-Sur-Pos/docs/PLAN-APP-SERVICIOS.md`):
+// `{ deviceId, name? }` → el token del bot de ESTE celular, sin pasar por el navegador: el celular ya está vinculado a la sucursal y
+// quien lo usa puede configurar el bot (el mismo permiso que vincular uno con Termux). El id lo genera la app y lo guarda: pedirlo de
+// nuevo renueva el token del mismo bot, no crea otro. Un id que ya es de otro equipo (otro tipo u otro negocio) se rechaza.
+export async function onRequestTokenPost({ request, env }) {
+  const w = await equipo(request, env, { bot: false, accion: 'configurar_bot' }); if (w.error) return w.error;
+  const r = await cuerpo(request, 4096);
+  const b = r && r.b;
+  if (!b || !validDeviceId(b.deviceId)) return json({ error: 'bad_request' }, 400);
+  const previo = await getDevice(env, b.deviceId);
+  if (previo && (previo.kind !== 'bot' || previo.owner_org !== w.orgId)) return json({ error: 'forbidden' }, 403);
+  const t = now();
+  const name = typeof b.name === 'string' && b.name.trim() ? b.name.trim().slice(0, 60) : 'Bot de WhatsApp (en la app)';
+  await upsertDevice(env, { id: b.deviceId, sub: w.a.sub, email: w.a.email, name, orgId: w.orgId, branchId: w.branchId, kind: 'bot' }, t);
+  return json({ token: await signDeviceToken(env, { sub: w.a.sub, email: w.a.email, deviceId: b.deviceId }, t), email: w.a.email, deviceId: b.deviceId, expiresAt: t + DEVICE_TTL });
 }
 
 // El aviso no frena la respuesta: en el Worker sigue después de contestar; en las pruebas (sin `ctx`) se espera.

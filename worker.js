@@ -133,6 +133,7 @@ const ROUTES = {
   'POST /api/bot/turno/cambio': bot.onRequestTurnoCambio,
   'POST /api/bot/ocupados': bot.onRequestOcupadosPost,
   'GET /api/bot/turnos': bot.onRequestTurnosGet,
+  'POST /api/bot/token': bot.onRequestTokenPost,
   'POST /api/sync': sync.onRequestPost,
   'GET /api/sync': sync.onRequestGet,
   'GET /api/sync/escuchar': sync.onRequestEscuchar,
