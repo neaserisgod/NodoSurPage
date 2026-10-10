@@ -52,7 +52,9 @@ async function armar({ conSecreto = true } = {}) {
   return { env, cel: await equipo('cel-caro-0123456789abcdefgh', 'celular'), cel2: await equipo('cel-centro-0123456789abcdef', 'celular', otra), robot: await equipo('bot-caro-0123456789abcdefgh', 'bot') };
 }
 const post = (fn, env, path, body, headers) => fn({ request: req(path, { method: 'POST', headers, body }), env });
-const TOKEN_FCM = 'fcm-token-del-celular:APA91bHUN_ejemplo-1234567890';
+// Tokens de mentira armados acá (no son secretos): `celular-aaaa…`.
+const falso = (quien) => `${quien}-${'a'.repeat(24)}`;
+const TOKEN_FCM = falso('celular');
 const H = 3600 * 1000;
 const turno = (id) => {
   const d = new Date(Date.now() + 48 * H); d.setUTCHours(13, 0, 0, 0); // 10:00 en Argentina
@@ -71,8 +73,8 @@ await t('el celular registra su token; uno raro, sin equipo o sin negocio, no', 
 await t('un turno nuevo del bot le llega al celular de la sucursal, firmado con la cuenta de servicio', async () => {
   const { env, cel, cel2, robot } = await armar();
   await post(push.onRequestPost, env, '/api/device/push', { token: TOKEN_FCM }, cel);
-  await post(push.onRequestPost, env, '/api/device/push', { token: 'otro-token-de-otra-sucursal-123' }, cel2);
-  await post(push.onRequestPost, env, '/api/device/push', { token: 'token-del-bot-que-no-va-12345' }, robot);
+  await post(push.onRequestPost, env, '/api/device/push', { token: falso('otra-sucursal') }, cel2);
+  await post(push.onRequestPost, env, '/api/device/push', { token: falso('bot') }, robot);
   assert.equal((await post(bot.onRequestTurnoPost, env, '/api/bot/turno', turno('turno-0001-aaaa'), robot)).status, 201);
   assert.equal(google.enviados.length, 1, 'solo el celular de esa sucursal, no el bot ni la otra sucursal');
   const m = google.enviados[0];
