@@ -44,6 +44,9 @@
     } else if (dev.id !== 'other' && d.releases.length) {
       root.appendChild(el('p', 'dl-detect', 'Estás en ' + dev.name + ' y todavía no hay una versión para ese dispositivo. Estas son las disponibles:'));
     }
+    // Nodo Sur Servicios también anda en el navegador (iPhone, compu, tablet), sin instalar nada: horsepos.com/app/.
+    var web = el('p', 'dl-sep', '¿Turnos desde el iPhone o la compu? Nodo Sur Servicios también anda en el navegador, sin instalar nada: ');
+    var irWeb = el('a', null, 'abrir horsepos.com/app/'); irWeb.href = '/app/'; web.appendChild(irWeb); root.appendChild(web);
     if (rest.length) {
       if (mine) root.appendChild(el('p', 'dl-sep', 'Para otros dispositivos'));
       var grid = el('div', 'dl-grid');

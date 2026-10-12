@@ -12,6 +12,7 @@ cubre lo propio del sitio. Los detalles de cada función del servidor están en 
 (`wrangler.jsonc`, worker `broad-frog-1e4b`), base D1 `nodosur`, bucket R2 para versiones y copias, y un Durable Object
 (`SyncHub`) para avisar cambios en vivo. Se publica solo al mezclar a `main`.
 
+- **Nodo Sur Servicios en el navegador** (`/app/`, 2026-10-12): la app del celular compilada para web, servida desde R2 (ver README, "Nodo Sur Servicios en el navegador").
 - **Páginas** (HTML + JS sin build): home, páginas del sistema y guías, `/ingresar`, `/cuenta`, `/negocio`, `/unirse`,
   `/vincular`, `/pagar`, `/descargar`, `/admin`.
 - **API** (`worker.js` → `functions/`): login con Google; negocios, sucursales, miembros e invitaciones; suscripciones

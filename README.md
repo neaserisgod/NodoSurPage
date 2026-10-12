@@ -164,6 +164,16 @@ Las páginas internas (sistema-pos, bot-whatsapp, guías, ingresar, pagar, 404, 
 
 Disposición de las páginas de contenido (12 páginas): el HTML se reordenó en bloques `.blk` (título a la izquierda, texto a la derecha, tarjetas `.card2`, pasos `.steps2`, capturas `.halo`, preguntas `<details class="q2">`). El texto es el mismo. Para volver a la disposición anterior de una página: `git checkout <commit anterior a este cambio> -- <pagina>/index.html`.
 
+### Nodo Sur Servicios en el navegador (`/app/`, 2026-10-12)
+
+La app del celular (edición servicios) compilada para web, en `horsepos.com/app/` (plan y motivos en `Nodo-Sur-Pos/docs/PLAN-WEB-SERVICIOS.md`).
+
+- **Archivos**: no están en este repo. Los sube `scripts/publicar-web.mjs` (lo corre el workflow `publicar-web` de Nodo-Sur-Pos) a R2 bajo `app/<versión>/`, y `app/actual.json` dice cuál se sirve; se guardan las últimas 3 (`app/versiones.json`). Probar sin subir: `node scripts/publicar-web.mjs --dir ../Nodo-Sur-Pos/build/web --version x --dry-run`.
+- **Servirla**: `functions/_lib/app_web.js` (`/app` y `/app/*` están en `run_worker_first`). Cabeceras propias: COOP/COEP para que la base del navegador use OPFS (sin aislamiento cae a IndexedDB y pierde lo último escrito al cerrar), política de contenido con `'wasm-unsafe-eval'`, `no-cache` con ETag (304). Sin versión publicada contesta 503.
+- **Entrar**: `/vincular/?web=1&state&challenge&device&name` (sin puerto); `POST /api/device/authorize` con `web: true` devuelve `/app/?code=…&state=…` y la app lo canjea en `/api/device/token` (PKCE, igual que siempre). Queda como un celular ("Navegador").
+- **Avisos en vivo**: `/api/sync/escuchar` acepta el token como subprotocolo `bearer.<token>` junto a `nodosur` (un WebSocket del navegador no puede mandar `Authorization`) y contesta eligiendo `nodosur`.
+- En `/descargar/` y en `/servicios/` hay un link para abrirla.
+
 ### Sincronización entre dispositivos (PC y celulares de una sucursal)
 
 `POST /api/sync` sube un lote de cambios y `GET /api/sync?desde=<seq>` baja los de los **otros** dispositivos de la misma **sucursal**. La nube es un buzón ordenado, no una copia maestra: quien aplica los lotes en el orden en que llegaron (`seq`) deja que el último pise a los anteriores; el reloj de los dispositivos no decide nada. Stock y caja se suman como movimientos.

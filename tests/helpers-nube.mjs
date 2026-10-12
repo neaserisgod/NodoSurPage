@@ -17,7 +17,7 @@ export function fakeR2() {
     async delete(k) { files.delete(k); },
     async head(k) { return files.has(k) ? { size: files.get(k).length } : null; },
     async list() { return { objects: [...files.keys()].map((key) => ({ key, uploaded: new Date(files.uploaded?.get(key) ?? 0) })), truncated: false }; },
-    async get(k) { const b = files.get(k); if (!b) return null; return { size: b.length, httpEtag: '"e"', writeHttpMetadata() {}, body: new Blob([b]).stream(), async arrayBuffer() { return new Uint8Array(b).buffer; } }; },
+    async get(k) { const b = files.get(k); if (!b) return null; return { size: b.length, httpEtag: '"e"', writeHttpMetadata() {}, body: new Blob([b]).stream(), async arrayBuffer() { return new Uint8Array(b).buffer; }, async text() { return b.toString(); } }; },
   };
 }
 export const BACKUP_KEY = Buffer.alloc(32, 7).toString('base64');

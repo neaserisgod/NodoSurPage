@@ -20,10 +20,14 @@ export async function onRequestPost({ request, env }) {
   if (!cu.session || cu.gone) return json({ error: 'no_session' }, 401);
   if (!hasDB(env)) return json({ error: 'no_db' }, 503);
   let b; try { b = await request.json(); } catch { return json({ error: 'bad_request' }, 400); }
-  if (!validPort(b.port) || !validState(b.state) || !validChallenge(b.challenge) || !validDeviceId(b.deviceId)) return json({ error: 'bad_request' }, 400);
+  // `web: true`: Nodo Sur Servicios en el navegador (horsepos.com/app/). Se vincula como un celular (cada persona con su cuenta, en una
+  // de sus sucursales) y el código vuelve a /app/ de este mismo sitio: no hay servidor local al que mandarlo.
+  const enNavegador = b.web === true;
+  if (enNavegador && b.tipo != null && b.tipo !== 'celular') return json({ error: 'bad_request' }, 400);
+  if ((enNavegador ? b.port != null : !validPort(b.port)) || !validState(b.state) || !validChallenge(b.challenge) || !validDeviceId(b.deviceId)) return json({ error: 'bad_request' }, 400);
   const sub = cu.session.sub;
   await ensureOrgTables(env);
-  const celular = b.tipo === 'celular';
+  const celular = enNavegador || b.tipo === 'celular';
   const bot = b.tipo === 'bot';
   // El bot se vincula con las mismas reglas que un celular (en una sucursal donde la persona tiene el permiso), pero con otro permiso.
   const accion = bot ? 'configurar_bot' : celular ? 'vincular_celular' : 'vincular_pc';
@@ -63,5 +67,6 @@ export async function onRequestPost({ request, env }) {
     sub, email: cu.session.email, deviceId: b.deviceId, name: cleanName(b.name), challenge: b.challenge, orgId: org.id, branchId: branch.id, personName: cu.session.name,
     kind: bot ? 'bot' : celular ? 'celular' : 'pc',
   });
-  return json({ redirect: `http://127.0.0.1:${b.port}/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(b.state)}` });
+  const vuelta = enNavegador ? '/app/?' : `http://127.0.0.1:${b.port}/callback?`;
+  return json({ redirect: `${vuelta}code=${encodeURIComponent(code)}&state=${encodeURIComponent(b.state)}` });
 }

@@ -182,4 +182,20 @@ await t('nadie se queda con el equipo de otro conociendo su id; el propio se vue
   await vincular(env, 'beto@x.com', 's2'); // dada de baja: ya se puede
 });
 
+await t('desde el navegador (Nodo Sur Servicios web): el código vuelve a /app/ de este sitio y el equipo queda como un celular', async () => {
+  const env = mkEnv(); addUser(env, 'ana@x.com', 's1'); const cookie = await sess(env, 'ana@x.com', 's1');
+  const verifier = newVerifier();
+  const pedir = (extra) => authorize.onRequestPost({ request: req('/api/device/authorize', { method: 'POST', cookie, headers: web,
+    body: { state: STATE, challenge: null, deviceId: 'web-0123456789abcdef0123', name: 'Navegador', ...extra } }), env });
+  const r = await pedir({ web: true, challenge: await sha256b64u(verifier) });
+  assert.equal(r.status, 200);
+  const { redirect } = await r.json();
+  assert.ok(redirect.startsWith('/app/?code='), redirect);
+  const code = new URLSearchParams(redirect.slice('/app/?'.length)).get('code');
+  const c = await canjear(env, code, verifier); assert.equal(c.status, 200);
+  assert.equal(env.DB.raw.prepare("SELECT kind FROM devices WHERE id = 'web-0123456789abcdef0123'").get().kind, 'celular');
+  assert.equal((await pedir({ web: true, port: 53682, challenge: await sha256b64u(verifier) })).status, 400, 'web y puerto juntos no');
+  assert.equal((await pedir({ web: true, tipo: 'bot', challenge: await sha256b64u(verifier) })).status, 400, 'un bot no se vincula desde la web');
+});
+
 console.log(`\n${pass} pruebas OK (dispositivos)`);
