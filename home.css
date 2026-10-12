@@ -486,3 +486,5 @@ p.found strong{color:var(--ink)}
 .ck{display:flex;flex-direction:column;gap:10px}
 .ck li{display:flex;gap:10px;align-items:flex-start;font-size:15.5px;line-height:1.45}
 .ck svg{flex-shrink:0;margin-top:0;stroke:var(--teal,#18c3a4)}
+.dark .lw{color:#fff;border-bottom-color:rgba(255,255,255,.4)}
+.dark .fl{margin-bottom:20px}

@@ -160,11 +160,11 @@
     }
     addEventListener('scroll',upd,{passive:true});upd();
   })();
-  /* precio de fundador: si el administrador lo desactivó, se oculta el bloque */
+  /* precio de fundador: oculto de entrada; se muestra solo si está activo y se cobra directo en Mercado Pago */
   (function(){
     var fs=$$('.found,.js-promo');if(!fs.length)return;
     fetch('/api/promo',{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(j){
-      if(j&&j.activa===false)fs.forEach(function(f){f.hidden=true});
+      if(j&&j.activa!==false&&j.directo)fs.forEach(function(f){f.hidden=false});
     }).catch(function(){});
   })();
 

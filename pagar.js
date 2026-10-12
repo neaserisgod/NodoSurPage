@@ -44,12 +44,12 @@
   radios.forEach(function(r){r.addEventListener('change',render)});
   promo.addEventListener('change',render);
   var pre=q.get('plan')||saved;if(pre&&PLANES[pre]){radios.forEach(function(r){r.checked=r.value===pre})}
-  if(q.get('promo')==='1')promo.checked=true;
-  render();
+  /* el precio de fundador se ofrece solo si se cobra directo en Mercado Pago (main.js muestra el paso) */
+  activa=false;render();
   fetch('/api/promo',{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(j){
-    if(!j||j.activa!==false)return;
-    activa=false;promo.checked=false;promo.disabled=true;
-    $('cupos').textContent='Por ahora el precio de fundador no está disponible.';
+    if(!j||j.activa===false||!j.directo)return;
+    activa=true;$('paso-fin').textContent='3';
+    if(q.get('promo')==='1')promo.checked=true;
     render();
   }).catch(function(){});
 })();

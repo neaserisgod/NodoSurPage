@@ -237,6 +237,7 @@ await t('promo de fundador: activa por defecto; solo el admin la apaga y se refl
   assert.equal(ov.promo.activa, false);
   await off(await sess(env, 'gtalovergamer@gmail.com', 'a'), '{"activa":true}');
   assert.equal((await (await promoPub.onRequestGet({ env })).json()).activa, true);
+  assert.equal((await (await promoPub.onRequestGet({ env })).json()).directo, false); // sin links de fundador en MP: no se muestra
   assert.equal((await (await promoPub.onRequestGet({ env: { ...env, DB: undefined } })).json()).activa, true); // sin base: activa
 });
 console.log(`\n${pass} pruebas OK (limpieza y admin)`);
