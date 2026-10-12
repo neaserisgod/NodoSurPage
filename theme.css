@@ -374,7 +374,53 @@ body{overflow-x:clip}
 .pays .acts{display:flex;flex-wrap:wrap;gap:2px;white-space:normal}
 .dlg-body{display:flex;flex-direction:column;gap:12px;margin:12px 0}
 @media (max-width:719px){.linkbox{flex-direction:column}.linkbox .btn{width:100%}}
-/* Seis secciones en el menú (2026-10-12, se sumó Servicios): entre 900 y 1199 px no entran en una línea y se partían en dos;
-   en ese rango va la hamburguesa, como en el celular. */
-.nav li a.l{white-space:nowrap}
-@media (min-width:900px) and (max-width:1199px){.nav .links{display:none}.mnav{display:block}}
+
+/* =====================================================================
+   v3 — compacto: menos scroll en las páginas de contenido. Encabezados,
+   bloques, tarjetas, pasos y cierre más bajos; pasos con el número al lado.
+   ===================================================================== */
+.ph{gap:16px;padding-top:clamp(28px,4.5vw,64px);padding-bottom:clamp(28px,4vw,56px)}
+.ph>h1,.ph h1{font-size:clamp(34px,4.4vw,64px)}
+.ph>.lead,.ph .lead{font-size:clamp(17px,1.3vw,20px)}
+.blk{padding:clamp(28px,4vw,56px) 0;gap:clamp(14px,1.6vw,22px) clamp(28px,5vw,72px)}
+.blk-h h2{font-size:clamp(26px,3vw,44px)}
+.blk-r{gap:12px}
+.blk-r p,.blk-r li{font-size:clamp(16px,1.15vw,18px);line-height:1.6}
+.body-sec{padding-bottom:clamp(24px,3vw,48px)}
+
+.cards{gap:12px}
+.card2{padding:clamp(18px,1.8vw,26px);gap:8px;border-radius:clamp(20px,2vw,28px)}
+.card2 h3{font-size:clamp(19px,1.5vw,22px)}
+.card2 p,.card2 li{font-size:15.5px;line-height:1.5}
+
+.steps2{gap:12px}
+.steps2 li{flex-direction:row;align-items:flex-start;gap:16px;padding:clamp(18px,2vw,28px);font-size:16px}
+.steps2 li b{font-size:clamp(48px,4.6vw,68px);flex-shrink:0}
+
+.halos{gap:12px}
+.halo{padding:clamp(14px,2.2vw,32px);gap:12px}
+.halos>.halo:first-child img{max-width:960px;margin:0 auto}
+.callout{padding:18px 22px;font-size:16px;border-radius:22px}
+
+.q2 summary{padding:clamp(14px,1.4vw,18px) 0}
+.q2 h3{font-size:clamp(18px,1.4vw,21px)}
+.q2 summary::after{width:36px;height:36px;font-size:22px}
+.faq .q{padding:18px 4px}
+.faq .q h3{font-size:clamp(18px,1.6vw,22px)}
+
+.rel a{padding:clamp(16px,1.8vw,24px);border-radius:24px}
+.rel strong{font-size:clamp(17px,1.3vw,20px)}
+
+.cta-b{min-height:0!important;padding:clamp(32px,5vw,64px) clamp(24px,4.4vw,64px)!important;gap:14px}
+.cta-b h2{font-size:clamp(30px,4vw,56px)}
+.foot{padding-top:clamp(24px,3vw,40px);padding-bottom:clamp(20px,2.5vw,32px)}
+.wordmark{font-size:clamp(64px,13vw,200px)}
+
+/* celular: las tarjetas en carrusel horizontal (se asoma la siguiente) en vez de una columna larguísima */
+@media (max-width:699px){
+  .cards{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;gap:10px;
+    margin-left:calc(var(--px,20px) * -1);margin-right:calc(var(--px,20px) * -1);padding:2px var(--px,20px) 8px;scroll-padding-inline:var(--px,20px)}
+  .cards::-webkit-scrollbar{display:none}
+  .cards>.card2{flex:0 0 82%;scroll-snap-align:start}
+  .card2:hover{transform:none}
+}

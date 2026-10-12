@@ -32,7 +32,7 @@
     var alta=$('alta');alta.hidden=!p.alta;alta.href='/api/checkout?item=alta&plan='+k;alta.textContent='Pagar el alta de $ 70.000';
     var b=$('pagar');
     b.href='/api/checkout?plan='+k+(on?'&promo=1':'');
-    b.textContent=!logged?'Ingresar con Google para continuar':on?'Pedir mi precio de fundador por WhatsApp':'Pagar con Mercado Pago';
+    b.textContent=!logged?'Ingresar con Google para empezar':on?'Pedir mi precio de fundador por WhatsApp':'Empezar la prueba en Mercado Pago';
     var ac=$('pg-acct');
     if(ac)ac.textContent=logged
       ?'Ingresaste como '+nombre+'. En Mercado Pago usá el mismo mail de tu cuenta de Google para ver tu suscripción en Mi cuenta.'
@@ -44,12 +44,12 @@
   radios.forEach(function(r){r.addEventListener('change',render)});
   promo.addEventListener('change',render);
   var pre=q.get('plan')||saved;if(pre&&PLANES[pre]){radios.forEach(function(r){r.checked=r.value===pre})}
-  if(q.get('promo')==='1')promo.checked=true;
-  render();
+  /* el precio de fundador se ofrece solo si se cobra directo en Mercado Pago (main.js muestra el paso) */
+  activa=false;render();
   fetch('/api/promo',{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(j){
-    if(!j||j.activa!==false)return;
-    activa=false;promo.checked=false;promo.disabled=true;
-    $('cupos').textContent='Por ahora el precio de fundador no está disponible.';
+    if(!j||j.activa===false||!j.directo)return;
+    activa=true;$('paso-fin').textContent='3';
+    if(q.get('promo')==='1')promo.checked=true;
     render();
   }).catch(function(){});
 })();

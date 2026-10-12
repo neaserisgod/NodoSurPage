@@ -71,9 +71,7 @@ header.px.lifted .nav{background:rgba(255,255,255,.88);box-shadow:inset 0 0 0 1p
 .mpanel{position:absolute;right:0;top:56px;width:min(300px,calc(100vw - 40px));background:#fff;border-radius:28px;padding:8px;box-shadow:0 24px 70px rgba(13,16,23,.18),inset 0 0 0 1px var(--line);display:flex;flex-direction:column;gap:2px}
 .mpanel a{padding:14px 18px;border-radius:18px;font-size:17px;font-weight:500}
 .mpanel a:hover{background:var(--bg2)}
-/* Desde 1140 px: con seis secciones (2026-10-12, se sumó Servicios) antes no entraban en una línea (y la marca se partía en dos). */
-.links a.l,.logo{white-space:nowrap}
-@media (min-width:1140px){
+@media (min-width:960px){
   .links{display:flex;gap:2px}
   .login{display:inline-flex}
   .mnav{display:none}
@@ -370,3 +368,140 @@ header.px.lifted .nav{background:rgba(255,255,255,.9);backdrop-filter:blur(14px)
 .cta-r{align-items:flex-start}
 @media (prefers-reduced-motion:reduce){.caret::after{animation:none}}
 @media (min-width:900px){.sys .head,.tour .head{grid-template-columns:1.6fr .8fr}.sys .head .h2,.tour .head .h2{font-size:clamp(36px,4.4vw,64px)}}
+
+/* =====================================================================
+   v3 — compacto: menos scroll y menos aire muerto. Secciones más bajas,
+   las 4 funciones en grilla 2×2, FAQ en dos columnas, pasos y precios
+   más cortos, cierre y marca de agua más chicos.
+   ===================================================================== */
+:root{--py:clamp(48px,6vw,96px)}
+.head{gap:14px;margin-bottom:clamp(24px,3vw,44px)}
+.h2{font-size:clamp(32px,4.2vw,60px)}
+.lead{font-size:clamp(17px,1.25vw,20px)}
+
+/* hero */
+.hero{padding-top:clamp(104px,11vw,148px)}
+.hero h1{font-size:clamp(36px,5.2vw,76px);margin-top:20px}
+.hero .sub{margin-top:18px}
+.ctas{margin-top:28px}
+.fine{margin-top:14px}
+.stage{margin-top:clamp(28px,4vw,52px)}
+.nota-img{margin-top:clamp(28px,3.5vw,44px)}
+.marq{padding:clamp(24px,3vw,40px) 0}
+
+/* funciones: grilla 2×2 de tarjetas (texto arriba, captura abajo) */
+.rows{display:grid;gap:clamp(16px,2vw,24px)}
+.feat,.feat:nth-child(even){grid-template-columns:1fr;gap:18px;align-items:start;align-content:start}
+.feat:nth-child(even)>div{order:0}
+.feat:nth-child(even)>.crop{order:1}
+.feat h3{font-size:clamp(24px,2.2vw,34px);max-width:none}
+.feat p{margin-top:8px;font-size:clamp(16px,1.15vw,18px);max-width:44ch}
+.feat .crop{padding:clamp(14px,2.2vw,32px)}
+@media (min-width:760px){.rows{grid-template-columns:1fr 1fr}}
+.chips{margin-top:clamp(24px,3vw,40px)}
+.more{margin-top:24px}
+
+/* carrusel: diapositivas más bajas */
+.slide{flex-basis:min(86%,680px);gap:16px}
+.slide-m{aspect-ratio:16/10}
+.slide-t h3{font-size:clamp(22px,2vw,28px)}
+.car-c{margin-top:18px}
+.car-b{width:48px;height:48px}
+
+/* quién está detrás */
+.quien-h{font-size:clamp(30px,4vw,56px)}
+.cols{margin-top:clamp(20px,2.5vw,36px)}
+
+/* bot */
+.dark{padding:clamp(36px,5vw,72px) var(--px)}
+.dark .h2{margin:14px 0!important}
+.fl{margin:24px 0}
+.fl li{padding:18px}
+
+/* POS + bot */
+.duo h2{font-size:clamp(28px,3.4vw,48px)}
+
+/* pasos: número chico al lado del texto */
+.step{gap:18px;flex-direction:row;align-items:flex-start;padding:clamp(22px,2.4vw,32px)}
+.step b{font-size:clamp(52px,5vw,72px);flex-shrink:0}
+.step p{font-size:16px}
+
+/* precios: que el monto no se parta en dos líneas */
+.plan{gap:20px;padding:clamp(22px,2.4vw,32px)}
+.price strong{font-size:clamp(34px,2.9vw,46px);white-space:nowrap}
+.plan li{font-size:15px}
+.plan ul{gap:10px}
+.paynote,.found{margin-top:20px}
+
+/* FAQ en dos columnas desde tablet */
+.faq{max-width:none;border-top:0;column-gap:clamp(24px,4vw,64px)}
+.q summary{padding:18px 0}
+.q h3{font-size:clamp(18px,1.6vw,22px)}
+.q summary::after{width:36px;height:36px;font-size:22px}
+.q p{padding:0 48px 20px 0;font-size:16px}
+@media (min-width:860px){.faq{grid-template-columns:1fr 1fr;align-items:start}}
+
+/* cierre */
+.cta-b{min-height:0;padding:clamp(36px,6vw,80px) clamp(24px,5vw,72px);gap:16px}
+.cta-b h2{font-size:clamp(34px,5vw,72px)}
+.share{padding-top:clamp(28px,3vw,44px)}
+.foot{padding-top:clamp(28px,3vw,44px);padding-bottom:clamp(20px,2.5vw,32px);gap:24px}
+.wordmark{font-size:clamp(64px,13vw,200px)}
+/* quién está detrás: titular y texto lado a lado */
+@media (min-width:960px){
+  #quien .wrap{display:grid;grid-template-columns:.9fr 1.1fr;gap:16px clamp(32px,5vw,72px);align-items:end}
+  #quien .eyebrow{grid-column:1/-1}
+  #quien .cols{margin-top:0}
+}
+
+/* celular: menos apilado */
+@media (max-width:699px){
+  .chips{gap:6px;justify-content:flex-start}
+  .chips li{padding:7px 12px;font-size:13.5px}
+  .fl{grid-template-columns:1fr 1fr;gap:8px}
+  .fl li{padding:14px;border-radius:18px}
+  .fl h3{font-size:16px}
+  .fl p{font-size:13.5px}
+  /* planes en carrusel horizontal, se asoma el siguiente */
+  .plans{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;gap:12px;
+    margin:0 calc(var(--px) * -1);padding:4px var(--px) 8px;scroll-padding-inline:var(--px)}
+  .plans::-webkit-scrollbar{display:none}
+  .plan{flex:0 0 84%;scroll-snap-align:start}
+  .step{padding:18px}
+  .q summary{padding:14px 0}
+}
+
+/* planes: 3 para comercios y Emprendedor aparte, en un renglón */
+@media (min-width:1000px){.plans{grid-template-columns:repeat(3,1fr)}}
+.emp{margin-top:14px;display:flex;flex-direction:column;gap:16px;align-items:flex-start;padding:clamp(20px,2.4vw,28px) clamp(22px,2.6vw,32px);border-radius:var(--r);box-shadow:inset 0 0 0 1.5px var(--line)}
+.emp h3{font-size:clamp(19px,1.6vw,22px);font-weight:500;letter-spacing:-.02em}
+.emp p{margin-top:6px;font-size:15.5px;line-height:1.5;color:var(--mute);max-width:70ch}
+.emp strong{color:var(--ink)}
+.emp .btn{min-height:48px;flex-shrink:0}
+@media (min-width:760px){.emp{flex-direction:row;align-items:center;justify-content:space-between;gap:32px}}
+p.found{display:block;margin-top:16px;padding:0;background:none;border-radius:0;text-align:center;font-size:15.5px;line-height:1.6;color:var(--mute)}
+p.found strong{color:var(--ink)}
+.nav .cta{padding:0 18px}
+/* lista con tildes del bot (no tenía estilo: tildes invisibles y texto corrido) */
+.ck{display:flex;flex-direction:column;gap:10px}
+.ck li{display:flex;gap:10px;align-items:flex-start;font-size:15.5px;line-height:1.45}
+.ck svg{flex-shrink:0;margin-top:0;stroke:var(--teal,#18c3a4)}
+.dark .lw{color:#fff;border-bottom-color:rgba(255,255,255,.4)}
+.dark .fl{margin-bottom:20px}
+
+/* =====================================================================
+   v4 — página de venta: garantías al lado del botón, cada producto
+   cierra con su botón y los precios aparecen enseguida.
+   ===================================================================== */
+.hero .sub strong{color:var(--ink);font-weight:600;white-space:nowrap}
+.gar{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 20px;margin-top:18px;font-size:15px;font-weight:500;color:var(--mute)}
+.gar li{display:inline-flex;align-items:center;gap:6px}
+.gar svg{stroke:var(--teal,#18c3a4);flex-shrink:0}
+.gar.c{margin:22px 0 0}
+.more{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px 24px}
+.more.l{justify-content:flex-start;margin-top:26px}
+.btn-wh{background:#fff;color:var(--ink)}
+.btn-wh:hover{background:#fff;color:var(--ink)}
+.juntos{margin-top:22px;font-size:15.5px;line-height:1.55;color:#aab1c2;max-width:52ch}
+.juntos strong{color:#fff;font-weight:600}
+#precios{padding-top:var(--py)}
