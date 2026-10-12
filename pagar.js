@@ -32,7 +32,7 @@
     var alta=$('alta');alta.hidden=!p.alta;alta.href='/api/checkout?item=alta&plan='+k;alta.textContent='Pagar el alta de $ 70.000';
     var b=$('pagar');
     b.href='/api/checkout?plan='+k+(on?'&promo=1':'');
-    b.textContent=!logged?'Ingresar con Google para continuar':on?'Pedir mi precio de fundador por WhatsApp':'Pagar con Mercado Pago';
+    b.textContent=!logged?'Ingresar con Google para empezar':on?'Pedir mi precio de fundador por WhatsApp':'Empezar la prueba en Mercado Pago';
     var ac=$('pg-acct');
     if(ac)ac.textContent=logged
       ?'Ingresaste como '+nombre+'. En Mercado Pago usá el mismo mail de tu cuenta de Google para ver tu suscripción en Mi cuenta.'
