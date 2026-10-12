@@ -143,8 +143,13 @@
     var skip=['/pagar','/ingresar','/cuenta','/admin','/privacidad','/descargar','/vincular','/negocio','/unirse'];
     if(skip.indexOf(path)>-1||!matchMedia('(max-width:719px)').matches)return;
     var a=d.createElement('a');a.className='sticky-cta';
-    a.href='https://wa.me/5492944796044?text='+encodeURIComponent('Hola, quiero probar el sistema');
-    a.rel='noopener';a.textContent='Probalo 7 días gratis · WhatsApp';
+    /* la misma acción que el botón principal de la página: la prueba de 7 días (o el presupuesto, en páginas web) */
+    if(path==='/paginas-web'){
+      a.href='https://wa.me/5492944796044?text='+encodeURIComponent('Hola, quiero un presupuesto para una página web');
+      a.rel='noopener';a.textContent='Pedir presupuesto';
+    }else{
+      a.href=path==='/bot-whatsapp'?'/pagar/?plan=bot':'/pagar/';a.textContent='Probar 7 días gratis';
+    }
     d.body.appendChild(a);d.body.classList.add('has-sticky');
     var on=false,t=$('#contacto');
     function upd(){
@@ -155,11 +160,11 @@
     }
     addEventListener('scroll',upd,{passive:true});upd();
   })();
-  /* precio de fundador: si el administrador lo desactivó, se oculta el bloque */
+  /* precio de fundador: oculto de entrada; se muestra solo si está activo y se cobra directo en Mercado Pago */
   (function(){
     var fs=$$('.found,.js-promo');if(!fs.length)return;
     fetch('/api/promo',{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(j){
-      if(j&&j.activa===false)fs.forEach(function(f){f.hidden=true});
+      if(j&&j.activa!==false&&j.directo)fs.forEach(function(f){f.hidden=false});
     }).catch(function(){});
   })();
 

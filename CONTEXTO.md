@@ -42,6 +42,18 @@ Mismo lenguaje que el POS: estilo antigravity.google (fondo blanco, bloques `#F3
 Figtree, poco texto). Home con `home.css`/`home.js`; páginas internas con `styles.css` + `theme.css`/`theme.js` +
 `fx.js`. Mocks del rediseño en `mocks/antigravity/` (no se publican). Las capturas del POS que muestra el sitio (`img/pos/*-v4.webp`, 2026-10-07) salen del mock v4 de la PC (`Nodo-Sur-Pos/docs/mock-pc/NodoSurPC-v4.html`) y de las capturas reales del celular (`flutter test test/companion/capturas_mock_test.dart`); `/img/*` tiene caché inmutable, así que una imagen nueva lleva nombre nuevo. Detalle en `README.md` ("Rediseño del index").
 
+## Prueba por autoservicio (2026-10-12)
+
+Todo "Probar 7 días gratis" del sitio lleva a `/pagar/` (Google + Mercado Pago, hoy $ 0); WhatsApp queda solo como
+"¿Dudas?". La instalación del sistema POS es del cliente, con ayuda opcional; el bot la sigue haciendo el dueño (la cubre
+el alta). Pendiente en Mercado Pago (lo hace el dueño, no se puede desde una sesión):
+
+- **Volver al sitio después de activar la prueba:** en cada plan de suscripción (Mercado Pago → Suscripciones → planes),
+  poner como URL de retorno `https://horsepos.com/cuenta/`, donde aparece el botón de descarga.
+- **Precio de fundador directo:** crear 4 planes de suscripción con el precio de fundador ($ 24.500 Sistema POS,
+  $ 42.000 Sistema + Bot, $ 24.500 Solo el bot, $ 12.600 Emprendedor) y pegar sus links en `promoHref`
+  (`functions/_lib/plans.js`). Mientras falte alguno, `/api/promo` responde `directo: false` y el sitio no muestra el fundador.
+
 ## Estado al 2026-10-03
 
 - Publicado y en uso: negocios y sucursales con sync por sucursal, Mercado Pago por negocio (cobro, impresión, cobros
