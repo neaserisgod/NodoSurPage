@@ -71,7 +71,9 @@ header.px.lifted .nav{background:rgba(255,255,255,.88);box-shadow:inset 0 0 0 1p
 .mpanel{position:absolute;right:0;top:56px;width:min(300px,calc(100vw - 40px));background:#fff;border-radius:28px;padding:8px;box-shadow:0 24px 70px rgba(13,16,23,.18),inset 0 0 0 1px var(--line);display:flex;flex-direction:column;gap:2px}
 .mpanel a{padding:14px 18px;border-radius:18px;font-size:17px;font-weight:500}
 .mpanel a:hover{background:var(--bg2)}
-@media (min-width:960px){
+/* Desde 1140 px: con seis secciones (2026-10-12, se sumó Servicios) antes no entraban en una línea (y la marca se partía en dos). */
+.links a.l,.logo{white-space:nowrap}
+@media (min-width:1140px){
   .links{display:flex;gap:2px}
   .login{display:inline-flex}
   .mnav{display:none}
