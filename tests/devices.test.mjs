@@ -169,4 +169,17 @@ await t('login: solo se vuelve a /vincular/ (lista blanca), nunca a una URL de a
   assert.equal(await ir(), 'https://horsepos.com/cuenta/');
 });
 
+await t('nadie se queda con el equipo de otro conociendo su id; el propio se vuelve a vincular, y uno dado de baja también', async () => {
+  const env = mkEnv(); addUser(env, 'ana@x.com', 's1'); addUser(env, 'beto@x.com', 's2');
+  const deAna = await vincular(env, 'ana@x.com', 's1');
+  // Beto (otra persona, otro negocio) pide un código con el id de la PC de Ana.
+  const { r, verifier } = await pedirCodigo(env, await sess(env, 'beto@x.com', 's2'));
+  const c = await canjear(env, await codeDe(r), verifier);
+  assert.equal(c.status, 409); assert.equal((await c.json()).error, 'device_ajeno');
+  assert.equal((await doPing(env, deAna)).status, 200, 'la PC de Ana sigue andando');
+  await vincular(env, 'ana@x.com', 's1'); // volver a vincular la propia
+  await devices.onRequestRevoke({ request: req('/api/device/revoke', { method: 'POST', headers: bearer(deAna), body: {} }), env });
+  await vincular(env, 'beto@x.com', 's2'); // dada de baja: ya se puede
+});
+
 console.log(`\n${pass} pruebas OK (dispositivos)`);

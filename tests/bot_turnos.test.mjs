@@ -148,4 +148,25 @@ await t('sin el plan con bot no hay token', async () => {
   const { env, app } = await armar(PLAN_POS);
   assert.equal((await post(bot.onRequestTokenPost, env, '/api/bot/token', { deviceId: 'bot-enlaapp-0123456789abcdef' }, app)).status, 403);
 });
+await t('más de 200 turnos de la app publicados juntos: el bot los ve todos, aunque tengan la misma hora de cambio', async () => {
+  const { env, app, robot } = await armar();
+  const ocupados = Array.from({ length: 250 }, (_, i) => ({ id: `gid-app-${String(i).padStart(10, '0')}`, inicio: manana10 + i * H, fin: manana10 + i * H + H / 2, estado: 'confirmado' }));
+  assert.equal((await post(bot.onRequestOcupadosPost, env, '/api/bot/ocupados', { turnos: ocupados }, app)).status, 200);
+  const vistos = new Set(); let desde = 0; let mas = true; let vueltas = 0;
+  while (mas && vueltas++ < 10) {
+    const j = await (await get(bot.onRequestTurnosGet, env, `/api/bot/turnos?desde=${desde}`, robot)).json();
+    j.turnos.forEach((x) => vistos.add(x.id)); desde = j.hasta; mas = j.mas;
+  }
+  assert.equal(vistos.size, 250);
+});
+
+await t('el token del bot solo sirve para lo del bot: ni la sync ni la PC del local', async () => {
+  const { env, robot } = await armar();
+  const sync = await import('../functions/api/sync.js');
+  const pcLocal = await import('../functions/api/device/pc_local.js');
+  assert.equal((await get(sync.onRequestGet, env, '/api/sync?desde=0', robot)).status, 401);
+  assert.equal((await get(pcLocal.onRequestGet, env, '/api/device/pc-local', robot)).status, 401);
+  assert.equal((await get(bot.onRequestConfigGet, env, '/api/bot/config', robot)).status, 200, 'lo suyo sí');
+});
+
 console.log(`\n${pass} pruebas de turnos del bot OK`);

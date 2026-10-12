@@ -155,6 +155,22 @@ export async function cambiarTurno(env, orgId, branchId, { turnoId, estado, inic
   return r.meta.changes ? { ok: true } : { ocupado: true };
 }
 
+// Una página de cambios por el cursor `actualizado` (ms). El cursor es solo ese número, así que una página nunca puede terminar
+// a mitad de un grupo de filas con el mismo `actualizado`: la próxima pide `> hasta` y las que quedaban del grupo no volvían
+// más. Pasaba de verdad: `publicarOcupados` graba todos los turnos de la app con la misma hora, y con más de 200 el bot dejaba
+// de ver los que pasaban de 200 (revisión 2026-10-12). Si la página se llena, se completa con el resto de su último grupo.
+export async function paginaPorActualizado(env, tabla, orgId, branchId, desde, limite) {
+  const filas = (await env.DB.prepare(
+    `SELECT * FROM ${tabla} WHERE org_id = ?1 AND branch_id = ?2 AND actualizado > ?3 ORDER BY actualizado, id LIMIT ?4`
+  ).bind(orgId, branchId, desde, limite).all()).results;
+  if (filas.length < limite) return filas;
+  const ultima = filas[filas.length - 1];
+  const resto = (await env.DB.prepare(
+    `SELECT * FROM ${tabla} WHERE org_id = ?1 AND branch_id = ?2 AND actualizado = ?3 AND id > ?4 ORDER BY id`
+  ).bind(orgId, branchId, ultima.actualizado, ultima.id).all()).results;
+  return resto.length ? filas.concat(resto) : filas;
+}
+
 const turnoPublico = async (env, f) => ({
   id: f.turno_id, origen: f.origen, estado: f.estado, profesional: f.profesional, inicio: f.inicio, fin: f.fin,
   ...(f.datos_enc ? await descifrarJson(env, f.datos_enc) : {}), actualizado: f.actualizado,
@@ -164,10 +180,8 @@ const turnoPublico = async (env, f) => ({
 // cambios que la dueña le hizo a los suyos.
 export async function turnosDesde(env, orgId, branchId, desde = 0) {
   await ensureTablaTurnos(env);
-  const filas = (await env.DB.prepare(
-    'SELECT * FROM bot_turnos WHERE org_id = ?1 AND branch_id = ?2 AND actualizado > ?3 ORDER BY actualizado, id LIMIT ?4'
-  ).bind(orgId, branchId, desde, MAX_TURNOS_LISTA).all()).results;
+  const filas = await paginaPorActualizado(env, 'bot_turnos', orgId, branchId, desde, MAX_TURNOS_LISTA);
   const turnos = [];
   for (const f of filas) turnos.push(await turnoPublico(env, f));
-  return { turnos, hasta: filas.length ? filas[filas.length - 1].actualizado : desde, mas: filas.length === MAX_TURNOS_LISTA };
+  return { turnos, hasta: filas.length ? filas[filas.length - 1].actualizado : desde, mas: filas.length >= MAX_TURNOS_LISTA };
 }

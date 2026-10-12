@@ -160,6 +160,9 @@ export async function onRequestSaldo({ request, env }) {
 // del bot; la dueña lo confirmó en la app. Reintentar no devuelve dos veces.
 export async function onRequestDevolverSena({ request, env }) {
   const w = await quien(request, env); if (w.error) return w.error;
+  // Devolver plata es de dueño y encargado, como la devolución de una venta (`onRequestDevolver`): un empleado no la devuelve.
+  const m = await getMembership(env, w.orgId, w.sub);
+  if (!m || m.status !== 'active' || !puede(m, 'devolver', w.branchId)) return json({ error: 'sin_permiso_devolver' }, 403);
   const b = await readJson(request);
   if (!b || typeof b.turnoId !== 'string' || !/^[A-Za-z0-9_-]{8,64}$/.test(b.turnoId)) return json({ error: 'bad_request' }, 400);
   const r = await devolverSena(env, w.orgId, w.branchId, b.turnoId);
