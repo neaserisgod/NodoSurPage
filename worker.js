@@ -45,7 +45,7 @@ import * as sync from './functions/api/sync.js';
 import * as promo from './functions/api/promo.js';
 import * as adminPromo from './functions/api/admin/promo.js';
 import { sweep } from './functions/_lib/sweep.js';
-import { servirApp } from './functions/_lib/app_web.js';
+import { servirApp, servirDemo } from './functions/_lib/app_web.js';
 import { hasDB } from './functions/_lib/db.js';
 import { purgeBackups, backupsReady } from './functions/_lib/backups.js';
 import { backfillOrgs } from './functions/_lib/orgs.js';
@@ -160,6 +160,8 @@ export default {
     const url = new URL(request.url);
     // Nodo Sur Servicios en el navegador: sale de R2, con sus propias cabeceras (`functions/_lib/app_web.js`).
     if (url.pathname === '/app' || url.pathname.startsWith('/app/')) return servirApp(request, env);
+    // La demo: la misma app, sin cuenta y con datos de ejemplo.
+    if (url.pathname === '/demo' || url.pathname.startsWith('/demo/')) return servirDemo(request, env);
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
 
     // El feed de actualizaciones apunta a /api/update/file/<nombre>.exe?id=N: WinSparkle guarda el instalador con el

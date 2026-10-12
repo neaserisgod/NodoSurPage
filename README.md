@@ -173,6 +173,7 @@ La app del celular (edición servicios) compilada para web, en `horsepos.com/app
 - **Entrar**: `/vincular/?web=1&state&challenge&device&name` (sin puerto); `POST /api/device/authorize` con `web: true` devuelve `/app/?code=…&state=…` y la app lo canjea en `/api/device/token` (PKCE, igual que siempre). Queda como un celular ("Navegador").
 - **Avisos en vivo**: `/api/sync/escuchar` acepta el token como subprotocolo `bearer.<token>` junto a `nodosur` (un WebSocket del navegador no puede mandar `Authorization`) y contesta eligiendo `nodosur`.
 - En `/descargar/` y en `/servicios/` hay un link para abrirla.
+- **Demo** (`/demo/`, 2026-10-12): la misma app, sin cuenta y con un negocio de ejemplo (barbería, peluquería, uñas o estética) armado en el navegador; todo en memoria, se borra al cerrar (`Nodo-Sur-Pos/docs/PLAN-DEMO-SERVICIOS.md`). El worker (`servirDemo`) sirve en `/demo/` la página de `/app/`, con las mismas cabeceras; lo demás lo carga de `/app/` por su `<base href>`, así que no hay nada que publicar aparte. La app ve que está en `/demo/` y arranca en modo demo. "Ver la demo" está en `/servicios/`.
 
 ### Sincronización entre dispositivos (PC y celulares de una sucursal)
 
