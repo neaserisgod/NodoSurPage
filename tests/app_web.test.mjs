@@ -1,7 +1,7 @@
 // Nodo Sur Servicios en el navegador (`functions/_lib/app_web.js`): /app/ sale de R2, de la versión que marca app/actual.json,
 // con sus propias cabeceras (aislamiento entre orígenes para la base en el navegador, y WebAssembly permitido).
 import assert from 'node:assert/strict';
-import { servirApp, rutaSegura, tipoDe, olvidarVersion } from '../functions/_lib/app_web.js';
+import { servirApp, servirDemo, rutaSegura, tipoDe, olvidarVersion } from '../functions/_lib/app_web.js';
 import worker from '../worker.js';
 import { mkEnv } from './helpers-nube.mjs';
 
@@ -56,5 +56,22 @@ await t('el worker manda /app/ a la app (no a los archivos del sitio) y el resto
   assert.equal(r.status, 200); assert.equal(assets, 0);
   assert.equal(await (await worker.fetch(new Request('https://horsepos.com/aplicacion/'), env, { waitUntil() {} })).text(), 'sitio');
   assert.equal(assets, 1);
+});
+await t('/demo/ es la página de la app (la misma versión y las mismas cabeceras); nada más cuelga de /demo/', async () => {
+  const env = await conVersion();
+  const demo = (p, init) => servirDemo(new Request('https://horsepos.com' + p, init), env);
+  const r = await demo('/demo/');
+  assert.equal(r.status, 200); assert.match(await r.text(), /Nodo Sur Servicios/);
+  assert.equal(r.headers.get('Cross-Origin-Embedder-Policy'), 'require-corp');
+  const sin = await demo('/demo?x=1');
+  assert.equal(sin.status, 301); assert.equal(sin.headers.get('Location'), 'https://horsepos.com/demo/?x=1');
+  for (const p of ['/demo/main.dart.js', '/demo/index.html', '/demo/../app/actual.json']) assert.equal((await demo(p)).status, 404, p);
+  assert.equal((await demo('/demo/', { method: 'POST' })).status, 405);
+  olvidarVersion();
+  assert.equal((await servirDemo(new Request('https://horsepos.com/demo/'), mkEnv())).status, 503, 'sin app publicada, tampoco hay demo');
+  olvidarVersion();
+  let assets = 0; env.ASSETS = { fetch: async () => { assets++; return new Response('sitio'); } };
+  assert.equal((await worker.fetch(new Request('https://horsepos.com/demo/'), env, { waitUntil() {} })).status, 200);
+  assert.equal(assets, 0);
 });
 console.log(`\n${pass} pruebas de la app web OK`);

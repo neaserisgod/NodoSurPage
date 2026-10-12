@@ -70,9 +70,21 @@ const noEncontrado = () => new Response('No encontrado', { status: 404, headers:
 export async function servirApp(request, env) {
   const url = new URL(request.url);
   if (url.pathname === '/app') return Response.redirect(`${url.origin}/app/${url.search}`, 301);
+  return servirArchivo(request, env, rutaSegura(url.pathname.slice('/app/'.length)));
+}
+
+// GET/HEAD /demo/ : la demo (El dueño, 2026-10-12; `Nodo-Sur-Pos/docs/PLAN-DEMO-SERVICIOS.md`). Es la misma app: la página de
+// /app/, que carga todo lo demás desde /app/ (su `<base href>`), y al ver que está en /demo/ arranca sin cuenta, con un negocio
+// de ejemplo y todo en memoria. Por eso acá solo se sirve la página; cualquier otra ruta bajo /demo/ no existe.
+export async function servirDemo(request, env) {
+  const url = new URL(request.url);
+  if (url.pathname === '/demo') return Response.redirect(`${url.origin}/demo/${url.search}`, 301);
+  return servirArchivo(request, env, url.pathname === '/demo/' ? 'index.html' : null);
+}
+
+async function servirArchivo(request, env, ruta) {
   if (request.method !== 'GET' && request.method !== 'HEAD') return new Response('Method not allowed', { status: 405 });
   if (!env.RELEASES) return noEncontrado();
-  const ruta = rutaSegura(url.pathname.slice('/app/'.length));
   if (!ruta) return noEncontrado();
   const version = await versionActual(env);
   if (!version) {
