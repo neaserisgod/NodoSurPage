@@ -51,14 +51,27 @@ export async function onRequestGet({ request, env }) {
 // Escuchar avisos (WebSocket): la app se conecta una vez y queda esperando; cuando otro dispositivo sube un lote,
 // llega `{"seq":N}` y recién ahí baja. Mientras no haya nada nuevo no hay ningún pedido. Pasa por el mismo control
 // de acceso que bajar.
+// Desde el navegador (Nodo Sur Servicios web) un WebSocket no puede mandar la cabecera Authorization: el token viaja como
+// subprotocolo `bearer.<token>` junto a `nodosur`, y el sitio contesta eligiendo `nodosur` (si no, el navegador corta).
+const PROTOCOLO_WEB = 'nodosur';
+function tokenDeSubprotocolo(request) {
+  const lista = (request.headers.get('Sec-WebSocket-Protocol') || '').split(',').map((x) => x.trim());
+  if (!lista.includes(PROTOCOLO_WEB)) return null;
+  const t = lista.find((x) => x.startsWith('bearer.'));
+  return t ? t.slice('bearer.'.length) : null;
+}
+
 export async function onRequestEscuchar({ request, env }) {
   if (request.headers.get('Upgrade') !== 'websocket') return json({ error: 'upgrade_required' }, 426);
-  const a = await actorOf(request, env);
+  const tokenWeb = request.headers.get('Authorization') ? null : tokenDeSubprotocolo(request);
+  const a = await actorOf(tokenWeb ? new Request(request.url, { headers: { Authorization: `Bearer ${tokenWeb}` } }) : request, env);
   if (!a || a.via !== 'device') return json({ error: 'no_device' }, 401);
   if (!syncReady(env) || !hubReady(env)) return noConfig();
   const acc = await syncAccess(env, a);
   if (acc.error || !acc.bajar) return denied(acc, 'no_download');
   const hub = await hubDeCuenta(env, scopeDeSync(a));
   // Pedido nuevo con solo lo necesario: la credencial del dispositivo no sigue viaje hacia el Durable Object.
-  return hub.fetch('https://hub/escuchar', { headers: { Upgrade: 'websocket', 'X-Dispositivo': a.device.id, ...(a.device.kind === 'bot' ? { 'X-Tipo': 'bot' } : {}) } });
+  const r = await hub.fetch('https://hub/escuchar', { headers: { Upgrade: 'websocket', 'X-Dispositivo': a.device.id, ...(a.device.kind === 'bot' ? { 'X-Tipo': 'bot' } : {}) } });
+  if (!tokenWeb || r.status !== 101) return r;
+  return new Response(null, { status: 101, webSocket: r.webSocket, headers: { 'Sec-WebSocket-Protocol': PROTOCOLO_WEB } });
 }

@@ -168,6 +168,14 @@ await t('escuchar: exige websocket, dispositivo y permiso; y manda al hub solo e
   assert.equal((await escuchar(env, { headers: { ...ws, ...bearer(pc) } })).status, 403);
   delete env.SYNC_HUB; assert.equal((await escuchar(env, { headers: { ...ws, ...bearer(pc) } })).status, 503);
 });
+await t('escuchar desde el navegador: el token como subprotocolo (con "nodosur"); suelto o mal armado no entra', async () => {
+  const { env, pc } = await cuenta(); env.SYNC_HUB = hubFalso();
+  const tok = bearer(pc).Authorization.slice('Bearer '.length);
+  const ws = (proto) => ({ Upgrade: 'websocket', 'Sec-WebSocket-Protocol': proto });
+  assert.equal((await escuchar(env, { headers: ws(`nodosur, bearer.${tok}`) })).status, 204, 'con el subprotocolo entra');
+  assert.equal((await escuchar(env, { headers: ws(`bearer.${tok}`) })).status, 401, 'sin "nodosur" no');
+  assert.equal((await escuchar(env, { headers: ws('nodosur, bearer.no-es-un-token') })).status, 401);
+});
 function estadoFalso(sockets) { return { getWebSockets: () => sockets.map((s) => s.ws), getTags: (ws) => sockets.find((s) => s.ws === ws).tags, acceptWebSocket() {} }; }
 const sockFalso = (tag, falla = false) => { const enviados = []; return { ws: { send: (m) => { if (falla) throw new Error('cerrado'); enviados.push(m); } }, tags: [tag], enviados }; };
 await t('el hub avisa a todos los dispositivos menos al que subió, y un socket muerto no corta a los demás', async () => {

@@ -149,4 +149,22 @@ await t('devolver la seña: una sola vez aunque se repita; sin seña por Mercado
   assert.equal((await devolver('turno-no-existe-01')).status, 404);
 });
 
+await t('devolver la seña es de dueño y encargado: un empleado no puede, y el token del bot no sirve para Mercado Pago', async () => {
+  const { env, m, n, robot } = await armar();
+  await post(bot.onRequestTurnoPost, env, '/api/bot/turno', turno('turno-sena-0005'), robot);
+  m.pagos['77005'] = { id: 77005, status: 'approved', transaction_amount: 5000, external_reference: referenciaSena('turno-sena-0005'), collector_id: CUENTA };
+  await procesarAvisoMp(env, { tema: 'payment', id: '77005', userId: CUENTA });
+  addUser(env, 'emp@x.com', 'se');
+  const mm = env.DB.raw.prepare("INSERT INTO memberships (org_id, user_sub, email, role, status, all_branches, created_at) VALUES (?, 'se', 'emp@x.com', 'employee', 'active', 0, ?)").run(n.org.id, nowS());
+  env.DB.raw.prepare('INSERT INTO membership_branches (membership_id, branch_id) VALUES (?, ?)').run(mm.lastInsertRowid, n.branch.id);
+  await upsertDevice(env, { id: 'cel-empleada-0123456789abc', sub: 'se', email: 'emp@x.com', name: 'celular', orgId: n.org.id, branchId: n.branch.id, kind: 'celular' });
+  const empleada = { Authorization: `Bearer ${await signDeviceToken(env, { sub: 'se', email: 'emp@x.com', deviceId: 'cel-empleada-0123456789abc' })}` };
+  const r = await post(orden.onRequestDevolverSena, env, '/api/mp/sena/devolver', { turnoId: 'turno-sena-0005' }, empleada);
+  assert.equal(r.status, 403); assert.equal((await r.json()).error, 'sin_permiso_devolver');
+  // El bot lo vinculó la dueña, pero su token solo sirve para lo del bot.
+  assert.equal((await post(orden.onRequestDevolverSena, env, '/api/mp/sena/devolver', { turnoId: 'turno-sena-0005' }, robot)).status, 401);
+  assert.equal((await post(orden.onRequestPost, env, '/api/mp/orden', { externalReference: 'v-1', idempotencyKey: 'clave-0001', montoCentavos: 10000, canal: 'qr' }, robot)).status, 401);
+  assert.deepEqual(m.devoluciones, [], 'nadie devolvió nada');
+});
+
 console.log(`${pass} pruebas de Mercado Pago para servicios OK`);

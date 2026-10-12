@@ -15,6 +15,7 @@ import { getOrg } from './orgs.js';
 import { isPrivilegedOrg } from './devices.js';
 import { listSubscriptionsCached, PLANES_CON_BOT } from './mp.js';
 import { hubReady, hubDeCuenta } from './sync.js';
+import { paginaPorActualizado } from './bot_turnos.js';
 
 export const MAX_CONFIG_BYTES = 32 * 1024;
 export const MAX_CATALOGO_ITEMS = 5000;
@@ -180,12 +181,10 @@ const pedidoPublico = async (env, f) => ({ id: f.id, pedidoId: f.pedido_id, esta
 // Lo que cambió después de `desde` (ms), en orden: la app ve los nuevos, el bot ve los que se resolvieron.
 export async function pedidosDesde(env, orgId, branchId, desde = 0) {
   await ensureBotTables(env);
-  const filas = (await env.DB.prepare(
-    'SELECT * FROM bot_pedidos WHERE org_id = ?1 AND branch_id = ?2 AND actualizado > ?3 ORDER BY actualizado, id LIMIT ?4'
-  ).bind(orgId, branchId, desde, MAX_PEDIDOS_LISTA).all()).results;
+  const filas = await paginaPorActualizado(env, 'bot_pedidos', orgId, branchId, desde, MAX_PEDIDOS_LISTA);
   const pedidos = [];
   for (const f of filas) pedidos.push(await pedidoPublico(env, f));
-  return { pedidos, hasta: filas.length ? filas[filas.length - 1].actualizado : desde, mas: filas.length === MAX_PEDIDOS_LISTA };
+  return { pedidos, hasta: filas.length ? filas[filas.length - 1].actualizado : desde, mas: filas.length >= MAX_PEDIDOS_LISTA };
 }
 
 // Un pedido con gramos solo entra si TODAS las apps que leen los pedidos de la sucursal los entienden: una app anterior a los gramos
