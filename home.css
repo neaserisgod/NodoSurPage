@@ -488,3 +488,20 @@ p.found strong{color:var(--ink)}
 .ck svg{flex-shrink:0;margin-top:0;stroke:var(--teal,#18c3a4)}
 .dark .lw{color:#fff;border-bottom-color:rgba(255,255,255,.4)}
 .dark .fl{margin-bottom:20px}
+
+/* =====================================================================
+   v4 — página de venta: garantías al lado del botón, cada producto
+   cierra con su botón y los precios aparecen enseguida.
+   ===================================================================== */
+.hero .sub strong{color:var(--ink);font-weight:600;white-space:nowrap}
+.gar{display:flex;flex-wrap:wrap;justify-content:center;gap:8px 20px;margin-top:18px;font-size:15px;font-weight:500;color:var(--mute)}
+.gar li{display:inline-flex;align-items:center;gap:6px}
+.gar svg{stroke:var(--teal,#18c3a4);flex-shrink:0}
+.gar.c{margin:22px 0 0}
+.more{display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:14px 24px}
+.more.l{justify-content:flex-start;margin-top:26px}
+.btn-wh{background:#fff;color:var(--ink)}
+.btn-wh:hover{background:#fff;color:var(--ink)}
+.juntos{margin-top:22px;font-size:15.5px;line-height:1.55;color:#aab1c2;max-width:52ch}
+.juntos strong{color:#fff;font-weight:600}
+#precios{padding-top:var(--py)}
