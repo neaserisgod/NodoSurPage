@@ -10,9 +10,8 @@ export async function onRequestGet({ request, env }) {
   // Plan elegido antes de ingresar (viaja firmado dentro del flujo; después se guarda en la base).
   const q0 = request ? new URL(request.url).searchParams : new URLSearchParams();
   const plan = isPlan(q0.get('plan')) ? q0.get('plan') : null;
-  const promo = Boolean(plan) && q0.get('promo') === '1';
   const next = safeNext(q0.get('next'));
-  const flow = await sign({ state, nonce, verifier, plan, promo, next, exp: now() + 600 }, env.SESSION_SECRET);
+  const flow = await sign({ state, nonce, verifier, plan, next, exp: now() + 600 }, env.SESSION_SECRET);
   const q = new URLSearchParams({
     client_id: env.GOOGLE_CLIENT_ID,
     redirect_uri: `${site}/api/auth/callback`,

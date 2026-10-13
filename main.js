@@ -160,14 +160,6 @@
     }
     addEventListener('scroll',upd,{passive:true});upd();
   })();
-  /* precio de fundador: oculto de entrada; se muestra solo si está activo y se cobra directo en Mercado Pago */
-  (function(){
-    var fs=$$('.found,.js-promo');if(!fs.length)return;
-    fetch('/api/promo',{cache:'no-store'}).then(function(r){return r.ok?r.json():null}).then(function(j){
-      if(j&&j.activa!==false&&j.directo)fs.forEach(function(f){f.hidden=false});
-    }).catch(function(){});
-  })();
-
   /* compartir: botón nativo del celular (si existe) y copiar el link */
   (function(){
     var box=$('.share');if(!box)return;
