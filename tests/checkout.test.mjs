@@ -9,7 +9,6 @@ import * as google from '../functions/api/auth/google.js';
 import * as callback from '../functions/api/auth/callback.js';
 import * as me from '../functions/api/me.js';
 import * as overview from '../functions/api/admin/overview.js';
-import { setPromo } from '../functions/_lib/db.js';
 import { clearMpCache } from '../functions/_lib/mp.js';
 import { PLAN_CATALOG, ALTA_URL } from '../functions/_lib/plans.js';
 
@@ -28,11 +27,11 @@ const go = (env, qs, cookie) => checkout.onRequestGet({ request: new Request('ht
 const ck = (res) => Object.fromEntries(res.headers.getSetCookie().map((c) => [c.split('=')[0], c.slice(c.indexOf('=') + 1).split(';')[0]]));
 
 // ---------- sin sesión: no se puede pagar, y el plan se recuerda
-await t('checkout sin sesión manda a ingresar recordando plan y precio de fundador', async () => {
+await t('checkout sin sesión manda a ingresar recordando el plan', async () => {
   const env = mkEnv();
   for (const [qs, want] of [
     ['plan=pos', '/ingresar/?plan=pos'],
-    ['plan=pos-bot&promo=1', '/ingresar/?plan=pos-bot&promo=1'],
+    ['plan=pos-bot&promo=1', '/ingresar/?plan=pos-bot'], // un link viejo con promo=1 ya no lleva el fundador
     ['plan=bot&item=alta', '/ingresar/?plan=bot&item=alta'],
   ]) {
     const r = await go(env, qs);
@@ -59,18 +58,13 @@ await t('checkout con sesión: va a Mercado Pago y guarda el plan (crea las colu
   const c = await sess(env, 'ana@gmail.com', 's1');
   let r = await go(env, 'plan=pos-bot', c);
   assert.equal(r.headers.get('Location'), PLAN_CATALOG['pos-bot'].href);
-  let u = row(env, 'ana@gmail.com'); assert.equal(u.plan_interest, 'pos-bot'); assert.equal(u.promo_interest, 0); assert.ok(u.plan_chosen_at > 0);
+  let u = row(env, 'ana@gmail.com'); assert.equal(u.plan_interest, 'pos-bot'); assert.ok(u.plan_chosen_at > 0);
   r = await go(env, 'item=alta&plan=bot', c);
   assert.equal(r.headers.get('Location'), ALTA_URL); assert.equal(row(env, 'ana@gmail.com').plan_interest, 'bot');
 });
-await t('checkout con precio de fundador: WhatsApp con el plan; si la promo está apagada, precio normal', async () => {
+await t('checkout: un link viejo con promo=1 va a Mercado Pago con el precio normal (no hay más fundador)', async () => {
   const env = mkEnv(); addUser(env, 'ana@gmail.com', 's1'); const c = await sess(env, 'ana@gmail.com', 's1');
-  let r = await go(env, 'plan=pos&promo=1', c);
-  const loc = new URL(r.headers.get('Location')); assert.equal(loc.origin + loc.pathname, 'https://wa.me/5492944796044');
-  assert.match(loc.searchParams.get('text'), /precio de fundador con el plan Sistema POS/); assert.equal(row(env, 'ana@gmail.com').promo_interest, 1);
-  await setPromo(env, false, nowS());
-  r = await go(env, 'plan=pos&promo=1', c);
-  assert.equal(r.headers.get('Location'), PLAN_CATALOG.pos.href); assert.equal(row(env, 'ana@gmail.com').promo_interest, 0);
+  assert.equal((await go(env, 'plan=pos&promo=1', c)).headers.get('Location'), PLAN_CATALOG.pos.href);
 });
 await t('checkout sin base de datos: igual exige sesión y redirige', async () => {
   const env = mkEnv({ DB: undefined });
@@ -98,9 +92,9 @@ async function login(env, qs, email = 'ana@gmail.com', sub = 's1') {
 await t('registro con plan elegido: vuelve al pago con el plan, lo guarda en la base y en cookie', async () => {
   const env = mkEnv();
   const { res, flow } = await login(env, '?plan=bot&promo=1');
-  assert.equal(flow.plan, 'bot'); assert.equal(flow.promo, true);
-  assert.equal(res.headers.get('Location'), 'https://horsepos.com/pagar/?plan=bot&promo=1');
-  const u = row(env, 'ana@gmail.com'); assert.equal(u.plan_interest, 'bot'); assert.equal(u.promo_interest, 1);
+  assert.equal(flow.plan, 'bot'); assert.equal(flow.promo, undefined);
+  assert.equal(res.headers.get('Location'), 'https://horsepos.com/pagar/?plan=bot');
+  const u = row(env, 'ana@gmail.com'); assert.equal(u.plan_interest, 'bot');
   assert.equal(ck(res).ns_plan, 'bot'); assert.ok(ck(res).ns_session);
 });
 await t('registro sin plan o con plan inválido: va a Mi cuenta y no guarda nada', async () => {
@@ -131,7 +125,7 @@ const meCall = async (env, cookie) => me.onRequestGet({ request: new Request('ht
 await t('/api/me: devuelve el plan elegido y marca "sin suscripción" para el aviso del sitio', async () => {
   const env = mkEnv(); await login(env, '?plan=pos-bot'); SUBS = []; mockMP();
   const r = await meCall(env, await sess(env, 'ana@gmail.com', 's1')); const j = await r.json();
-  assert.deepEqual(j.intent, { plan: 'pos-bot', promo: false }); assert.equal(j.promoActive, true); assert.deepEqual(j.subscriptions, []);
+  assert.deepEqual(j.intent, { plan: 'pos-bot' }); assert.equal(j.promoActive, undefined); assert.deepEqual(j.subscriptions, []);
   const c = ck(r); assert.equal(c.ns_sub, '0'); assert.equal(c.ns_plan, 'pos-bot');
   assert.doesNotMatch(r.headers.getSetCookie().find((x) => x.startsWith('ns_sub')), /HttpOnly/);
 });
@@ -167,7 +161,7 @@ await t('admin: muestra el plan elegido y cuántos se registraron sin pagar', as
   SUBS = [mpSub('luis@gmail.com', 'authorized')]; mockMP();
   const r = await overview.onRequestGet({ request: new Request('https://horsepos.com/api/admin/overview', { headers: { Cookie: await sess(env, 'admin@x.com', 's3') } }), env });
   const j = await r.json(); const by = Object.fromEntries(j.users.map((u) => [u.email, u]));
-  assert.equal(by['ana@gmail.com'].plan, 'pos'); assert.equal(by['ana@gmail.com'].promo, true); assert.ok(by['ana@gmail.com'].chosenAt > 0);
+  assert.equal(by['ana@gmail.com'].plan, 'pos'); assert.equal(by['ana@gmail.com'].promo, undefined); assert.ok(by['ana@gmail.com'].chosenAt > 0);
   assert.equal(by['luis@gmail.com'].plan, null);
   assert.equal(j.kpis.unpaid, 1); // ana: sin suscripción; luis paga; admin no cuenta
   mpFail = true; clearMpCache(); mockMP(); const r2 = await overview.onRequestGet({ request: new Request('https://horsepos.com/api/admin/overview', { headers: { Cookie: await sess(env, 'admin@x.com', 's3') } }), env });

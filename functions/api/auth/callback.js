@@ -50,7 +50,7 @@ export async function onRequestGet({ request, env }) {
   if (hasDB(env)) {
     try {
       const u = await upsertLogin(env, { sub: claims.sub, email: String(claims.email).toLowerCase(), name: claims.name || claims.email }, iat);
-      if (plan && u) await setIntent(env, u.id, plan, Boolean(flow.promo), iat).catch(() => {});
+      if (plan && u) await setIntent(env, u.id, plan, iat).catch(() => {});
     } catch { return back(site, 'servidor'); }
   }
   const session = await sign({
@@ -63,7 +63,7 @@ export async function onRequestGet({ request, env }) {
   const first = encodeURIComponent(String(claims.given_name || claims.name || claims.email).split(' ')[0]);
   // Con plan elegido se vuelve al pago con ese plan ya seleccionado; si no, a Mi cuenta.
   const volver = safeNext(flow.next); // p. ej. la vinculación de la app: se vuelve ahí
-  const next = plan ? `${site}/pagar/?plan=${plan}${flow.promo ? '&promo=1' : ''}` : volver ? `${site}${volver}` : `${site}/cuenta/`;
+  const next = plan ? `${site}/pagar/?plan=${plan}` : volver ? `${site}${volver}` : `${site}/cuenta/`;
   const h = new Headers({ Location: next, 'Cache-Control': 'no-store' });
   h.append('Set-Cookie', cookie('ns_oauth', '', { maxAge: 0, path: '/api/auth' }));
   h.append('Set-Cookie', cookie('ns_session', session, { maxAge: 30 * 24 * 3600 }));

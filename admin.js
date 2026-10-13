@@ -52,20 +52,6 @@
     });
     root.appendChild(kp);
 
-    var sp = el('section', 'acc'); sp.appendChild(el('h2', null, 'Precio de fundador'));
-    var on = !d.promo || d.promo.activa;
-    sp.appendChild(el('p', 'acc-note', 'Controla si en la página de pago y en la home se ofrece el precio de fundador (30 % menos durante 6 meses). Al desactivarlo, la opción desaparece de inmediato para los clientes nuevos.'));
-    var prow = el('div', 'prow'); prow.appendChild(chip(on ? 'Activa' : 'Desactivada', on ? 'ok' : 'bad')); prow.appendChild(document.createTextNode(' '));
-    var pb = el('button', 'btn btn-w', on ? 'Desactivar el precio de fundador' : 'Activar el precio de fundador'); pb.type = 'button';
-    pb.addEventListener('click', function () {
-      pb.disabled = true;
-      post('/api/admin/promo', { activa: !on }).then(function (x) {
-        if (!x.ok) { pb.disabled = false; pb.textContent = 'No se pudo cambiar, probá de nuevo'; return; }
-        refresh();
-      });
-    });
-    prow.appendChild(pb); sp.appendChild(prow); root.appendChild(sp);
-
     var cf = el('div', 'acc-actions');
     cf.appendChild(chip('Mercado Pago: ' + (cfg.mp ? 'conectado' : 'sin conexión'), cfg.mp ? 'ok' : 'bad'));
     cf.appendChild(chip('Avisos por mail: ' + (cfg.notifier ? 'activos' : 'sin configurar'), cfg.notifier ? 'ok' : 'wait'));
@@ -95,7 +81,7 @@
       tr.appendChild(el('td', null, ago(u.lastSeen)));
       tr.appendChild(el('td', null, String(u.logins)));
       var cp = el('td');
-      if (u.plan) { cp.appendChild(document.createTextNode((PLAN_NAMES[u.plan] || u.plan) + (u.promo ? ' · fundador' : ''))); if (u.chosenAt) { cp.appendChild(document.createElement('br')); cp.appendChild(el('small', null, ago(u.chosenAt))); } }
+      if (u.plan) { cp.appendChild(document.createTextNode((PLAN_NAMES[u.plan] || u.plan))); if (u.chosenAt) { cp.appendChild(document.createElement('br')); cp.appendChild(el('small', null, ago(u.chosenAt))); } }
       else cp.appendChild(el('small', null, '—'));
       tr.appendChild(cp);
       var cs = el('td');

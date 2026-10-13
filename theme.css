@@ -279,11 +279,11 @@ body{overflow-x:clip}
 /* pagar */
 .co-c{background:var(--bg2);border-radius:28px}
 .co legend b,.co .pg-h b{background:var(--ink);color:#fff}
-.pg-opt,.pg-promo{background:#fff;border:1.5px solid transparent;border-radius:20px;transition:border-color .25s,transform .3s var(--ease)}
-.pg-opt:hover,.pg-promo:hover{background:#fff;border-color:var(--line)}
-.pg-opt.sel,.pg-promo.sel{border-color:var(--ink);background:#fff}
-.pg-opt input,.pg-promo input{accent-color:var(--ink)}
-.pg-opt:focus-within,.pg-promo:focus-within{outline:3px solid var(--blue);outline-offset:2px}
+.pg-opt{background:#fff;border:1.5px solid transparent;border-radius:20px;transition:border-color .25s,transform .3s var(--ease)}
+.pg-opt:hover{background:#fff;border-color:var(--line)}
+.pg-opt.sel{border-color:var(--ink);background:#fff}
+.pg-opt input{accent-color:var(--ink)}
+.pg-opt:focus-within{outline:3px solid var(--blue);outline-offset:2px}
 .pg-c em{color:var(--ink)}
 .pg-c i.pill,.pill.best{background:var(--ink);color:#fff}
 .pg-sum{background:#fff;border-radius:20px}

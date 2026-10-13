@@ -51,9 +51,6 @@ el alta). Pendiente en Mercado Pago (lo hace el dueño, no se puede desde una se
 
 - **Volver al sitio después de activar la prueba:** en cada plan de suscripción (Mercado Pago → Suscripciones → planes),
   poner como URL de retorno `https://horsepos.com/cuenta/`, donde aparece el botón de descarga.
-- **Precio de fundador directo:** crear 4 planes de suscripción con el precio de fundador ($ 24.500 Sistema POS,
-  $ 42.000 Sistema + Bot, $ 24.500 Solo el bot, $ 12.600 Emprendedor) y pegar sus links en `promoHref`
-  (`functions/_lib/plans.js`). Mientras falte alguno, `/api/promo` responde `directo: false` y el sitio no muestra el fundador.
 
 ## Estado al 2026-10-03
 

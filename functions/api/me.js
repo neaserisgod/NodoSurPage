@@ -1,6 +1,6 @@
 import { json, now, isAdminEmail, cookie } from '../_lib/util.js';
 import { currentUser, clearedSession } from '../_lib/auth.js';
-import { hasDB, touch, getPromo } from '../_lib/db.js';
+import { hasDB, touch } from '../_lib/db.js';
 import { isPlan } from '../_lib/plans.js';
 import { listSubscriptions, listPayments } from '../_lib/mp.js';
 import { membershipsOf, describirOrgs } from '../_lib/orgs.js';
@@ -37,7 +37,7 @@ export async function onRequestGet({ request, env }) {
       try { if ((await listSubscriptions(env, e)).some((x) => x.status === 'authorized')) { covered = true; break; } } catch { /* ante la duda, no se asume cubierta */ }
     }
   }
-  const intent = billing && user && isPlan(user.plan_interest) ? { plan: user.plan_interest, promo: Boolean(user.promo_interest) } : null;
+  const intent = billing && user && isPlan(user.plan_interest) ? { plan: user.plan_interest } : null;
   const res = json({
     user: { name: s.name, email: s.email, since: user ? user.created_at : s.iat, lastSeen: user ? user.last_seen : null },
     subscriptions,
@@ -49,7 +49,6 @@ export async function onRequestGet({ request, env }) {
     isAdmin,
     exempt,
     intent,
-    promoActive: await getPromo(env),
     notice: user && user.delete_after ? { deleteAfter: user.delete_after } : null,
     tracked: hasDB(env),
   });

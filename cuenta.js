@@ -123,7 +123,6 @@
     var P = window.NS_PLANES || {};
     var c = card('Elegí tu sistema');
     var chosen = d.intent && P[d.intent.plan] ? d.intent.plan : null;
-    var promo = Boolean(d.promoActive);
     c.appendChild(el('p', 'acc-note', chosen
       ? 'Elegiste ' + P[chosen].nombre + '. Seguí con el pago cuando quieras: los primeros 7 días son de prueba, sin costo.'
       : 'Todavía no tenés un sistema. Elegí uno y probalo 7 días sin costo; después seguís por Mercado Pago y cancelás cuando quieras.'));
@@ -134,23 +133,16 @@
       if (on) it.appendChild(el('span', 'chip ok', 'Tu elección'));
       it.appendChild(el('strong', null, p.nombre));
       var pr = el('span', 'of-p');
-      var fund = on && promo && d.intent && d.intent.promo; // solo el plan que pidió el precio de fundador
-      if (fund) { pr.appendChild(el('s', null, money(p.precio))); pr.appendChild(document.createTextNode(money(p.promo))); }
-      else pr.appendChild(document.createTextNode(money(p.precio)));
+      pr.appendChild(document.createTextNode(money(p.precio)));
       pr.appendChild(document.createTextNode(' /mes'));
       it.appendChild(pr);
       it.appendChild(el('small', null, p.desc));
       var a = el('a', 'btn' + (on ? '' : ' btn-w'), on ? 'Continuar al pago' : 'Probar 7 días gratis');
-      a.href = '/api/checkout?plan=' + k + (fund ? '&promo=1' : '');
+      a.href = '/api/checkout?plan=' + k;
       it.appendChild(a);
       grid.appendChild(it);
     });
     c.appendChild(grid);
-    if (promo && !(d.intent && d.intent.promo)) {
-      var f = el('p', 'acc-note', 'Precio de fundador: 30 % menos durante 6 meses para los primeros 5 comercios. Podés pedirlo al elegir el plan en ');
-      var l = el('a', null, 'la página de pago'); l.href = '/pagar/'; f.appendChild(l); f.appendChild(document.createTextNode('.'));
-      c.appendChild(f);
-    }
     c.appendChild(el('p', 'acc-note', 'En Mercado Pago usá el mismo mail de tu cuenta de Google (' + d.user.email + ') para ver tu suscripción acá.'));
     return c;
   }

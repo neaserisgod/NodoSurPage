@@ -1,6 +1,6 @@
 import { json, now, isAdminEmail } from '../../_lib/util.js';
 import { requireAdmin } from '../../_lib/auth.js';
-import { hasDB, listUsers, getPromo } from '../../_lib/db.js';
+import { hasDB, listUsers } from '../../_lib/db.js';
 import { listAllSubscribers } from '../../_lib/mp.js';
 import { notifierReady, deletionNoticesReady } from '../../_lib/notify.js';
 import { RULES } from '../../_lib/sweep.js';
@@ -32,7 +32,7 @@ export async function onRequestGet({ request, env }) {
     return {
       id: u.id, name: u.name, email: u.email, createdAt: u.created_at, lastSeen: u.last_seen, logins: u.login_count,
       exempt: Boolean(u.exempt), isAdmin: isAdminEmail(env, u.email), deleteAfter: u.delete_after, noticeSentAt: u.notice_sent_at,
-      plan: u.plan_interest || null, promo: Boolean(u.promo_interest), chosenAt: u.plan_chosen_at || null,
+      plan: u.plan_interest || null, chosenAt: u.plan_chosen_at || null,
       subscription: sub && { id: sub.id, plan: sub.plan, status: sub.status, amount: sub.amount, nextPayment: sub.nextPayment },
     };
   });
@@ -65,6 +65,5 @@ export async function onRequestGet({ request, env }) {
     mpStale,
     mpDetail,
     rules: RULES,
-    promo: { activa: await getPromo(env) },
   });
 }

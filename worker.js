@@ -42,8 +42,6 @@ import * as orgTransfer from './functions/api/org/transfer.js';
 import * as orgBilling from './functions/api/org/billing.js';
 import * as adminOrg from './functions/api/admin/org.js';
 import * as sync from './functions/api/sync.js';
-import * as promo from './functions/api/promo.js';
-import * as adminPromo from './functions/api/admin/promo.js';
 import { sweep } from './functions/_lib/sweep.js';
 import { servirApp, servirDemo } from './functions/_lib/app_web.js';
 import { hasDB } from './functions/_lib/db.js';
@@ -147,8 +145,6 @@ const ROUTES = {
   'HEAD /api/update/file': updFile.onRequest,
   'GET /api/admin/releases': adminReleases.onRequestGet,
   'POST /api/admin/releases': adminReleases.onRequestPost,
-  'GET /api/promo': promo.onRequestGet,
-  'POST /api/admin/promo': adminPromo.onRequestPost,
 };
 const NO_STORE = { 'Content-Type': 'application/json; charset=utf-8', 'Cache-Control': 'no-store' };
 

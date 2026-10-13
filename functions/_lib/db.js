@@ -25,31 +25,15 @@ export const markNotice = (env, id, sentAt, deleteAfter) =>
   env.DB.prepare('UPDATE users SET notice_sent_at = ?2, delete_after = ?3 WHERE id = ?1').bind(id, sentAt, deleteAfter).run();
 export const deleteUser = (env, id) => env.DB.prepare('DELETE FROM users WHERE id = ?1').bind(id).run();
 
-// Ajustes del sitio (clave/valor). La tabla se crea sola la primera vez que el administrador cambia algo.
-// Promo de fundador: activa por defecto; si no hay base o falla la lectura, se considera activa.
-export async function getPromo(env) {
-  if (!hasDB(env)) return true;
-  try {
-    const r = await env.DB.prepare("SELECT value FROM settings WHERE key = 'promo_fundador'").first();
-    return r ? r.value !== 'off' : true;
-  } catch { return true; }
-}
-export async function setPromo(env, on, t) {
-  await env.DB.prepare('CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT NOT NULL, updated_at INTEGER NOT NULL)').run();
-  await env.DB.prepare(
-    "INSERT INTO settings (key, value, updated_at) VALUES ('promo_fundador', ?1, ?2) ON CONFLICT(key) DO UPDATE SET value = ?1, updated_at = ?2"
-  ).bind(on ? 'on' : 'off', t).run();
-}
-
 // Plan que el usuario eligió (para recordarlo entre el registro y el pago, y para el seguimiento en el panel).
 // Las columnas se agregan solas la primera vez si todavía no se corrió migrations/0003_plan_interest.sql.
-export async function setIntent(env, userId, plan, promo, t) {
-  const run = () => env.DB.prepare('UPDATE users SET plan_interest = ?2, promo_interest = ?3, plan_chosen_at = ?4 WHERE id = ?1')
-    .bind(userId, plan, promo ? 1 : 0, t).run();
+export async function setIntent(env, userId, plan, t) {
+  const run = () => env.DB.prepare('UPDATE users SET plan_interest = ?2, plan_chosen_at = ?3 WHERE id = ?1')
+    .bind(userId, plan, t).run();
   try { return await run(); }
   catch (e) {
     if (!/no such column|has no column/i.test(String(e && e.message))) throw e;
-    for (const sql of ['ALTER TABLE users ADD COLUMN plan_interest TEXT', 'ALTER TABLE users ADD COLUMN promo_interest INTEGER NOT NULL DEFAULT 0', 'ALTER TABLE users ADD COLUMN plan_chosen_at INTEGER']) {
+    for (const sql of ['ALTER TABLE users ADD COLUMN plan_interest TEXT', 'ALTER TABLE users ADD COLUMN plan_chosen_at INTEGER']) {
       try { await env.DB.prepare(sql).run(); } catch (err) { if (!/duplicate column/i.test(String(err && err.message))) throw err; }
     }
     return run();
