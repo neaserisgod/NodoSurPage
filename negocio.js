@@ -11,7 +11,7 @@
     last_branch: 'No se puede cerrar la última sucursal activa.', has_devices: 'Esa sucursal tiene dispositivos vinculados (PC o celulares). Primero desvinculalos.', too_many: 'Llegaste al máximo de sucursales.',
     self: 'No podés transferirte el negocio a vos mismo.', stale: 'La propuesta ya no es válida: el negocio cambió de dueño.', not_member: 'Esa persona ya no es parte del negocio.',
     expired: 'La propuesta venció.', accepted: 'Esa propuesta ya se resolvió.', declined: 'Esa propuesta ya se resolvió.', cancelled: 'Esa propuesta ya se resolvió.',
-    no_subscription: 'Tu mail no tiene una suscripción vigente. Suscribite primero.', mp_error: 'No pudimos consultar Mercado Pago. Probá de nuevo en unos minutos.', not_configured: 'La facturación todavía no está disponible.',
+    no_subscription: 'Tu mail no tiene una suscripción vigente. Suscribite primero.', sin_plan_libre: 'Tu suscripción ya cubre otro negocio tuyo. Cada negocio necesita su plan: suscribite a otro y volvé a intentar.', nombre_invalido: 'Poné un nombre de entre 2 y 80 letras.', demasiados_negocios: 'Llegaste al máximo de negocios por cuenta.', mp_error: 'No pudimos consultar Mercado Pago. Probá de nuevo en unos minutos.', not_configured: 'La facturación todavía no está disponible.',
     mp_no_conectado: 'Primero conectá tu cuenta de Mercado Pago.', mp_sin_terminal: 'Esa sucursal todavía no tiene una terminal elegida.', mp_rechazo: 'Mercado Pago rechazó el pedido.', mp_error: 'No pudimos consultar Mercado Pago. Probá de nuevo en unos minutos.', mp_no_configurado: 'La conexión con Mercado Pago todavía no está configurada.', terminal_desconocida: 'Esa terminal no es de tu cuenta de Mercado Pago.', bad_branch: 'Esa sucursal ya no existe.',
     not_found: 'Ya no existe: recargá la página.', forbidden: 'No tenés permiso para hacer esto.', no_session: 'Tu sesión venció. Volvé a ingresar.'
   };
@@ -138,11 +138,24 @@
       despues: function () { cargarTraspasos().then(render); } });
   }
 
+  // Una cuenta puede tener varios negocios (un almacén, una barbería…), cada uno con su plan.
+  function crearNegocio() {
+    var cuerpo = el('div', 'frm'), lab = el('label', null, 'Nombre del negocio'), inp = el('input'); inp.maxLength = 80; inp.placeholder = 'Ej.: Barbería del Centro';
+    lab.appendChild(inp); cuerpo.appendChild(lab);
+    cuerpo.appendChild(note('Arranca vacío, con su «Sucursal principal». Cada negocio paga su propio plan.'));
+    var nuevo = null;
+    abrir({ titulo: 'Crear otro negocio', cuerpo: cuerpo, boton: 'Crear',
+      accion: function () { return api('POST', '/api/org/crear', { name: inp.value }).then(function (x) { if (!x.ok) return { error: msgError(x.j) }; nuevo = x.j.orgId; return {}; }); },
+      despues: function () { location.href = '/negocio/?org=' + nuevo; } });
+    setTimeout(function () { inp.focus(); }, 0);
+  }
+
   function sinNegocio() {
     root.textContent = '';
     var c = card('Todavía no tenés un negocio');
-    c.appendChild(note('Tu negocio se crea cuando vinculás el primer dispositivo (la PC del local o el celular) con el sistema POS. Si te invitaron a uno, abrí el link de la invitación que te llegó por mail.'));
-    var a = el('div', 'acc-actions'); var l = el('a', 'btn', 'Ir a mi cuenta'); l.href = '/cuenta/'; a.appendChild(l); c.appendChild(a); root.appendChild(c);
+    c.appendChild(note('Tu negocio se crea cuando vinculás el primer dispositivo (la PC del local o el celular) con el sistema POS, o creándolo acá. Si te invitaron a uno, abrí el link de la invitación que te llegó por mail.'));
+    var a = el('div', 'acc-actions'); a.appendChild(button('Crear mi negocio', 'btn', crearNegocio));
+    var l = el('a', 'btn btn-w', 'Ir a mi cuenta'); l.href = '/cuenta/'; a.appendChild(l); c.appendChild(a); root.appendChild(c);
   }
 
   function render() {
@@ -157,6 +170,7 @@
       var f = el('div', 'frm'); f.appendChild(s); fila.appendChild(f);
     }
     c.appendChild(fila);
+    c.appendChild(button('Crear otro negocio', 'btn btn-w', crearNegocio));
     var saliente = pendienteDe(o.id);
     if (saliente) {
       c.appendChild(note('Transferencia pendiente: le propusiste el negocio a ' + saliente.toEmail + ' (vence el ' + dt(saliente.exp) + '). Hasta que acepte, seguís siendo el dueño.'));
@@ -436,9 +450,14 @@
       api('GET', '/api/org/billing?org=' + o.id).then(function (r) {
         c.textContent = ''; c.appendChild(el('h2', null, 'Facturación'));
         if (!r.ok) { c.appendChild(note('No pudimos cargar la facturación.')); return; }
-        var d = r.j, ST = { authorized: ['Activa', 'ok'], inactive: ['Sin suscripción vigente', 'bad'], none: ['Sin suscripción', 'bad'], unknown: ['No se pudo verificar', 'wait'] }[d.status] || ['—', 'wait'];
+        var d = r.j, ST = { authorized: ['Activa', 'ok'], inactive: ['Sin suscripción vigente', 'bad'], none: ['Sin suscripción', 'bad'], unknown: ['No se pudo verificar', 'wait'], sin_plan_propio: ['Sin plan propio', 'bad'] }[d.status] || ['—', 'wait'];
         var fila = el('div', 'prow'); fila.appendChild(chip(ST[0], ST[1])); c.appendChild(fila);
         if (d.mpError) c.appendChild(note('No pudimos consultar Mercado Pago en este momento. Probá de nuevo en unos minutos.'));
+        // Cada negocio paga su plan: un mail con menos planes que negocios deja sin cubrir a los más nuevos.
+        if (d.status === 'sin_plan_propio') {
+          c.appendChild(note(d.billingEmail + ' paga ' + d.planes + (d.planes === 1 ? ' plan' : ' planes') + ' y tiene ' + d.negocios + ' negocios: cada negocio necesita su propio plan. Suscribite a otro para «' + o.name + '».'));
+          var sp = el('a', 'btn', 'Suscribir este negocio'); sp.href = '/pagar/'; sp.style.alignSelf = 'flex-start'; c.appendChild(sp);
+        }
         c.appendChild(note(d.mine
           ? 'El negocio se cobra con tu suscripción (' + d.billingEmail + '). Podés verla y cancelarla desde Mi cuenta.'
           : 'El negocio se cobra con la suscripción de ' + d.billingEmail + '. Está a nombre de otra persona: solo ella puede cancelarla, y si lo hace el negocio se queda sin cobertura.'));

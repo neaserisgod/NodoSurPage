@@ -79,6 +79,22 @@ async function lastId(env, tabla, run) {
   return (await env.DB.prepare(`SELECT MAX(id) AS id FROM ${tabla}`).first()).id;
 }
 
+// Una cuenta puede tener varios negocios (2026-10-13: un almacén, una barbería, un emprendimiento…), cada uno con su plan
+// (`plan_por_negocio.js`). El tope es solo contra el abuso: nadie real administra tantos.
+export const MAX_NEGOCIOS_PROPIOS = 20;
+// Sin caracteres de control ni saltos de línea, con los espacios juntados: es lo que se muestra en el sitio, la app y el ticket.
+export const limpiarNombreNegocio = (n) => (typeof n === 'string' ? n.replace(/[\p{C}]/gu, ' ').replace(/\s+/g, ' ').trim() : '');
+export const nombreDeNegocioValido = (n) => { const l = limpiarNombreNegocio(n); return l.length >= 2 && l.length <= 80; };
+
+// Crea OTRO negocio de [persona] con el nombre que eligió. { org, branch, membership } o { error, status }.
+export async function crearOtroNegocio(env, { sub, email, name }, nombre, t = now()) {
+  if (!nombreDeNegocioValido(nombre)) return { error: 'nombre_invalido', status: 400 };
+  await ensureOrgTables(env);
+  const { n } = await env.DB.prepare('SELECT COUNT(*) AS n FROM orgs WHERE owner_sub = ?1').bind(sub).first();
+  if (n >= MAX_NEGOCIOS_PROPIOS) return { error: 'demasiados_negocios', status: 409 };
+  return createOrg(env, { sub, email, name, orgName: limpiarNombreNegocio(nombre) }, t);
+}
+
 export const getOrg = (env, id) => env.DB.prepare('SELECT * FROM orgs WHERE id = ?1').bind(id).first();
 
 // El negocio "personal" de una cuenta: el primero que posee, o uno nuevo si todavía no tiene.

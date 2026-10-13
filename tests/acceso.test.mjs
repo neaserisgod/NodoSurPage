@@ -152,7 +152,7 @@ await t('/api/device/me: el celular sabe quién es (nombre, rol, sucursal) con s
   const { tok } = await vincular(env, await sess(env, 'emp@x.com', 'sm', 'Marta Gómez'), { tipo: 'celular', orgId: n.org.id }, 'cel-me-0123456789abcdefghi'); assert.ok(tok);
   const yo = async (token) => deviceMe.onRequestGet({ request: req('/api/device/me', { headers: token ? { Authorization: 'Bearer ' + token } : {} }), env });
   const j = await (await yo(tok)).json();
-  assert.deepEqual(j, { email: 'emp@x.com', name: 'Marta Gómez', role: 'employee', orgId: n.org.id, branchId: n.b });
+  assert.deepEqual(j, { email: 'emp@x.com', name: 'Marta Gómez', role: 'employee', orgId: n.org.id, branchId: n.b, orgName: 'La Plazoleta', branchName: 'Centro' });
   assert.equal((await yo(null)).status, 401);
   env.DB.raw.prepare("UPDATE devices SET person_name = NULL").run();
   assert.equal((await (await yo(tok)).json()).name, 'emp', 'sin nombre guardado: la parte del mail antes de la @');

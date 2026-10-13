@@ -13,7 +13,8 @@ import { now, once } from './util.js';
 import { cifrar, descifrar, claveValida, sha256Hex } from './backups.js';
 import { getOrg } from './orgs.js';
 import { isPrivilegedOrg } from './devices.js';
-import { listSubscriptionsCached, PLANES_CON_BOT } from './mp.js';
+import { listSubscriptionsCached } from './mp.js';
+import { planDelNegocio } from './plan_por_negocio.js';
 import { hubReady, hubDeCuenta } from './sync.js';
 import { paginaPorActualizado } from './bot_turnos.js';
 
@@ -61,7 +62,7 @@ export async function tieneBot(env, orgId) {
   if (!env.MP_ACCESS_TOKEN) return { error: 'mp_error' };
   try {
     const subs = await listSubscriptionsCached(env, org.billing_email);
-    return { ok: subs.some((s) => s.status === 'authorized' && PLANES_CON_BOT.has(s.plan)) };
+    return { ok: (await planDelNegocio(env, org, subs)).bot };
   } catch {
     return { error: 'mp_error' };
   }

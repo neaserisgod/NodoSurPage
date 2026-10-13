@@ -21,6 +21,7 @@ import * as adminMpReporte from './functions/api/admin/mp_reporte.js';
 import * as deviceWhoami from './functions/api/device/whoami.js';
 import * as deviceAuthorize from './functions/api/device/authorize.js';
 import * as deviceToken from './functions/api/device/token.js';
+import * as deviceGoogle from './functions/api/device/google.js';
 import * as devicePing from './functions/api/device/ping.js';
 import { reintentarAvisos } from './functions/_lib/push.js';
 import * as devicePush from './functions/api/device/push.js';
@@ -39,6 +40,7 @@ import * as orgInvitations from './functions/api/org/invitations.js';
 import * as orgMembers from './functions/api/org/members.js';
 import * as orgBranches from './functions/api/org/branches.js';
 import * as orgTransfer from './functions/api/org/transfer.js';
+import * as orgCrear from './functions/api/org/crear.js';
 import * as orgBilling from './functions/api/org/billing.js';
 import * as adminOrg from './functions/api/admin/org.js';
 import * as sync from './functions/api/sync.js';
@@ -67,6 +69,8 @@ const ROUTES = {
   'GET /api/device/whoami': deviceWhoami.onRequestGet,
   'POST /api/device/authorize': deviceAuthorize.onRequestPost,
   'POST /api/device/token': deviceToken.onRequestPost,
+  'GET /api/device/google': deviceGoogle.onRequestGet,
+  'POST /api/device/google': deviceGoogle.onRequestPost,
   'POST /api/device/ping': devicePing.onRequestPost,
   'POST /api/device/push': devicePush.onRequestPost,
   'GET /api/device/me': deviceMe.onRequestGet,
@@ -91,6 +95,7 @@ const ROUTES = {
   'POST /api/org/branch/update': orgBranches.onRequestUpdate,
   'GET /api/org/transfer': orgTransfer.onRequestGet,
   'POST /api/org/transfer': orgTransfer.onRequestPost,
+  'POST /api/org/crear': orgCrear.onRequestPost,
   'POST /api/org/transfer/accept': orgTransfer.onRequestAccept,
   'POST /api/org/transfer/decline': orgTransfer.onRequestDecline,
   'POST /api/org/transfer/cancel': orgTransfer.onRequestCancel,
