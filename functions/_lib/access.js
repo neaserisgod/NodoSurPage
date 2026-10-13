@@ -10,6 +10,7 @@ import { isPrivilegedSub } from './devices.js';
 import { orgsWith, getOrg, getMembership } from './orgs.js';
 import { puede } from './permisos.js';
 import { VENTANA_RESTAURAR_DIAS } from './backups.js';
+import { planDelNegocio } from './plan_por_negocio.js';
 
 const DAY = 86400;
 
@@ -67,7 +68,9 @@ export async function backupAccess(env, actor, scope) {
   if (!env.MP_ACCESS_TOKEN) return { error: 'mp_error' };
   let subs;
   try { subs = await listSubscriptionsCached(env, scope.billingEmail); } catch { return { error: 'mp_error' }; } // camino caliente: con memoria breve
-  if (subs.some((s) => s.status === 'authorized')) return { upload: true, restore: true };
+  // Con negocio, cada negocio paga su plan (`plan_por_negocio.js`); sin negocio (cuentas anteriores), alcanza con uno.
+  const org = scope.orgId ? await getOrg(env, scope.orgId) : null;
+  if (org ? (await planDelNegocio(env, org, subs)).pago : subs.some((s) => s.status === 'authorized')) return { upload: true, restore: true };
   const limite = now() - VENTANA_RESTAURAR_DIAS * DAY;
   const reciente = subs.some((s) => ['cancelled', 'canceled', 'paused', 'pending'].includes(s.status)
     && Date.parse(s.modified || s.since || '') / 1000 >= limite);

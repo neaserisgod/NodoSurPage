@@ -40,6 +40,7 @@ import * as orgInvitations from './functions/api/org/invitations.js';
 import * as orgMembers from './functions/api/org/members.js';
 import * as orgBranches from './functions/api/org/branches.js';
 import * as orgTransfer from './functions/api/org/transfer.js';
+import * as orgCrear from './functions/api/org/crear.js';
 import * as orgBilling from './functions/api/org/billing.js';
 import * as adminOrg from './functions/api/admin/org.js';
 import * as sync from './functions/api/sync.js';
@@ -94,6 +95,7 @@ const ROUTES = {
   'POST /api/org/branch/update': orgBranches.onRequestUpdate,
   'GET /api/org/transfer': orgTransfer.onRequestGet,
   'POST /api/org/transfer': orgTransfer.onRequestPost,
+  'POST /api/org/crear': orgCrear.onRequestPost,
   'POST /api/org/transfer/accept': orgTransfer.onRequestAccept,
   'POST /api/org/transfer/decline': orgTransfer.onRequestDecline,
   'POST /api/org/transfer/cancel': orgTransfer.onRequestCancel,

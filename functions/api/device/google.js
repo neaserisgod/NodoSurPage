@@ -1,7 +1,7 @@
 import { json, now, fetchConPlazo } from '../../_lib/util.js';
 import { hasDB, upsertLogin } from '../../_lib/db.js';
 import { validDeviceId, cleanName } from '../../_lib/devices.js';
-import { orgsWith, membershipsOf, describirOrgs } from '../../_lib/orgs.js';
+import { orgsWith, membershipsOf, describirOrgs, crearOtroNegocio } from '../../_lib/orgs.js';
 import { destinoDelDispositivo, emitirTokenDeDispositivo } from '../../_lib/vincular.js';
 
 // El client ID Web que la app le pasa al selector de Google como `serverClientId` (no es secreto: viaja en cada página de
@@ -17,6 +17,10 @@ export function onRequestGet({ env }) {
 //
 // Si la persona puede entrar en más de un negocio o sucursal y la app no dijo cuál, se contesta `{ elegir: true, orgs }` y la
 // app vuelve a llamar con `orgId` y `branchId` y el mismo id_token (vale una hora; no se consume).
+//
+// Una cuenta puede tener varios negocios (2026-10-13). Agregando otro negocio en el celular, la app manda `elegirSiempre: true`
+// para que la lista salga aunque haya uno solo, y ofrece crear uno nuevo: `nuevoNegocio: "Barbería Juan"` lo crea (con su
+// "Sucursal principal") y entra el celular ahí.
 export async function onRequestPost({ request, env }) {
   if (!hasDB(env)) return json({ error: 'no_db' }, 503);
   if (!env.GOOGLE_CLIENT_ID) return json({ error: 'no_config' }, 503);
@@ -28,14 +32,20 @@ export async function onRequestPost({ request, env }) {
   const persona = { sub: claims.sub, email: String(claims.email).toLowerCase(), name: claims.name || claims.email };
   await upsertLogin(env, persona, now());
 
-  if (b.orgId == null && b.branchId == null) {
+  let pedido = { orgId: b.orgId, branchId: b.branchId };
+  if (b.nuevoNegocio != null) {
+    const creado = await crearOtroNegocio(env, persona, b.nuevoNegocio);
+    if (creado.error) return json({ error: creado.error }, creado.status);
+    pedido = { orgId: creado.org.id, branchId: creado.branch.id };
+  } else if (b.orgId == null && b.branchId == null) {
     const orgs = await describirOrgs(env, (await orgsWith(env, persona.sub, 'vincular_celular')).map((x) => x.membership));
-    if (!orgs.length && (await membershipsOf(env, persona.sub)).length) return json({ error: 'sin_sucursal', email: persona.email }, 403);
-    if (orgs.length > 1 || (orgs.length === 1 && orgs[0].branches.length > 1)) {
+    const sinSucursal = !orgs.length && (await membershipsOf(env, persona.sub)).length;
+    if (sinSucursal && b.elegirSiempre !== true) return json({ error: 'sin_sucursal', email: persona.email }, 403);
+    if (orgs.length > 1 || (orgs.length === 1 && orgs[0].branches.length > 1) || (b.elegirSiempre === true && (orgs.length || sinSucursal))) {
       return json({ elegir: true, email: persona.email, name: persona.name, orgs: orgs.map((o) => ({ id: o.id, name: o.name, branches: o.branches })) });
     }
   }
-  const destino = await destinoDelDispositivo(env, persona, { tipo: 'celular', orgId: b.orgId, branchId: b.branchId });
+  const destino = await destinoDelDispositivo(env, persona, { tipo: 'celular', ...pedido });
   if (destino.error) return json({ error: destino.error }, destino.status);
   const r = await emitirTokenDeDispositivo(env, {
     sub: persona.sub, email: persona.email, deviceId: b.deviceId, name: cleanName(b.name), orgId: destino.org.id, branchId: destino.branch.id,
