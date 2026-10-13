@@ -4,13 +4,19 @@ import { validDeviceId, cleanName } from '../../_lib/devices.js';
 import { orgsWith, membershipsOf, describirOrgs } from '../../_lib/orgs.js';
 import { destinoDelDispositivo, emitirTokenDeDispositivo } from '../../_lib/vincular.js';
 
+// El client ID Web que la app le pasa al selector de Google como `serverClientId` (no es secreto: viaja en cada página de
+// ingreso). Así no queda escrito en el APK y cambiarlo no pide publicar una versión nueva.
+export function onRequestGet({ env }) {
+  return env.GOOGLE_CLIENT_ID ? json({ clientId: env.GOOGLE_CLIENT_ID }) : json({ error: 'no_config' }, 503);
+}
+
 // Entrar en el celular con Google SIN pasar por el navegador (El dueño, 2026-10-13: "la vinculación por el sitio es un paso
 // medio innecesario"). La app pide la cuenta con el selector de Google de Android y manda acá el id_token; el sitio lo
 // comprueba con Google y devuelve el token del celular, igual que /vincular/ + authorize + token, con las mismas reglas
 // (`_lib/vincular.js`). Solo celulares: la PC y el bot siguen por el navegador.
 //
 // Si la persona puede entrar en más de un negocio o sucursal y la app no dijo cuál, se contesta `{ elegir: true, orgs }` y la
-// app vuelve a llamar con `orgId` y `branchId` (Google da un id_token nuevo cada vez, así que reintentar no es problema).
+// app vuelve a llamar con `orgId` y `branchId` y el mismo id_token (vale una hora; no se consume).
 export async function onRequestPost({ request, env }) {
   if (!hasDB(env)) return json({ error: 'no_db' }, 503);
   if (!env.GOOGLE_CLIENT_ID) return json({ error: 'no_config' }, 503);

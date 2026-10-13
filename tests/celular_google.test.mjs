@@ -84,4 +84,9 @@ await t('un celular ya vinculado por otra persona de otro negocio no se pisa (de
   assert.equal((await entrar(env, { idToken: 'ana' })).status, 200, 'la misma persona vuelve a entrar sin problema');
 });
 
+await t('GET: el client ID Web para el selector de Google de la app (503 sin configurar)', async () => {
+  assert.deepEqual(await google.onRequestGet({ env: mkEnv({ GOOGLE_CLIENT_ID: CLIENT }) }).json(), { clientId: CLIENT });
+  assert.equal(google.onRequestGet({ env: mkEnv() }).status, 503);
+});
+
 console.log(`\n${pass} pruebas OK (celular con Google)`);

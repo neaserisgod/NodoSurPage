@@ -68,6 +68,7 @@ const ROUTES = {
   'GET /api/device/whoami': deviceWhoami.onRequestGet,
   'POST /api/device/authorize': deviceAuthorize.onRequestPost,
   'POST /api/device/token': deviceToken.onRequestPost,
+  'GET /api/device/google': deviceGoogle.onRequestGet,
   'POST /api/device/google': deviceGoogle.onRequestPost,
   'POST /api/device/ping': devicePing.onRequestPost,
   'POST /api/device/push': devicePush.onRequestPost,
