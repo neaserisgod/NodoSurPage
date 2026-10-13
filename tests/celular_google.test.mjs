@@ -14,10 +14,12 @@ let pedidos = [];
 const mockGoogle = (tokens) => { pedidos = []; globalThis.fetch = async (url) => {
   const u = new URL(url); pedidos.push(u);
   assert.equal(u.origin + u.pathname, 'https://oauth2.googleapis.com/tokeninfo');
-  const c = tokens[u.searchParams.get('id_token')];
+  const c = tokens[u.searchParams.get('id_token').split('.')[0]];
   return c ? new Response(JSON.stringify(c), { status: 200 }) : new Response('{"error":"invalid_token"}', { status: 400 });
 }; };
-const entrar = (env, body) => google.onRequestPost({ request: req('/api/device/google', { method: 'POST', body: { deviceId: DID, name: 'Celular (Android)', ...body } }), env });
+// Los tokens del test tienen forma de JWT (`nombre.a.b`): el sitio rechaza lo que no la tiene sin preguntarle a Google.
+const jwt = (t) => (typeof t === 'string' && !t.includes('.') ? `${t}.a.b` : t);
+const entrar = (env, body) => google.onRequestPost({ request: req('/api/device/google', { method: 'POST', body: { deviceId: DID, name: 'Celular (Android)', ...body, idToken: jwt(body.idToken) } }), env });
 const conMiembro = async (env, org, sub, email, sucursales) => {
   const m = env.DB.raw.prepare("INSERT INTO memberships (org_id, user_sub, email, role, status, all_branches, created_at) VALUES (?,?,?,?,?,0,?)").run(org.id, sub, email, 'employee', 'active', nowS());
   for (const b of sucursales) env.DB.raw.prepare('INSERT INTO membership_branches (membership_id, branch_id) VALUES (?,?)').run(m.lastInsertRowid, b);
@@ -42,6 +44,10 @@ await t('datos inválidos: 400 sin preguntarle a Google; sin GOOGLE_CLIENT_ID: 5
   const env = mkEnv({ GOOGLE_CLIENT_ID: CLIENT }); mockGoogle({});
   assert.equal((await entrar(env, { idToken: 123 })).status, 400);
   assert.equal((await entrar(env, { idToken: 'x', deviceId: 'corto' })).status, 400);
+  for (const malo of ['sin-puntos', 'a.b', 'a.b.c.d', 'a.b.c d', 'a.b.<c>']) {
+    const r = await google.onRequestPost({ request: req('/api/device/google', { method: 'POST', body: { deviceId: DID, idToken: malo } }), env });
+    assert.equal(r.status, 400, malo);
+  }
   assert.equal(pedidos.length, 0);
   assert.equal((await entrar(mkEnv(), { idToken: 'x' })).status, 503);
 });

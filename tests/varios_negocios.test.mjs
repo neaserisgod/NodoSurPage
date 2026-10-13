@@ -66,6 +66,28 @@ await t('crear otro negocio desde la web: exige sesión y mismo origen, valida e
   assert.equal(org.name, 'Barbería'); assert.equal(org.owner_sub, 's1'); assert.equal(org.billing_email, 'ana@x.com');
   assert.equal(env.DB.raw.prepare("SELECT role FROM memberships WHERE org_id = ? AND user_sub = 's1'").get(b.orgId).role, 'owner');
 });
+await t('el mail de cobro se compara sin mayúsculas ni espacios: cargarlo distinto no regala un plan', async () => {
+  const env = mkEnv(); const n = await tresNegocios(env);
+  env.DB.raw.prepare('UPDATE orgs SET billing_email = ? WHERE id = ?').run(' ANA@x.com ', n.belleza.id);
+  conPlanes('ana@x.com', 1);
+  const subs = await listSubscriptions(env, 'ana@x.com');
+  const belleza = env.DB.raw.prepare('SELECT * FROM orgs WHERE id = ?').get(n.belleza.id);
+  assert.equal((await planDelNegocio(env, belleza, subs)).pago, false, 'sigue siendo el tercero de Ana');
+  assert.equal((await planDelNegocio(env, n.almacen, subs)).pago, true);
+});
+await t('un negocio que no figura entre los de su mail cuenta como el último, nunca gratis', async () => {
+  const env = mkEnv(); await tresNegocios(env);
+  conPlanes('ana@x.com', 3);
+  const fantasma = { id: 999, billing_email: 'ana@x.com', owner_sub: 's1' };
+  assert.equal((await planDelNegocio(env, fantasma, await listSubscriptions(env, 'ana@x.com'))).pago, false);
+});
+await t('el nombre del negocio se limpia: sin saltos de línea ni caracteres de control', async () => {
+  const env = mkEnv(); addUser(env, 'ana@x.com', 's1'); const cookie = await sess(env, 'ana@x.com', 's1');
+  const r = await (await crear.onRequestPost({ request: req('/api/org/crear', { method: 'POST', cookie, headers: web, body: { name: '  Barbería\n\u0000del   Centro\t' } }), env })).json();
+  assert.equal(env.DB.raw.prepare('SELECT name FROM orgs WHERE id = ?').get(r.orgId).name, 'Barbería del Centro');
+  const solo = await crear.onRequestPost({ request: req('/api/org/crear', { method: 'POST', cookie, headers: web, body: { name: '\u0000\n ' } }), env });
+  assert.equal(solo.status, 400);
+});
 await t('hay un tope de negocios por cuenta', async () => {
   const env = mkEnv(); addUser(env, 'ana@x.com', 's1'); await ensureOrgTables(env); const cookie = await sess(env, 'ana@x.com', 's1');
   for (let i = 0; i < MAX_NEGOCIOS_PROPIOS; i++) await createOrg(env, { sub: 's1', email: 'ana@x.com', orgName: 'N' + i });
@@ -79,7 +101,7 @@ const mockGoogle = () => { globalThis.fetch = async (url) => {
   if (!String(url).startsWith('https://oauth2.googleapis.com/tokeninfo')) return new Response('{}', { status: 404 });
   return new Response(JSON.stringify({ iss: 'https://accounts.google.com', aud: CLIENT, sub: 's1', email: 'ana@x.com', email_verified: 'true', name: 'Ana', exp: String(nowS() + 600) }));
 }; };
-const entrar = (env, body) => google.onRequestPost({ request: req('/api/device/google', { method: 'POST', body: { idToken: 'x', deviceId: DID, name: 'Celular', ...body } }), env });
+const entrar = (env, body) => google.onRequestPost({ request: req('/api/device/google', { method: 'POST', body: { idToken: 'x.y.z', deviceId: DID, name: 'Celular', ...body } }), env });
 
 await t('celular agregando un negocio: con elegirSiempre la lista sale aunque haya uno solo', async () => {
   const env = mkEnv({ GOOGLE_CLIENT_ID: CLIENT }); await ensureOrgTables(env); mockGoogle();

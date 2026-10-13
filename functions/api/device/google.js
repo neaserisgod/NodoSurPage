@@ -25,7 +25,10 @@ export async function onRequestPost({ request, env }) {
   if (!hasDB(env)) return json({ error: 'no_db' }, 503);
   if (!env.GOOGLE_CLIENT_ID) return json({ error: 'no_config' }, 503);
   let b; try { b = await request.json(); } catch { return json({ error: 'bad_request' }, 400); }
-  if (typeof b.idToken !== 'string' || b.idToken.length > 4096 || !validDeviceId(b.deviceId)) return json({ error: 'bad_request' }, 400);
+  // Un id_token es un JWT (tres partes): lo que no tiene esa forma se rechaza sin preguntarle a Google.
+  if (typeof b.idToken !== 'string' || b.idToken.length > 4096 || !/^[\w-]+\.[\w-]+\.[\w-]+$/.test(b.idToken) || !validDeviceId(b.deviceId)) {
+    return json({ error: 'bad_request' }, 400);
+  }
 
   const claims = await comprobarConGoogle(env, b.idToken);
   if (!claims) return json({ error: 'google_invalido' }, 401);

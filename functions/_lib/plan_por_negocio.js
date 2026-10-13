@@ -15,7 +15,8 @@ const vigentes = (subs) => subs.filter((s) => s.status === 'authorized');
 // Los negocios que se cobran a [email], del más viejo al más nuevo. Sin la tabla (instalación vieja), ninguno.
 export async function negociosDelMail(env, email) {
   try {
-    return (await env.DB.prepare('SELECT id FROM orgs WHERE billing_email = ?1 ORDER BY id').bind(String(email || '').trim().toLowerCase()).all())
+    // Sin depender de mayúsculas ni espacios: un mail cargado distinto no puede sacar a un negocio de la cuenta (y del cobro).
+    return (await env.DB.prepare('SELECT id FROM orgs WHERE lower(trim(billing_email)) = ?1 ORDER BY id').bind(String(email || '').trim().toLowerCase()).all())
       .results.map((r) => r.id);
   } catch (e) {
     if (/no such table/i.test(String(e && e.message))) return [];
@@ -27,8 +28,10 @@ export async function negociosDelMail(env, email) {
 // { pago, bot, planes, negocios, posicion }: `posicion` es su lugar entre los negocios de ese mail (0 = el más viejo).
 export async function planDelNegocio(env, org, subs) {
   const ids = await negociosDelMail(env, org.billing_email);
-  const posicion = Math.max(0, ids.indexOf(org.id));
+  // Si el negocio no figura entre los del mail (no debería pasar), cuenta como el último: nunca queda cubierto gratis.
+  const i = ids.indexOf(org.id);
+  const posicion = i === -1 ? ids.length : i;
   const pagos = vigentes(subs);
   const conBot = pagos.filter((s) => PLANES_CON_BOT.has(s.plan)).length;
-  return { pago: posicion < pagos.length, bot: posicion < pagos.length && posicion < conBot, planes: pagos.length, negocios: Math.max(ids.length, 1), posicion };
+  return { pago: posicion < pagos.length, bot: posicion < pagos.length && posicion < conBot, planes: pagos.length, negocios: Math.max(i === -1 ? ids.length + 1 : ids.length, 1), posicion };
 }
