@@ -2,8 +2,7 @@ import { json, sameOriginPost } from '../../_lib/util.js';
 import { currentUser } from '../../_lib/auth.js';
 import { hasDB } from '../../_lib/db.js';
 import { createDeviceCode, validPort, validState, validChallenge, validDeviceId, cleanName } from '../../_lib/devices.js';
-import { ensureOrgTables, ensurePersonalOrg, adoptarLegado, orgsWith, membershipsOf, listBranches, mainBranch } from '../../_lib/orgs.js';
-import { puede } from '../../_lib/permisos.js';
+import { destinoDelDispositivo } from '../../_lib/vincular.js';
 
 // Paso 2-3 de la vinculación: la persona, ya con sesión y tras confirmar en /vincular/, pide el código de
 // un solo uso. Se devuelve a dónde redirigir el navegador: el servidor local que escucha la app (127.0.0.1).
@@ -25,44 +24,12 @@ export async function onRequestPost({ request, env }) {
   const enNavegador = b.web === true;
   if (enNavegador && b.tipo != null && b.tipo !== 'celular') return json({ error: 'bad_request' }, 400);
   if ((enNavegador ? b.port != null : !validPort(b.port)) || !validState(b.state) || !validChallenge(b.challenge) || !validDeviceId(b.deviceId)) return json({ error: 'bad_request' }, 400);
-  const sub = cu.session.sub;
-  await ensureOrgTables(env);
   const celular = enNavegador || b.tipo === 'celular';
   const bot = b.tipo === 'bot';
-  // El bot se vincula con las mismas reglas que un celular (en una sucursal donde la persona tiene el permiso), pero con otro permiso.
-  const accion = bot ? 'configurar_bot' : celular ? 'vincular_celular' : 'vincular_pc';
-  const porSucursal = celular || bot;
-  const propios = await orgsWith(env, sub, accion);
-  let org;
-  if (b.orgId != null) {
-    if (!Number.isInteger(b.orgId)) return json({ error: 'bad_request' }, 400);
-    const elegido = propios.find((o) => o.org.id === b.orgId);
-    if (!elegido) return json({ error: 'forbidden' }, 403);
-    org = elegido.org;
-  } else if (propios.length) org = propios[0].org;
-  else if (bot || (await membershipsOf(env, sub)).length) return json({ error: 'forbidden' }, 403); // es miembro de otro negocio, no dueña
-  else {
-    const personal = await ensurePersonalOrg(env, { sub, email: cu.session.email, name: cu.session.name });
-    org = personal.org;
-    // Sus PC y copias de antes del modelo de negocios pasan a este negocio ya, para que no queden invisibles hasta el cron.
-    if (personal.created) await adoptarLegado(env, sub, org.id, personal.branch.id);
-  }
-  let branch;
-  if (b.branchId != null) {
-    if (!Number.isInteger(b.branchId)) return json({ error: 'bad_request' }, 400);
-    branch = (await listBranches(env, org.id)).find((x) => x.id === b.branchId && x.active);
-    if (!branch) return json({ error: 'bad_request' }, 400);
-  } else if (porSucursal) {
-    // Sin sucursal indicada: la primera activa de las suyas (el dueño, la principal).
-    const m = (propios.find((o) => o.org.id === org.id) || {}).membership;
-    branch = m ? (await listBranches(env, org.id)).find((x) => x.active && puede(m, accion, x.id)) : await mainBranch(env, org.id);
-    if (!branch) return json({ error: 'forbidden' }, 403);
-  } else branch = await mainBranch(env, org.id);
-  // Un celular (o el bot) solo se vincula a una sucursal donde la persona trabaja (el dueño, a cualquiera).
-  if (porSucursal) {
-    const m = (propios.find((o) => o.org.id === org.id) || {}).membership;
-    if (m && !puede(m, accion, branch.id)) return json({ error: 'forbidden' }, 403);
-  }
+  const destino = await destinoDelDispositivo(env, cu.session, { tipo: bot ? 'bot' : celular ? 'celular' : 'pc', orgId: b.orgId, branchId: b.branchId });
+  if (destino.error) return json({ error: destino.error }, destino.status);
+  const { org, branch } = destino;
+  const sub = cu.session.sub;
   const code = await createDeviceCode(env, {
     sub, email: cu.session.email, deviceId: b.deviceId, name: cleanName(b.name), challenge: b.challenge, orgId: org.id, branchId: branch.id, personName: cu.session.name,
     kind: bot ? 'bot' : celular ? 'celular' : 'pc',

@@ -120,7 +120,7 @@ La PC con el POS se **vincula a la cuenta de Google** del dueño y sube copias d
 
 | Nombre | Valor |
 |---|---|
-| `GOOGLE_CLIENT_ID` | Client ID de Google Cloud (OAuth, tipo Web) |
+| `GOOGLE_CLIENT_ID` | Client ID de Google Cloud (OAuth, tipo Web). El celular entra con Google sin navegador (`POST /api/device/google`) pidiendo un id_token para ESTE client ID; además hace falta un cliente OAuth tipo **Android** en el mismo proyecto (paquete de la app + huella SHA-1 de la clave que firma el APK), que no se carga acá |
 | `GOOGLE_CLIENT_SECRET` | Client secret del mismo cliente |
 | `SESSION_SECRET` | Texto aleatorio de 48+ caracteres |
 | `MP_ACCESS_TOKEN` | Access token de producción de la app de Mercado Pago |

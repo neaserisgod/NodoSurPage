@@ -21,6 +21,7 @@ import * as adminMpReporte from './functions/api/admin/mp_reporte.js';
 import * as deviceWhoami from './functions/api/device/whoami.js';
 import * as deviceAuthorize from './functions/api/device/authorize.js';
 import * as deviceToken from './functions/api/device/token.js';
+import * as deviceGoogle from './functions/api/device/google.js';
 import * as devicePing from './functions/api/device/ping.js';
 import { reintentarAvisos } from './functions/_lib/push.js';
 import * as devicePush from './functions/api/device/push.js';
@@ -67,6 +68,7 @@ const ROUTES = {
   'GET /api/device/whoami': deviceWhoami.onRequestGet,
   'POST /api/device/authorize': deviceAuthorize.onRequestPost,
   'POST /api/device/token': deviceToken.onRequestPost,
+  'POST /api/device/google': deviceGoogle.onRequestPost,
   'POST /api/device/ping': devicePing.onRequestPost,
   'POST /api/device/push': devicePush.onRequestPost,
   'GET /api/device/me': deviceMe.onRequestGet,
