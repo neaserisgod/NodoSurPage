@@ -11,9 +11,11 @@ export const ROLES = ['owner', 'manager', 'employee'];
 // encargado"; un empleado anula, pero la devolución queda para ellos). Es de sucursal.
 // `configurar_bot`: cambiar la configuración del bot de WhatsApp de una sucursal y vincular el celular donde corre (El dueño,
 // 2026-10-09, `Nodo-Sur-Pos/docs/PLAN-BOT.md`). Dueño y encargado, como devolver: un empleado opera, pero no decide cómo atiende el bot.
-export const ACCIONES = ['facturacion', 'miembros', 'sucursales', 'vincular_pc', 'transferir', 'descargar', 'copias', 'operar', 'vincular_celular', 'mercadopago', 'devolver', 'configurar_bot'];
+// `nombre_negocio`: cambiarle el nombre al negocio (2026-10-14: un negocio nuevo nacía "Negocio de <nombre de Google>" y no había cómo
+// cambiarlo). Solo el dueño.
+export const ACCIONES = ['facturacion', 'miembros', 'sucursales', 'vincular_pc', 'transferir', 'descargar', 'copias', 'operar', 'vincular_celular', 'mercadopago', 'devolver', 'configurar_bot', 'nombre_negocio'];
 
-const DE_NEGOCIO = new Set(['facturacion', 'miembros', 'sucursales', 'vincular_pc', 'transferir', 'mercadopago']);
+const DE_NEGOCIO = new Set(['facturacion', 'miembros', 'sucursales', 'vincular_pc', 'transferir', 'mercadopago', 'nombre_negocio']);
 
 // Qué acciones permite cada rol. El dueño tiene todas.
 const POR_ROL = {

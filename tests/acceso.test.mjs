@@ -18,6 +18,7 @@ import * as devices from '../functions/api/devices.js';
 import { addRelease } from '../functions/_lib/releases.js';
 import * as ping from '../functions/api/device/ping.js';
 import * as latest from '../functions/api/update/latest.js';
+import * as negocioDev from '../functions/api/device/negocio.js';
 import { mkEnv, addUser, sess, req, web, mp, mpSub, mockMP, nowS } from './helpers-nube.mjs';
 
 let pass = 0; const t = async (n, f) => { await f(); pass++; console.log('ok  ', n); };
@@ -316,5 +317,21 @@ await t('facturación: el negocio de una cuenta eximida figura pago y sin vencim
   assert.equal((await estadoFacturacion(env, n.org, 'duena@x.com')).status, 'none');
   env.DB.raw.prepare("UPDATE users SET exempt = 1 WHERE sub = 'sd'").run();
   assert.equal((await estadoFacturacion(env, n.org, 'duena@x.com')).status, 'authorized');
+});
+// ───────── el nombre del negocio desde la app (2026-10-14: nacía "Negocio de <nombre de Google>" y quedaba así)
+await t('nombre del negocio: lo cambia el dueño desde su equipo; un empleado no; un nombre vacío o roto no', async () => {
+  const env = mkEnv(); const n = await negocio(env); miembro(env, n, 'emp@x.com', 'sm', 'employee', { branches: [n.a] });
+  const tokDuena = await pc(env, n, n.a, 'sd', 'duena@x.com', ID('duena'));
+  const tokEmp = await pc(env, n, n.a, 'sm', 'emp@x.com', ID('emp1'));
+  const poner = (tok, name) => negocioDev.onRequestPost({ request: req('/api/device/negocio', { method: 'POST', headers: bearer(tok), body: { name } }), env });
+  const nombre = () => env.DB.raw.prepare('SELECT name FROM orgs WHERE id = ?').get(n.org.id).name;
+  assert.equal((await poner(tokDuena, '  Barbería   Lucho ')).status, 200);
+  assert.equal(nombre(), 'Barbería Lucho');
+  assert.equal((await poner(tokEmp, 'Otro')).status, 403);
+  assert.equal(nombre(), 'Barbería Lucho');
+  assert.equal((await poner(tokDuena, ' ')).status, 400);
+  assert.equal((await poner(tokDuena, 'x'.repeat(81))).status, 400);
+  assert.equal((await negocioDev.onRequestPost({ request: req('/api/device/negocio', { method: 'POST', body: { name: 'Sin token' } }), env })).status, 401);
+  assert.equal(nombre(), 'Barbería Lucho');
 });
 console.log(`\n${pass} pruebas OK (acceso por negocio y sucursal)`);
