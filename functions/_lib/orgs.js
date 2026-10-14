@@ -95,6 +95,13 @@ export async function crearOtroNegocio(env, { sub, email, name }, nombre, t = no
   return createOrg(env, { sub, email, name, orgName: limpiarNombreNegocio(nombre) }, t);
 }
 
+// Cambiarle el nombre a un negocio (lo decide el dueño: `puede(m, 'nombre_negocio')`, quien llama lo comprueba).
+export async function renombrarNegocio(env, orgId, nombre) {
+  if (!nombreDeNegocioValido(nombre)) return { error: 'nombre_invalido', status: 400 };
+  await env.DB.prepare('UPDATE orgs SET name = ?2 WHERE id = ?1').bind(orgId, limpiarNombreNegocio(nombre)).run();
+  return { ok: true };
+}
+
 export const getOrg = (env, id) => env.DB.prepare('SELECT * FROM orgs WHERE id = ?1').bind(id).first();
 
 // El negocio "personal" de una cuenta: el primero que posee, o uno nuevo si todavía no tiene.
