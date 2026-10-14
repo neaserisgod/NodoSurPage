@@ -56,8 +56,8 @@ el alta). Pendiente en Mercado Pago (lo hace el dueño, no se puede desde una se
 
 - Plan Emprendedor primero, todo el país, $ 0 de publicidad: páginas por rubro (`/app-de-turnos-para-unas|peluqueria|barberia|estetica/`),
   enlazadas desde `/servicios/`, en `sitemap.xml` y `llms.txt`. Repiten solo lo que ya promete `/servicios/`.
-- **Estadísticas**: Cloudflare Web Analytics. La política de contenido (`_headers`) ya permite su script; se activa desde el
-  panel (lo hace el dueño): Cloudflare → Web Analytics → Add a site → `horsepos.com` → inyección automática. Sin cookies.
+- **Estadísticas**: Cloudflare Web Analytics, ya activo en el panel (inyección automática, sin cookies). La política de
+  contenido (`_headers`) permite su script: no sacarlo de `script-src` ni de `connect-src`.
 
 ## Estado al 2026-10-03
 
