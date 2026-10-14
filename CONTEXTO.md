@@ -52,6 +52,13 @@ el alta). Pendiente en Mercado Pago (lo hace el dueño, no se puede desde una se
 - **Volver al sitio después de activar la prueba:** en cada plan de suscripción (Mercado Pago → Suscripciones → planes),
   poner como URL de retorno `https://horsepos.com/cuenta/`, donde aparece el botón de descarga.
 
+## Marketing (2026-10-14)
+
+- Plan Emprendedor primero, todo el país, $ 0 de publicidad: páginas por rubro (`/app-de-turnos-para-unas|peluqueria|barberia|estetica/`),
+  enlazadas desde `/servicios/`, en `sitemap.xml` y `llms.txt`. Repiten solo lo que ya promete `/servicios/`.
+- **Estadísticas**: Cloudflare Web Analytics, ya activo en el panel (inyección automática, sin cookies). La política de
+  contenido (`_headers`) permite su script: no sacarlo de `script-src` ni de `connect-src`.
+
 ## Estado al 2026-10-03
 
 - Publicado y en uso: negocios y sucursales con sync por sucursal, Mercado Pago por negocio (cobro, impresión, cobros
