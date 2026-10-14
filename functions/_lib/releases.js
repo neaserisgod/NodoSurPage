@@ -91,11 +91,13 @@ export async function eligible(release, cid) {
 }
 // Actualización para una instalación: la más nueva que le toque y que sea mayor a la que ya tiene.
 // `conBeta`: la instalación es de una cuenta de pruebas (administrador o eximida) y ve primero las betas.
-export async function latestForUpdate(env, platform, channel, current, cid, { conBeta = false } = {}) {
+// `soloCanal`: el celular eligió Estable (2026-10-14): una cuenta de pruebas no recibe las betas (la PC no lo pide y las recibe).
+// Con `channel=beta`, una cuenta de pruebas ve la más nueva entre betas y estables: una estable más nueva no se le esconde.
+export async function latestForUpdate(env, platform, channel, current, cid, { conBeta = false, soloCanal = false } = {}) {
   // El canal beta es solo para cuentas de pruebas: pedirlo a mano (`channel=beta`) no alcanza (2026-10-03).
   if (channel === 'beta' && !conBeta) return null;
   const ok = [];
-  const canales = conBeta && channel === 'stable' ? ['stable', 'beta'] : [channel];
+  const canales = conBeta && (channel === 'beta' || !soloCanal) ? ['stable', 'beta'] : [channel];
   for (const canal of canales) for (const r of await candidates(env, platform, canal)) if (await eligible(r, cid)) ok.push(r);
   const best = newest(ok);
   return best && (!current || cmpVersion(best.version, current) > 0) ? best : null;
