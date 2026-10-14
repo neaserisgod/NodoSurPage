@@ -148,9 +148,16 @@ await t('las PC de la cuenta administradora ven primero las betas; las de client
   assert.equal(await ver('cid-ana-00000001'), '1.0.0.2098'); assert.equal(await ver('cid-que-no-existe'), '1.0.0.2098'); assert.equal(await ver(), '1.0.0.2098');
   const feed = async (cid) => (await (await appcast.onRequestGet({ request: req(`/api/update/appcast.xml?platform=windows&cid=${cid}`), env })).text());
   assert.match(await feed('cid-admin-0000001'), /<sparkle:version>1\.0\.0\.2099</); assert.match(await feed('cid-ana-00000001'), /<sparkle:version>1\.0\.0\.2098</);
+  // El celular elige: Estable (solo=1) no ve la beta aunque sea de pruebas; Beta ve la más nueva entre las dos.
+  const celu = async (qs) => (await (await latest.onRequestGet({ request: req(`/api/update/latest.json?platform=windows&version=1.0.0.2097&${qs}`), env })).json()).version;
+  assert.equal(await celu('cid=cid-admin-0000001&solo=1'), '1.0.0.2098');
+  assert.equal(await celu('cid=cid-admin-0000001&channel=beta'), '1.0.0.2099');
+  assert.equal(await celu('cid=cid-ana-00000001&channel=beta'), undefined, 'un cliente no recibe betas aunque las pida');
   // la PC del administrador desvinculada deja de ser de pruebas
   env.DB.raw.prepare('UPDATE devices SET revoked=1 WHERE id=?').run('pc-del-admin-0123456789abcd');
   assert.equal(await ver('cid-admin-0000001'), '1.0.0.2098');
+  await publicar(env, '1.0.0.2100', 'stable');
+  assert.equal(await celu('cid=cid-demo-00000001&channel=beta'), '1.0.0.2100', 'eligiendo Beta, una estable más nueva igual llega');
 });
 
 // --- volver a /vincular/ después de ingresar con Google

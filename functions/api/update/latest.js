@@ -4,14 +4,15 @@ import { hasDB } from '../../_lib/db.js';
 import { cidIsPrivileged } from '../../_lib/devices.js';
 
 // Público: ¿hay una versión nueva para esta instalación? Las actualizaciones no piden sesión (el archivo va firmado).
-//   /api/update/latest.json?platform=android&channel=stable&version=1.2.3&cid=<id de instalación>
+//   /api/update/latest.json?platform=android&channel=stable&version=1.2.3&cid=<id de instalación>[&solo=1]
+// `solo=1`: solo el canal pedido (el celular que eligió Estable, aunque sea de una cuenta de pruebas).
 export async function onRequestGet({ request, env }) {
   const q = new URL(request.url).searchParams;
   const platform = q.get('platform'), channel = q.get('channel') || 'stable', current = q.get('version');
   const cid = (q.get('cid') || '').slice(0, 64);
   if (!PLATFORMS.includes(platform) || !CHANNELS.includes(channel) || (current && !validVersion(current))) return json({ error: 'bad_request' }, 400);
   if (!hasDB(env) || !hasR2(env)) return json({ update: false });
-  const r = await latestForUpdate(env, platform, channel, current, cid, { conBeta: await cidIsPrivileged(env, cid) });
+  const r = await latestForUpdate(env, platform, channel, current, cid, { conBeta: await cidIsPrivileged(env, cid), soloCanal: q.get('solo') === '1' });
   if (!r) return json({ update: false });
   return json({
     update: true, version: r.version, mandatory: Boolean(r.mandatory), url: await urlArchivo(env, `${siteUrl(env)}/api/update/file?id=${r.id}`, r),
