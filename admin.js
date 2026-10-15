@@ -167,7 +167,7 @@
   }
 
   // Versiones del sistema POS: estado, despliegue gradual, bloqueo y retiro (rollback). Se publican con scripts/publicar-release.mjs.
-  var PLAT = { windows: 'Windows', macos: 'macOS', linux: 'Linux', android: 'Android' };
+  var PLAT = { windows: 'Windows', macos: 'macOS', linux: 'Linux', android: 'Android', 'android-servicios': 'Servicios (Android)', 'windows-servicios': 'Servicios (Windows)' };
   function versiones(host) {
     var sec = el('section', 'acc'); sec.appendChild(el('h2', null, 'Versiones del sistema'));
     var body = el('div'); body.appendChild(el('div', 'sk sk-block')); sec.appendChild(body); host.appendChild(sec);

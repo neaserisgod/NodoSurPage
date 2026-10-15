@@ -133,6 +133,14 @@ await t('appcast (Sparkle/WinSparkle): versión nombre.build, firma, obligatoria
   assert.equal((await (await appcast.onRequestGet({ request: req('/api/update/appcast.xml?platform=macos'), env })).text()).includes('<item>'), false);
   assert.equal((await appcast.onRequestGet({ request: req('/api/update/appcast.xml?platform=x'), env })).status, 400);
 });
+await t('appcast de Nodo Sur Servicios para Windows: su propia plataforma, pero sparkle:os="windows" y .exe', async () => {
+  const env = mkEnv(); const key = 'stable/1.0.0.7/NodoSurServicios-Setup-1.0.0.7.exe'; env.RELEASES.put(key, 'x');
+  assert.equal((await ciPost(env, { platform: 'windows-servicios', channel: 'stable', version: '1.0.0.7', key, sha256: 'a'.repeat(64) })).status, 200);
+  const x = await (await appcast.onRequestGet({ request: req('/api/update/appcast.xml?platform=windows-servicios'), env })).text();
+  assert.match(x, /sparkle:os="windows"/); assert.match(x, /NodoSurPOS-Actualizacion\.exe/);
+  // La de almacén no recibe la de servicios.
+  assert.equal((await (await appcast.onRequestGet({ request: req('/api/update/appcast.xml?platform=windows'), env })).text()).includes('<item>'), false);
+});
 await t('archivo de actualización: completo, por partes (Range), condicional y HEAD', async () => {
   const env = mkEnv(); await publish(env, '1.0.0+1', {}, '0123456789');
   let r = await file.onRequest({ request: req('/api/update/file?id=1'), env }); assert.equal(r.status, 200); assert.equal(await r.text(), '0123456789'); assert.equal(r.headers.get('content-length'), '10'); assert.equal(r.headers.get('accept-ranges'), 'bytes');

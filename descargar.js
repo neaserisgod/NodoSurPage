@@ -3,7 +3,8 @@
   if (!root) return;
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
   var NAMES = { windows: ['Windows', 'La versión para la compu del local.'], macos: ['macOS', 'Para Mac.'], linux: ['Linux', 'Para Linux.'], android: ['Android', 'La app para el celular.'],
-    'android-servicios': ['Nodo Sur Servicios', 'La app de turnos para Android, con el bot de WhatsApp adentro.'] };
+    'android-servicios': ['Nodo Sur Servicios', 'La app de turnos para Android, con el bot de WhatsApp adentro.'],
+    'windows-servicios': ['Nodo Sur Servicios para Windows', 'La app de turnos para la compu, con el bot de WhatsApp adentro.'] };
   var MSG = {
     no_subscription: ['Todavía no tenés una suscripción activa.', 'La descarga está disponible para quienes ya tienen su suscripción. Elegí tu sistema y probalo 7 días sin costo.'],
     mp_error: ['No pudimos verificar tu suscripción en este momento.', 'Mercado Pago no respondió. Probá de nuevo en unos minutos.'],
@@ -31,9 +32,10 @@
     var dev = window.NS_DEVICE || { id: 'other', name: '' };
     var mine = null;
     d.releases.forEach(function (r) { if (!mine && r.platform === dev.id) mine = r; });
-    // En Android hay dos apps: la de almacén y Nodo Sur Servicios (turnos, con el bot adentro). Las dos al frente, cada una
-    // diciendo para quién es, así nadie baja la que no es.
-    var servicios = dev.id === 'android' ? d.releases.filter(function (r) { return r.platform === 'android-servicios'; })[0] : null;
+    // En Android y en Windows hay dos apps: la de almacén y Nodo Sur Servicios (turnos, con el bot adentro). Las dos al frente,
+    // cada una diciendo para quién es, así nadie baja la que no es.
+    var platServicios = { android: 'android-servicios', windows: 'windows-servicios' }[dev.id];
+    var servicios = platServicios ? d.releases.filter(function (r) { return r.platform === platServicios; })[0] : null;
     var rest = d.releases.filter(function (r) { return r !== mine && r !== servicios; });
     if (mine) {
       root.appendChild(heroCard(mine, dev));
@@ -98,7 +100,7 @@
   function heroCard(r, dev) {
     var n = NAMES[r.platform] || [r.platform, ''];
     var c = el('article', 'dl-hero');
-    var app = r.platform === 'android-servicios'; // una app, no un dispositivo: "Descargar Nodo Sur Servicios"
+    var app = /-servicios$/.test(r.platform); // una app, no un dispositivo: "Descargar Nodo Sur Servicios"
     if (!app) c.appendChild(el('p', 'dl-detect on', 'Detectamos tu dispositivo: ' + dev.name));
     c.appendChild(el('h2', null, (app ? 'Descargar ' : 'Descargar para ') + n[0]));
     if (app) c.appendChild(el('p', 'acc-note', n[1]));
@@ -122,7 +124,7 @@
     var n = NAMES[r.platform] || [r.platform, ''];
     var c = el('article', 'acc dl' + (beta ? ' beta' : ''));
     var head = el('div', 'dl-h');
-    var ic = el('span', 'dl-ic'); ic.setAttribute('aria-hidden', 'true'); ic.innerHTML = ICON[r.platform] || (r.platform.indexOf('android') === 0 ? ICON.android : ICON.linux);
+    var ic = el('span', 'dl-ic'); ic.setAttribute('aria-hidden', 'true'); ic.innerHTML = ICON[r.platform] || (r.platform.indexOf('android') === 0 ? ICON.android : r.platform.indexOf('windows') === 0 ? ICON.windows : ICON.linux);
     head.appendChild(ic);
     var t = el('div'); t.appendChild(el('h2', null, n[0])); t.appendChild(el('p', 'dl-sub', n[1])); head.appendChild(t);
     if (beta) head.appendChild(el('span', 'chip wait', 'Versión de prueba'));
