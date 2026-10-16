@@ -141,7 +141,7 @@ await t('appcast de Nodo Sur Servicios para Windows: su propia plataforma, pero 
   // La de almacén no recibe la de servicios.
   assert.equal((await (await appcast.onRequestGet({ request: req('/api/update/appcast.xml?platform=windows'), env })).text()).includes('<item>'), false);
 });
-await t('Nodo Sur Gastronomía: sus propias plataformas, y en Windows también sparkle:os="windows" y .exe', async () => {
+await t('Nodo Gastro: sus propias plataformas, y en Windows también sparkle:os="windows" y .exe', async () => {
   const env = mkEnv(); const key = 'stable/1.0.0.9/NodoSurGastronomia-Setup-1.0.0.9.exe'; env.RELEASES.put(key, 'x');
   assert.equal((await ciPost(env, { platform: 'windows-gastronomia', channel: 'stable', version: '1.0.0.9', key, sha256: 'a'.repeat(64) })).status, 200);
   const x = await (await appcast.onRequestGet({ request: req('/api/update/appcast.xml?platform=windows-gastronomia'), env })).text();
