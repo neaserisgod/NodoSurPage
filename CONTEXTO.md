@@ -71,6 +71,17 @@ enlaces viejos y el de la app siguen andando. El componente vive en `descargar.j
 - **Estadísticas**: Cloudflare Web Analytics, ya activo en el panel (inyección automática, sin cookies). La política de
   contenido (`_headers`) permite su script: no sacarlo de `script-src` ni de `connect-src`.
 
+## Landing y conversión (2026-10-16)
+
+- Botones con plan sin alta (`pos`, `emprendedor`) van a `/api/checkout?plan=…` (Google → Mercado Pago, sin `/pagar/`), con
+  `rel="nofollow"` (`/api/` está en `robots.txt`). En las páginas de turnos todo "Probar gratis" es Emprendedor. Lo que no
+  tiene plan o tiene alta sigue yendo a `/pagar/`. Debajo de los precios, el aviso de usar el mismo mail.
+- Botón fijo del celular (`main.js`): el plan de la página; quien ya paga (`ns_sub=1`) ve "Descargar" → Mi cuenta, también en
+  el botón negro del encabezado.
+- Celular: el botón del encabezado muestra "Probar gratis" (era un círculo vacío desde que dejó de ser WhatsApp); las
+  pastillas de funciones de la home se cortan en 8 ("Ver todas las funciones" lleva al resto); en `/servicios/` y los rubros,
+  la sección Precio tiene un botón grande. Revisado sin desborde horizontal a 360 y 390 px.
+
 ## Estado al 2026-10-03
 
 - Publicado y en uso: negocios y sucursales con sync por sucursal, Mercado Pago por negocio (cobro, impresión, cobros

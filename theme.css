@@ -445,3 +445,5 @@ body{overflow-x:clip}
   .cards>.card2{flex:0 0 82%;scroll-snap-align:start}
   .card2:hover{transform:none}
 }
+.blk-r .fine{text-align:left}.blk-r .ctas{padding-top:0}
+.blk-r a.btn,.blk-r a.btn:hover{color:#fff;text-decoration:none}

@@ -475,9 +475,9 @@ header.px.lifted{background:rgba(255,255,255,.88);box-shadow:0 1px 0 var(--outli
 .prose>h2:first-child{margin-top:0}
 .crumbs{padding-top:16px}
 .wm{white-space:nowrap}
+/* el botón del encabezado es "Probar gratis" (antes un ícono de WhatsApp): en el celular se achica pero el texto queda */
 @media (max-width:479px){
-  .nav .cta{width:44px;padding:0;justify-content:center}
-  .nav .cta span{display:none}
+  .nav .cta{height:44px;padding:0 16px;font-size:14px;white-space:nowrap}
 }
 .hero{overflow:clip}
 html,body{overflow-x:clip}
