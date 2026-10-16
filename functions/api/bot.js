@@ -12,7 +12,7 @@ import { puede } from '../_lib/permisos.js';
 import { syncAccess } from '../_lib/sync.js';
 import {
   botConfigurado, tieneBot, configValida, leerConfig, guardarConfig, itemsDeCatalogo, guardarCatalogo, leerCatalogo,
-  pedidoDesdeBot, crearPedido, pedidosDesde, resolverPedido, avisarBot, botsDeSucursal, MAX_CONFIG_BYTES,
+  pedidoDesdeBot, crearPedido, pedidosDesde, resolverPedido, avanzarPedidoBot, avisarBot, botsDeSucursal, MAX_CONFIG_BYTES,
   anotarLector, pedidoConGramosPermitido, pedidoTieneGramos,
 } from '../_lib/bot.js';
 import { avisarConReintento, cuandoTexto } from '../_lib/push.js';
@@ -145,6 +145,21 @@ export async function onRequestResolver({ request, env, ctx }) {
   if (res.error === 'no_existe') return json({ error: 'no_existe' }, 404);
   if (res.error) return json({ error: res.error, estado: res.estado }, 409);
   await esperar(ctx, avisarBot(env, w.orgId, w.branchId, { para: 'bots', aviso: { pedido: b.id, estado: b.estado } }));
+  return json({ ok: true });
+}
+
+// POST /api/bot/pedido/estado (la app, locales gastronómicos §22): `{ id, estado: 'listo' | 'en_camino' | 'entregado' | 'cancelado' }`.
+// El pedido ya aceptado avanza y el bot le avisa al cliente ("tu pedido está listo", "salió"). Repetir el mismo estado no avisa de nuevo.
+export async function onRequestEstadoPedido({ request, env, ctx }) {
+  const w = await equipo(request, env, { bot: false }); if (w.error) return w.error;
+  const r = await cuerpo(request, 4 * 1024);
+  if (r && r.grande) return json({ error: 'too_large' }, 413);
+  const b = r && r.b;
+  if (!b || !Number.isSafeInteger(b.id) || b.id < 1 || !['listo', 'en_camino', 'entregado', 'cancelado'].includes(b.estado)) return json({ error: 'bad_request' }, 400);
+  const res = await avanzarPedidoBot(env, w.orgId, w.branchId, { id: b.id, estado: b.estado });
+  if (res.error === 'no_existe') return json({ error: 'no_existe' }, 404);
+  if (res.error) return json({ error: res.error, estado: res.estado }, 409);
+  if (!res.repetido) await esperar(ctx, avisarBot(env, w.orgId, w.branchId, { para: 'bots', aviso: { pedido: b.id, estado: b.estado } }));
   return json({ ok: true });
 }
 
