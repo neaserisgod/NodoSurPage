@@ -141,6 +141,18 @@ await t('appcast de Nodo Sur Servicios para Windows: su propia plataforma, pero 
   // La de almacén no recibe la de servicios.
   assert.equal((await (await appcast.onRequestGet({ request: req('/api/update/appcast.xml?platform=windows'), env })).text()).includes('<item>'), false);
 });
+await t('Nodo Sur Gastronomía: sus propias plataformas, y en Windows también sparkle:os="windows" y .exe', async () => {
+  const env = mkEnv(); const key = 'stable/1.0.0.9/NodoSurGastronomia-Setup-1.0.0.9.exe'; env.RELEASES.put(key, 'x');
+  assert.equal((await ciPost(env, { platform: 'windows-gastronomia', channel: 'stable', version: '1.0.0.9', key, sha256: 'a'.repeat(64) })).status, 200);
+  const x = await (await appcast.onRequestGet({ request: req('/api/update/appcast.xml?platform=windows-gastronomia'), env })).text();
+  assert.match(x, /sparkle:os="windows"/); assert.match(x, /NodoSurPOS-Actualizacion\.exe/);
+  // Ni la de almacén ni la de servicios reciben la de gastronomía.
+  for (const otra of ['windows', 'windows-servicios']) {
+    assert.equal((await (await appcast.onRequestGet({ request: req(`/api/update/appcast.xml?platform=${otra}`), env })).text()).includes('<item>'), false);
+  }
+  const apk = 'stable/1.0.0+9/NodoSurGastronomia-1.0.0+9.apk'; env.RELEASES.put(apk, 'y');
+  assert.equal((await ciPost(env, { platform: 'android-gastronomia', channel: 'stable', version: '1.0.0+9', key: apk, sha256: 'b'.repeat(64) })).status, 200);
+});
 await t('archivo de actualización: completo, por partes (Range), condicional y HEAD', async () => {
   const env = mkEnv(); await publish(env, '1.0.0+1', {}, '0123456789');
   let r = await file.onRequest({ request: req('/api/update/file?id=1'), env }); assert.equal(r.status, 200); assert.equal(await r.text(), '0123456789'); assert.equal(r.headers.get('content-length'), '10'); assert.equal(r.headers.get('accept-ranges'), 'bytes');
