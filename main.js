@@ -17,10 +17,10 @@
     if(lg&&nm){lg.href='/cuenta/';lg.textContent=nm.charAt(0).toUpperCase()+nm.slice(1);lg.classList.add('in');lg.title='Mi cuenta'}
     var ml=$('.mp-login');if(ml){ml.href='/cuenta/';ml.textContent='Mi cuenta'}
     /* con suscripción activa (cookie de solo lectura que pone /api/me): "Descargar" a un toque, en el menú de escritorio y en el del celular */
-    if(/(?:^|; )ns_sub=1(?:;|$)/.test(document.cookie)&&location.pathname.indexOf('/descargar')!==0){
+    if(/(?:^|; )ns_sub=1(?:;|$)/.test(document.cookie)&&location.pathname.indexOf('/cuenta')!==0){
       var ul=$('.nav .links');
-      if(ul){var li=document.createElement('li'),a=document.createElement('a');a.className='l';a.href='/descargar/';a.textContent='Descargar';li.appendChild(a);ul.appendChild(li)}
-      if(ml&&ml.parentNode){var m=document.createElement('a');m.href='/descargar/';m.textContent='Descargar';ml.parentNode.insertBefore(m,ml)}
+      if(ul){var li=document.createElement('li'),a=document.createElement('a');a.className='l';a.href='/cuenta/';a.textContent='Descargar';li.appendChild(a);ul.appendChild(li)}
+      if(ml&&ml.parentNode){var m=document.createElement('a');m.href='/cuenta/';m.textContent='Descargar';ml.parentNode.insertBefore(m,ml)}
     }
   }
 

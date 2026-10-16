@@ -28,24 +28,32 @@
     setTimeout(function () { root.classList.remove('acc-in'); }, 800);
   }
 
+  // Mi cuenta es la única página después de ingresar (2026-10-16): arriba lo que la persona vino a hacer (descargar, o elegir su
+  // sistema si todavía no tiene), después su negocio y su suscripción, y al final, chico, quién está ingresado.
+  var ERR = { no_subscription: 'Para descargar hace falta una suscripción activa.', mp_error: 'Mercado Pago no respondió: probá de nuevo en unos minutos.', no_disponible: 'Esa versión todavía no está publicada.' };
   function render(d) {
     root.textContent = '';
     done();
     var u = d.user;
-    var p = card('Tu cuenta');
-    var row = el('div', 'acc-user');
-    row.appendChild(el('span', 'avatar', (u.name || u.email).trim().charAt(0).toUpperCase()));
-    var who = el('div', 'acc-who');
-    who.appendChild(el('strong', null, u.name));
-    who.appendChild(el('span', null, u.email));
-    if (u.since) who.appendChild(el('small', null, 'Sesión iniciada el ' + date(u.since * 1000)));
-    row.appendChild(who);
-    p.appendChild(row);
-    var out = el('form', 'acc-out'); out.method = 'post'; out.action = '/api/auth/logout';
-    var ob = el('button', 'btn btn-w', 'Cerrar sesión'); ob.type = 'submit'; out.appendChild(ob);
-    p.appendChild(out);
-    if (d.isAdmin) { var ad = el('a', 'btn', 'Ir al panel de administración'); ad.href = '/admin/'; ad.style.alignSelf = 'flex-start'; p.appendChild(ad); }
-    root.appendChild(p);
+    var e = new URLSearchParams(location.search).get('e');
+    if (e && ERR[e]) { var eb0 = el('p', 'login-err', ERR[e]); eb0.setAttribute('role', 'alert'); root.appendChild(eb0); }
+    if (d.notice) {
+      var nb = el('div', 'login-err'); nb.setAttribute('role', 'alert');
+      nb.textContent = 'Tu cuenta figura sin suscripción ni uso reciente y se eliminaría el ' + date(d.notice.deleteAfter * 1000) + '. Al haber ingresado hoy, el aviso se canceló.';
+      root.appendChild(nb);
+    }
+    var activa = (d.subscriptions || []).some(function (x) { return x.status === 'authorized'; });
+    // Quien solo es encargado o empleado no paga nada: la suscripción es del negocio, así que no se le muestra ni se le ofrece.
+    var empleado = d.billing === false;
+    var puede = d.isAdmin || d.exempt || activa || d.covered || (empleado && d.orgs.some(function (o) { return o.can && o.can.descargar; }));
+    var ofrecer = !empleado && !d.mpError && !activa && !d.isAdmin && !d.exempt && !d.covered;
+
+    if (puede) {
+      var dl = el('div', 'acc-dl'); root.appendChild(dl);
+      if (window.NS_DESCARGAS) window.NS_DESCARGAS(dl, { app: appDelPlan(d) });
+    } else if (ofrecer) {
+      root.appendChild(offerCard(d));
+    }
 
     if (d.orgs && d.orgs.length) {
       var nc = card(d.orgs.length === 1 ? 'Tu negocio' : 'Tus negocios');
@@ -55,116 +63,98 @@
         li.appendChild(el('span', null, ROL[o.role] || o.role));
         var oa = el('a', 'lnk', 'Abrir'); oa.href = '/negocio/?org=' + encodeURIComponent(o.id); li.appendChild(oa); nl.appendChild(li);
       });
-      nc.appendChild(nl); root.appendChild(nc);
+      nc.appendChild(nl);
+      if (empleado) nc.appendChild(el('p', 'acc-note', 'Tu acceso lo da el negocio: la suscripción la maneja el dueño.'));
+      root.appendChild(nc);
     }
-    // Quien solo es encargado o empleado no paga nada: la suscripción es del negocio, así que no se le muestra ni se le ofrece.
-    if (d.billing === false) {
-      var eb = card('Tu acceso');
-      eb.appendChild(el('p', 'acc-note', 'Tu acceso lo da el negocio: la suscripción la maneja el dueño. No tenés que pagar ni elegir ningún plan.'));
-      root.appendChild(eb);
-      if (d.orgs.some(function (o) { return o.can && o.can.descargar; })) {
-        var eg = card('Descargá el sistema'); eg.classList.add('acc-dl');
-        eg.appendChild(el('p', 'acc-note', 'Instalador para tu compu y la app del celular, siempre en su última versión.'));
-        var el2 = el('a', 'btn', 'Ir a las descargas'); el2.href = '/descargar/'; el2.style.alignSelf = 'flex-start'; eg.appendChild(el2); root.appendChild(eg);
+
+    if (!empleado) {
+      // Propuestas de transferencia de propiedad que le mandaron: se avisan arriba de todo porque es lo primero que ve al entrar.
+      if (d.orgs && d.orgs.length) {
+        fetch('/api/org/transfer', { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+          if (!j || !j.incoming || !j.incoming.length) return;
+          var tc = card('Te quieren transferir un negocio');
+          j.incoming.forEach(function (i) { tc.appendChild(el('p', 'acc-note', (i.fromName || i.fromEmail) + ' quiere transferirte «' + i.orgName + '». Podés aceptar o rechazar desde Mi negocio.')); var ta = el('a', 'btn', 'Ver la propuesta'); ta.href = '/negocio/?org=' + encodeURIComponent(i.orgId); ta.style.alignSelf = 'flex-start'; tc.appendChild(ta); });
+          root.insertBefore(tc, root.firstChild);
+        }).catch(function () { /* es solo un aviso */ });
       }
-      return;
+      // La suscripción: solo si hay algo que mostrar. Administración y eximidas no pagan (lo dice la tarjeta de la cuenta).
+      if (d.mpError) {
+        var se = card('Tu suscripción'); se.appendChild(el('p', 'acc-note', 'No pudimos consultar Mercado Pago en este momento. Probá de nuevo en unos minutos.')); root.appendChild(se);
+      } else if (d.subscriptions && d.subscriptions.length) {
+        var s = card(d.subscriptions.length > 1 ? 'Tus suscripciones' : 'Tu suscripción');
+        d.subscriptions.forEach(function (sub) { s.appendChild(subCard(sub)); });
+        root.appendChild(s);
+      } else if (d.covered) {
+        var sc = card('Tu suscripción'); sc.appendChild(el('p', 'acc-note', 'Tu negocio está cubierto por la suscripción de otra persona. Revisá la facturación en Mi negocio.')); root.appendChild(sc);
+      }
     }
 
-    // Propuestas de transferencia de propiedad que le mandaron: se avisan acá porque es lo primero que ve al entrar.
-    if (d.orgs && d.orgs.length) {
-      fetch('/api/org/transfer', { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
-        if (!j || !j.incoming || !j.incoming.length) return;
-        var tc = card('Te quieren transferir un negocio');
-        j.incoming.forEach(function (i) { tc.appendChild(el('p', 'acc-note', (i.fromName || i.fromEmail) + ' quiere transferirte «' + i.orgName + '». Podés aceptar o rechazar desde Mi negocio.')); var ta = el('a', 'btn', 'Ver la propuesta'); ta.href = '/negocio/?org=' + encodeURIComponent(i.orgId); ta.style.alignSelf = 'flex-start'; tc.appendChild(ta); });
-        root.insertBefore(tc, root.children[1] || null);
-      }).catch(function () { /* es solo un aviso */ });
-    }
-
-    if (d.notice) {
-      var nb = el('div', 'login-err'); nb.setAttribute('role', 'alert');
-      nb.textContent = 'Tu cuenta figura sin suscripción ni uso reciente y se eliminaría el ' + date(d.notice.deleteAfter * 1000) + '. Al haber ingresado hoy, el aviso se canceló.';
-      root.appendChild(nb);
-    }
-
-    var s = card('Tu suscripción');
-    var sinPago = (d.isAdmin || d.exempt) && !(d.subscriptions || []).length;
-    if (sinPago) {
-      // Administración y cuentas eximidas se tratan como suscripción activa y sin vencimiento: se ve como una más, sin cartel de excepción.
-      var ac = el('article', 'subc'), ah = el('div', 'subc-h');
-      ah.appendChild(el('h3', null, 'Nodo Sur POS')); ah.appendChild(el('span', 'chip ok', 'Activa')); ac.appendChild(ah);
-      var adl = el('dl', 'subc-dl'); adl.appendChild(el('dt', null, 'Vigencia')); adl.appendChild(el('dd', null, 'Sin vencimiento')); ac.appendChild(adl);
-      s.appendChild(ac);
-    } else if (!d.mpConfigured) {
-      s.appendChild(el('p', 'acc-note', 'Muy pronto vas a ver acá el estado de tu suscripción.'));
-    } else if (d.mpError) {
-      s.appendChild(el('p', 'acc-note', 'No pudimos consultar Mercado Pago en este momento. Probá de nuevo en unos minutos.'));
-    } else if (!d.subscriptions || !d.subscriptions.length) {
-      s.appendChild(el('p', 'acc-note', 'No encontramos una suscripción asociada a ' + u.email + '.'));
-      if (d.covered) s.appendChild(el('p', 'acc-note', 'Tu negocio está cubierto por la suscripción de otra persona. Revisá la facturación en Mi negocio.'));
-      s.appendChild(el('p', 'acc-note', 'Si ya pagaste con otro mail de Mercado Pago, escribime y la vinculamos a mano. Si todavía no te suscribiste, elegí tu sistema acá abajo.'));
-      var acts = el('div', 'acc-actions');
-      var a2 = el('a', 'btn btn-w', 'Escribime por WhatsApp'); a2.rel = 'noopener'; a2.href = WA + encodeURIComponent('Hola, ingresé con ' + u.email + ' y no veo mi suscripción'); acts.appendChild(a2);
-      s.appendChild(acts);
-    } else {
-      d.subscriptions.forEach(function (sub) { s.appendChild(subCard(sub)); });
-    }
-    root.appendChild(s);
-    if (sinPago || (d.subscriptions && d.subscriptions.some(function (x) { return x.status === 'authorized'; }))) {
-      var dl = card('Descargá el sistema'); dl.classList.add('acc-dl');
-      dl.appendChild(el('p', 'acc-note', 'Instalador para tu compu y la app del celular, siempre en su última versión.'));
-      dl.appendChild(botonDescarga(d));
-      if (directa(d)) { var otras = el('a', 'lnk', 'Otras descargas'); otras.href = '/descargar/'; otras.style.alignSelf = 'flex-start'; dl.appendChild(otras); }
-      root.appendChild(dl);
-    }
-    // Registrado sin suscripción: se le ofrecen los sistemas (o se sabe que no hay error de Mercado Pago).
-    if (!d.mpError && (!d.mpConfigured || !d.subscriptions || !d.subscriptions.length) && !d.isAdmin && !d.exempt && !d.covered) root.appendChild(offerCard(d));
+    // Quién está ingresado, al final y compacto.
+    var p = el('section', 'acc acc-me');
+    var row = el('div', 'acc-user');
+    row.appendChild(el('span', 'avatar', (u.name || u.email).trim().charAt(0).toUpperCase()));
+    var who = el('div', 'acc-who');
+    who.appendChild(el('strong', null, u.name));
+    who.appendChild(el('span', null, u.email));
+    if (d.isAdmin || d.exempt) who.appendChild(el('small', null, d.isAdmin ? 'Administración · sin vencimiento' : 'Cuenta sin vencimiento'));
+    row.appendChild(who);
+    p.appendChild(row);
+    var acts = el('div', 'acc-actions');
+    if (d.isAdmin) { var ad = el('a', 'btn btn-w', 'Panel de administración'); ad.href = '/admin/'; acts.appendChild(ad); }
+    var out = el('form', 'acc-out'); out.method = 'post'; out.action = '/api/auth/logout';
+    var ob = el('button', 'btn btn-w', 'Cerrar sesión'); ob.type = 'submit'; out.appendChild(ob); acts.appendChild(out);
+    p.appendChild(acts);
+    root.appendChild(p);
   }
 
-  // La descarga que le toca, para bajarla con un clic sin pasar por /descargar/: el dispositivo lo dice el navegador y la app
-  // el plan (Emprendedor = Nodo Sur Servicios). En iPhone o Mac, Servicios se abre en el navegador. Si no hay versión
-  // publicada, /api/download vuelve solo a /descargar/ con el aviso.
-  function directa(d) {
-    var dv = window.NS_DEVICE || {}, serv = esServicios(d);
-    if (dv.id === 'windows' || dv.id === 'android') return { href: '/api/download?platform=' + dv.id + (serv ? '-servicios' : ''), txt: serv ? 'Descargar Nodo Sur Servicios' : 'Descargar para ' + dv.name };
-    if (serv && (dv.id === 'ios' || dv.id === 'macos')) return { href: '/app/', txt: 'Abrir Nodo Sur Servicios' };
-    return null;
+  // Qué app le toca por su plan: Emprendedor = Nodo Sur Servicios; Sistema POS o Sistema + Bot = la de almacén. Con los dos, o
+  // sin plan propio (administración, eximidas, encargados, "Solo el bot"), null: elige con el selector de la descarga.
+  function appDelPlan(d) {
+    if (d.isAdmin || d.exempt || d.billing === false) return null;
+    var planes = (d.subscriptions || []).filter(function (x) { return x.status === 'authorized'; }).map(function (x) { return x.plan; });
+    if (!planes.length && d.intent) planes = [{ emprendedor: 'Emprendedor', pos: 'Sistema POS', 'pos-bot': 'Sistema + Bot' }[d.intent.plan]];
+    var serv = planes.indexOf('Emprendedor') >= 0, alm = planes.indexOf('Sistema POS') >= 0 || planes.indexOf('Sistema + Bot') >= 0;
+    return serv === alm ? null : serv ? 'servicios' : 'almacen';
   }
-  function esServicios(d) {
-    if (d.intent && d.intent.plan === 'emprendedor') return true;
-    return (d.subscriptions || []).some(function (x) { return x.status === 'authorized' && x.plan === 'Emprendedor'; });
-  }
-  function botonDescarga(d) {
-    var x = directa(d), a = el('a', 'btn', x ? x.txt : 'Ir a las descargas');
-    a.href = x ? x.href : '/descargar/'; a.style.alignSelf = 'flex-start'; return a;
-  }
-
+  // Sin suscripción: si ya eligió un plan, solo ese, con un botón para seguir (y "Cambiar de plan"); si no, los planes.
   function offerCard(d) {
     var P = window.NS_PLANES || {};
-    var c = card('Elegí tu sistema');
     var chosen = d.intent && P[d.intent.plan] ? d.intent.plan : null;
+    var c = card(chosen ? 'Seguí con tu prueba gratis' : 'Elegí tu sistema');
+    c.classList.add('acc-offer');
     c.appendChild(el('p', 'acc-note', chosen
-      ? 'Elegiste ' + P[chosen].nombre + '. Seguí con el pago cuando quieras: los primeros 7 días son de prueba, sin costo.'
-      : 'Todavía no tenés un sistema. Elegí uno y probalo 7 días sin costo; después seguís por Mercado Pago y cancelás cuando quieras.'));
-    var grid = el('div', 'offer');
-    Object.keys(P).forEach(function (k) {
-      var p = P[k], on = k === chosen;
-      var it = el('div', 'offer-i' + (on ? ' sel' : ''));
-      if (on) it.appendChild(el('span', 'chip ok', 'Tu elección'));
-      it.appendChild(el('strong', null, p.nombre));
-      var pr = el('span', 'of-p');
-      pr.appendChild(document.createTextNode(money(p.precio)));
-      pr.appendChild(document.createTextNode(' /mes'));
-      it.appendChild(pr);
-      it.appendChild(el('small', null, p.desc));
-      var a = el('a', 'btn' + (on ? '' : ' btn-w'), on ? 'Continuar al pago' : 'Probar 7 días gratis');
-      a.href = '/api/checkout?plan=' + k;
-      it.appendChild(a);
-      grid.appendChild(it);
-    });
-    c.appendChild(grid);
-    c.appendChild(el('p', 'acc-note', 'En Mercado Pago usá el mismo mail de tu cuenta de Google (' + d.user.email + ') para ver tu suscripción acá.'));
+      ? 'Elegiste ' + P[chosen].nombre + ' (' + money(P[chosen].precio) + ' por mes). Los primeros 7 días no pagás nada y cancelás cuando quieras.'
+      : 'Probalo 7 días sin costo; después seguís por Mercado Pago y cancelás cuando quieras.'));
+    if (chosen) {
+      var acts = el('div', 'acc-actions');
+      var go = el('a', 'btn', 'Empezar la prueba en Mercado Pago'); go.href = '/api/checkout?plan=' + chosen; acts.appendChild(go);
+      var ch = el('a', 'btn btn-w', 'Cambiar de plan'); ch.href = '/pagar/?plan=' + chosen; acts.appendChild(ch);
+      c.appendChild(acts);
+    } else {
+      var grid = el('div', 'offer');
+      Object.keys(P).forEach(function (k) {
+        var p = P[k];
+        var it = el('div', 'offer-i');
+        it.appendChild(el('strong', null, p.nombre));
+        var pr = el('span', 'of-p');
+        pr.appendChild(document.createTextNode(money(p.precio)));
+        pr.appendChild(document.createTextNode(' /mes'));
+        it.appendChild(pr);
+        it.appendChild(el('small', null, p.desc));
+        var a = el('a', 'btn btn-w', 'Probar 7 días gratis');
+        a.href = '/api/checkout?plan=' + k;
+        it.appendChild(a);
+        grid.appendChild(it);
+      });
+      c.appendChild(grid);
+    }
+    var nota = el('p', 'acc-note', 'En Mercado Pago usá el mismo mail (' + d.user.email + '). ¿Ya pagaste con otro? ');
+    var wa = el('a', null, 'Escribime y lo vinculo'); wa.rel = 'noopener'; wa.href = WA + encodeURIComponent('Hola, ingresé con ' + d.user.email + ' y no veo mi suscripción'); nota.appendChild(wa);
+    c.appendChild(nota);
     return c;
   }
+
 
   function subCard(sub) {
     var st = STATUS[sub.status] || [sub.status || 'Desconocido', 'wait'];

@@ -50,9 +50,16 @@ Todo "Probar 7 días gratis" del sitio lleva a `/pagar/` (Google + Mercado Pago,
 el alta).
 
 Embudo corto (2026-10-16): "Probar gratis" (plan sin alta) → Google → **directo a Mercado Pago**, sin volver a `/pagar/`
-ni pasar por `/ingresar/`. En Mi cuenta, el botón baja **el archivo directo** según el dispositivo y el plan (Emprendedor
-= Nodo Sur Servicios; en iPhone/Mac abre `/app/`). La vinculación de la app y las descargas sin sesión también van directo a
-Google y vuelven (`safeNext` acepta `/descargar/`). Los planes con alta siguen pasando por `/pagar/`. Pendiente en Mercado Pago (lo hace el dueño, no se puede desde una sesión):
+ni pasar por `/ingresar/`. La vinculación de la app y la descarga sin sesión también van directo a Google. Los planes con alta
+siguen pasando por `/pagar/`.
+
+**Mi cuenta es la única página después de ingresar** (2026-10-16). Arriba lo que la persona vino a hacer: la **descarga**
+(una tarjeta grande con la app de su plan para su dispositivo: Emprendedor = Nodo Sur Servicios, Sistema POS / + Bot = almacén;
+en iPhone/Mac, Servicios abre `/app/`) o, sin suscripción, **elegir el sistema** (si ya eligió uno, solo ese y "Cambiar de
+plan"). Lo demás (otros dispositivos; para administración, las de prueba y las anteriores) queda plegado. Administración,
+eximidas, encargados y "Solo el bot" no tienen plan que decida: ven un selector "Almacén o kiosco / Servicios con turno" que
+se recuerda en el navegador. `/descargar/` ya no es una página: el worker la redirige a `/cuenta/` (con su `?e=`), así los
+enlaces viejos y el de la app siguen andando. El componente vive en `descargar.js` (`window.NS_DESCARGAS`). Pendiente en Mercado Pago (lo hace el dueño, no se puede desde una sesión):
 
 - **Volver al sitio después de activar la prueba:** en cada plan de suscripción (Mercado Pago → Suscripciones → planes),
   poner como URL de retorno `https://horsepos.com/cuenta/`, donde aparece el botón de descarga.
