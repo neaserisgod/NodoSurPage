@@ -21,7 +21,8 @@
   if (!valido) { error('El enlace no es válido. Volvé a abrir la vinculación desde la app.'); return; }
 
   fetch('/api/device/whoami' + (bot ? '?tipo=bot' : celular ? '?tipo=celular' : ''), { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } }).then(function (r) {
-    if (r.status === 401) { location.replace('/ingresar/?next=' + encodeURIComponent(location.pathname + location.search)); return null; }
+    // Sin sesión, directo a Google (sin la pantalla de /ingresar/, un clic menos) y de vuelta acá.
+    if (r.status === 401) { location.replace('/api/auth/google?next=' + encodeURIComponent(location.pathname + location.search)); return null; }
     return r.ok ? r.json() : Promise.reject();
   }).then(function (u) {
     if (!u) return;
@@ -36,6 +37,12 @@
       var na = el('a', 'btn btn-w', 'Ir a mi cuenta'); na.href = '/cuenta/'; nc.appendChild(na); root.appendChild(nc); return;
     }
     var orgs = u.orgs || [];
+    // Sin nada que elegir (un negocio y una sucursal), entra solo, sin el botón (El dueño, 2026-10-16: "que se haga todo directo
+    // con Google"): la app abre el navegador, Google pide la cuenta y vuelve a la app. Es seguro saltear la confirmación porque el
+    // código va al servidor local de la app que abrió esto (127.0.0.1) o a /app/ de este mismo sitio, y sin el verificador que
+    // guarda esa app no sirve. El bot sí pregunta: vincularlo pone a contestar el WhatsApp del negocio.
+    var elegir = orgs.length > 1 || (orgs.length === 1 && orgs[0].branches.length > 1);
+    var auto = !bot && !elegir;
     var c = card(bot ? '¿Vincular el bot de WhatsApp a tu negocio?' : web ? '¿Entrar a Nodo Sur Servicios con tu cuenta?' : celular ? '¿Entrar en este celular con tu cuenta?' : '¿Vincular este dispositivo a tu cuenta?');
     c.appendChild(el('p', 'acc-note', bot
       ? 'Vas a vincular «' + name + '» como el bot de WhatsApp de tu negocio, con la cuenta ' + u.email + '. Va a atender con la configuración que cargues en la app de Nodo Sur.'
@@ -69,6 +76,7 @@
     var ok = el('button', 'btn', celular ? 'Entrar' : 'Vincular'); ok.type = 'button';
     var no = el('a', 'btn btn-w', 'Cancelar'); no.href = '/cuenta/';
     acts.appendChild(ok); acts.appendChild(no); c.appendChild(acts); c.appendChild(msg); root.appendChild(c);
+    if (auto) { c.firstChild.textContent = celular ? 'Entrando con tu cuenta…' : 'Conectando con tu cuenta…'; acts.hidden = true; }
     ok.addEventListener('click', function () {
       ok.disabled = true; ok.textContent = celular ? 'Entrando…' : 'Vinculando…'; msg.textContent = '';
       fetch('/api/device/authorize', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' },
@@ -79,7 +87,8 @@
           var destino = web ? '/app/?' : 'http://127.0.0.1:' + port + '/';
           if (!x.ok || typeof x.j.redirect !== 'string' || x.j.redirect.indexOf(destino) !== 0) throw new Error();
           location.href = x.j.redirect;
-        }).catch(function () { ok.disabled = false; ok.textContent = celular ? 'Entrar' : 'Vincular'; msg.textContent = 'No se pudo vincular. Probá de nuevo.'; });
+        }).catch(function () { acts.hidden = false; ok.disabled = false; ok.textContent = celular ? 'Entrar' : 'Vincular'; msg.textContent = 'No se pudo vincular. Probá de nuevo.'; });
     });
+    if (auto) ok.click();
   }).catch(function () { error('No pudimos comprobar tu sesión. Recargá la página.'); });
 })();

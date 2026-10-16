@@ -17,10 +17,12 @@
     if(lg&&nm){lg.href='/cuenta/';lg.textContent=nm.charAt(0).toUpperCase()+nm.slice(1);lg.classList.add('in');lg.title='Mi cuenta'}
     var ml=$('.mp-login');if(ml){ml.href='/cuenta/';ml.textContent='Mi cuenta'}
     /* con suscripción activa (cookie de solo lectura que pone /api/me): "Descargar" a un toque, en el menú de escritorio y en el del celular */
-    if(/(?:^|; )ns_sub=1(?:;|$)/.test(document.cookie)&&location.pathname.indexOf('/descargar')!==0){
+    if(/(?:^|; )ns_sub=1(?:;|$)/.test(document.cookie)&&location.pathname.indexOf('/cuenta')!==0){
+      /* ya paga: el botón negro deja de ofrecerle la prueba y lo lleva a su descarga */
+      var hc=$('.nav .cta');if(hc&&hc.getAttribute('href')==='/pagar/'){hc.href='/cuenta/';var hs=hc.querySelector('span');(hs||hc).textContent='Descargar'}
       var ul=$('.nav .links');
-      if(ul){var li=document.createElement('li'),a=document.createElement('a');a.className='l';a.href='/descargar/';a.textContent='Descargar';li.appendChild(a);ul.appendChild(li)}
-      if(ml&&ml.parentNode){var m=document.createElement('a');m.href='/descargar/';m.textContent='Descargar';ml.parentNode.insertBefore(m,ml)}
+      if(ul){var li=document.createElement('li'),a=document.createElement('a');a.className='l';a.href='/cuenta/';a.textContent='Descargar';li.appendChild(a);ul.appendChild(li)}
+      if(ml&&ml.parentNode){var m=document.createElement('a');m.href='/cuenta/';m.textContent='Descargar';ml.parentNode.insertBefore(m,ml)}
     }
   }
 
@@ -137,18 +139,23 @@
       })();
     },{threshold:.5}).observe(chat);
   }
-  /* botón fijo de WhatsApp en celulares (solo en las páginas comerciales) */
+  /* botón fijo de la prueba en celulares (solo en las páginas comerciales) */
   (function(){
     var path=location.pathname.replace(/\/+$/,'')||'/';
-    var skip=['/pagar','/ingresar','/cuenta','/admin','/privacidad','/descargar','/vincular','/negocio','/unirse'];
+    var skip=['/pagar','/ingresar','/cuenta','/admin','/privacidad','/vincular','/negocio','/unirse'];
     if(skip.indexOf(path)>-1||!matchMedia('(max-width:719px)').matches)return;
     var a=d.createElement('a');a.className='sticky-cta';
     /* la misma acción que el botón principal de la página: la prueba de 7 días (o el presupuesto, en páginas web) */
     if(path==='/paginas-web'){
       a.href='https://wa.me/5492944796044?text='+encodeURIComponent('Hola, quiero un presupuesto para una página web');
       a.rel='noopener';a.textContent='Pedir presupuesto';
+    }else if(/(?:^|; )ns_sub=1(?:;|$)/.test(d.cookie)){
+      a.href='/cuenta/';a.textContent='Descargar';
     }else{
-      a.href=path==='/bot-whatsapp'?'/pagar/?plan=bot':'/pagar/';a.textContent='Probar 7 días gratis';
+      /* el plan de la página: en las de turnos, Emprendedor directo a la prueba (Google y Mercado Pago); el bot tiene alta, va por /pagar/ */
+      var turnos=path==='/servicios'||path.indexOf('/app-de-turnos-para-')===0;
+      a.href=turnos?'/api/checkout?plan=emprendedor':path==='/bot-whatsapp'?'/pagar/?plan=bot':'/pagar/';a.rel='nofollow';a.textContent='Probar 7 días gratis';
+      var hc2=$('.nav .cta');if(turnos&&hc2&&hc2.getAttribute('href')==='/pagar/')hc2.href=a.href;
     }
     d.body.appendChild(a);d.body.classList.add('has-sticky');
     var on=false,t=$('#contacto');

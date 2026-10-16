@@ -458,6 +458,8 @@ header.px.lifted .nav{background:rgba(255,255,255,.9);backdrop-filter:blur(14px)
 @media (max-width:699px){
   .chips{gap:6px;justify-content:flex-start}
   .chips li{padding:7px 12px;font-size:13.5px}
+  /* en el celular, veintipico de pastillas cansan: quedan las primeras y "Ver todas las funciones" lleva al resto */
+  .chips li:nth-child(n+9){display:none}
   .fl{grid-template-columns:1fr 1fr;gap:8px}
   .fl li{padding:14px;border-radius:18px}
   .fl h3{font-size:16px}
@@ -505,3 +507,7 @@ p.found strong{color:var(--ink)}
 .juntos{margin-top:22px;font-size:15.5px;line-height:1.55;color:#aab1c2;max-width:52ch}
 .juntos strong{color:#fff;font-weight:600}
 #precios{padding-top:var(--py)}
+
+/* debajo de los precios: el aviso del mail, antes de salir a Google y a Mercado Pago */
+.pr-mail{margin:10px auto 0;max-width:46ch;text-align:center;font-size:14px;line-height:1.5;color:var(--mute)}
+@media (max-width:399px){.plan .btn{padding:0 18px;font-size:16px;white-space:nowrap}}

@@ -158,22 +158,22 @@ await t('instalador: exige sesión y suscripción vigente; admin y cuentas eximi
   await publish(env, '1.0.0+2098', {}, 'INSTALADOR'); await publish(env, '1.1.0-beta.1', { channel: 'beta' }, 'BETA'); SUBS = [sub('ana@x.com', 'authorized'), sub('luis@x.com', 'cancelled')]; mockMP();
   const go = (qs, cookie, headers) => download.onRequestGet({ request: req('/api/download?' + qs, { cookie, headers }), env });
   const loc = (r) => r.headers.get('Location').replace('https://horsepos.com', '');
-  assert.equal(loc(await go('platform=windows')), '/ingresar/');
-  assert.equal(loc(await go('platform=ps5', await sess(env, 'ana@x.com', 's1'))), '/descargar/');
-  assert.equal(loc(await go('platform=windows', await sess(env, 'luis@x.com', 's3'))), '/descargar/?e=no_subscription'); // cancelada
-  assert.equal(loc(await go('platform=windows', await sess(env, 'nadie@x.com', 'zz'))), '/ingresar/'); // sesión de cuenta inexistente
+  assert.equal(loc(await go('platform=windows')), '/api/auth/google'); // directo a Google; vuelve a Mi cuenta, donde está la descarga
+  assert.equal(loc(await go('platform=ps5', await sess(env, 'ana@x.com', 's1'))), '/cuenta/');
+  assert.equal(loc(await go('platform=windows', await sess(env, 'luis@x.com', 's3'))), '/cuenta/?e=no_subscription'); // cancelada
+  assert.equal(loc(await go('platform=windows', await sess(env, 'nadie@x.com', 'zz'))), '/api/auth/google'); // sesión de cuenta inexistente
   let r = await go('platform=windows', await sess(env, 'ana@x.com', 's1')); assert.equal(r.status, 200); assert.equal(await r.text(), 'INSTALADOR');
   assert.match(r.headers.get('content-disposition'), /attachment; filename="Setup-1\.0\.0\+2098\.exe"/);
   assert.equal((await go('platform=windows', await sess(env, 'admin@x.com', 'a'))).status, 200); assert.equal((await go('platform=windows', await sess(env, 'demo@x.com', 's2'))).status, 200);
   // beta solo para admin/eximidos; un cliente que la pide recibe la estable
   assert.equal(await (await go('platform=windows&channel=beta', await sess(env, 'admin@x.com', 'a'))).text(), 'BETA');
   assert.equal(await (await go('platform=windows&channel=beta', await sess(env, 'ana@x.com', 's1'))).text(), 'INSTALADOR');
-  assert.equal(loc(await go('platform=android', await sess(env, 'ana@x.com', 's1'))), '/descargar/?e=no_disponible');
+  assert.equal(loc(await go('platform=android', await sess(env, 'ana@x.com', 's1'))), '/cuenta/?e=no_disponible');
   const n = () => env.DB.raw.prepare('SELECT COUNT(*) c FROM downloads').get().c; const before = n();
   await go('platform=windows', await sess(env, 'ana@x.com', 's1'), { Range: 'bytes=0-3' }); assert.equal(n(), before); // continuar una descarga no cuenta
   await go('platform=windows', await sess(env, 'ana@x.com', 's1')); assert.equal(n(), before + 1);
-  SUBS = 'fail'; mockMP(); clearMpCache(); assert.equal(loc(await go('platform=windows', await sess(env, 'ana@x.com', 's1'))), '/descargar/?e=mp_error'); // ante la duda, no
-  assert.equal(loc(await go('platform=windows', await sess({ ...env, MP_ACCESS_TOKEN: '' }, 'ana@x.com', 's1'))).replace(/\?.*/, ''), '/descargar/');
+  SUBS = 'fail'; mockMP(); clearMpCache(); assert.equal(loc(await go('platform=windows', await sess(env, 'ana@x.com', 's1'))), '/cuenta/?e=mp_error'); // ante la duda, no
+  assert.equal(loc(await go('platform=windows', await sess({ ...env, MP_ACCESS_TOKEN: '' }, 'ana@x.com', 's1'))).replace(/\?.*/, ''), '/cuenta/');
 });
 await t('instalador: solo se ofrece lo ya liberado al 100 % (una versión a medias no llega a instalaciones nuevas)', async () => {
   const env = mkEnv(); addUser(env, 'ana@x.com', 's1'); await publish(env, '1.0.0+1', {}, 'VIEJA'); await publish(env, '1.0.0+2', { rollout: 10 }, 'NUEVA'); SUBS = [sub('ana@x.com', 'authorized')]; mockMP();

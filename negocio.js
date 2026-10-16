@@ -192,7 +192,7 @@
     if (o.can.copias) copias(o);
     if (o.can.descargar) {
       var d = card('Descargá el sistema'); d.appendChild(note('Instalador para la PC del local y app del celular.'));
-      var dl = el('a', 'btn', 'Ir a las descargas'); dl.href = '/descargar/'; dl.style.alignSelf = 'flex-start'; d.appendChild(dl); root.appendChild(d);
+      var dl = el('a', 'btn', 'Ir a las descargas'); dl.href = '/cuenta/'; dl.style.alignSelf = 'flex-start'; d.appendChild(dl); root.appendChild(d);
     }
   }
 

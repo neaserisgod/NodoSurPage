@@ -47,7 +47,19 @@ Figtree, poco texto). Home con `home.css`/`home.js`; páginas internas con `styl
 
 Todo "Probar 7 días gratis" del sitio lleva a `/pagar/` (Google + Mercado Pago, hoy $ 0); WhatsApp queda solo como
 "¿Dudas?". La instalación del sistema POS es del cliente, con ayuda opcional; el bot la sigue haciendo el dueño (la cubre
-el alta). Pendiente en Mercado Pago (lo hace el dueño, no se puede desde una sesión):
+el alta).
+
+Embudo corto (2026-10-16): "Probar gratis" (plan sin alta) → Google → **directo a Mercado Pago**, sin volver a `/pagar/`
+ni pasar por `/ingresar/`. La vinculación de la app y la descarga sin sesión también van directo a Google. Los planes con alta
+siguen pasando por `/pagar/`.
+
+**Mi cuenta es la única página después de ingresar** (2026-10-16). Arriba lo que la persona vino a hacer: la **descarga**
+(una tarjeta grande con la app de su plan para su dispositivo: Emprendedor = Nodo Sur Servicios, Sistema POS / + Bot = almacén;
+en iPhone/Mac, Servicios abre `/app/`) o, sin suscripción, **elegir el sistema** (si ya eligió uno, solo ese y "Cambiar de
+plan"). Lo demás (otros dispositivos; para administración, las de prueba y las anteriores) queda plegado. Administración,
+eximidas, encargados y "Solo el bot" no tienen plan que decida: ven un selector "Almacén o kiosco / Servicios con turno" que
+se recuerda en el navegador. `/descargar/` ya no es una página: el worker la redirige a `/cuenta/` (con su `?e=`), así los
+enlaces viejos y el de la app siguen andando. El componente vive en `descargar.js` (`window.NS_DESCARGAS`). Pendiente en Mercado Pago (lo hace el dueño, no se puede desde una sesión):
 
 - **Volver al sitio después de activar la prueba:** en cada plan de suscripción (Mercado Pago → Suscripciones → planes),
   poner como URL de retorno `https://horsepos.com/cuenta/`, donde aparece el botón de descarga.
@@ -58,6 +70,17 @@ el alta). Pendiente en Mercado Pago (lo hace el dueño, no se puede desde una se
   enlazadas desde `/servicios/`, en `sitemap.xml` y `llms.txt`. Repiten solo lo que ya promete `/servicios/`.
 - **Estadísticas**: Cloudflare Web Analytics, ya activo en el panel (inyección automática, sin cookies). La política de
   contenido (`_headers`) permite su script: no sacarlo de `script-src` ni de `connect-src`.
+
+## Landing y conversión (2026-10-16)
+
+- Botones con plan sin alta (`pos`, `emprendedor`) van a `/api/checkout?plan=…` (Google → Mercado Pago, sin `/pagar/`), con
+  `rel="nofollow"` (`/api/` está en `robots.txt`). En las páginas de turnos todo "Probar gratis" es Emprendedor. Lo que no
+  tiene plan o tiene alta sigue yendo a `/pagar/`. Debajo de los precios, el aviso de usar el mismo mail.
+- Botón fijo del celular (`main.js`): el plan de la página; quien ya paga (`ns_sub=1`) ve "Descargar" → Mi cuenta, también en
+  el botón negro del encabezado.
+- Celular: el botón del encabezado muestra "Probar gratis" (era un círculo vacío desde que dejó de ser WhatsApp); las
+  pastillas de funciones de la home se cortan en 8 ("Ver todas las funciones" lleva al resto); en `/servicios/` y los rubros,
+  la sección Precio tiene un botón grande. Revisado sin desborde horizontal a 360 y 390 px.
 
 ## Estado al 2026-10-03
 

@@ -27,11 +27,11 @@ const go = (env, qs, cookie) => checkout.onRequestGet({ request: new Request('ht
 const ck = (res) => Object.fromEntries(res.headers.getSetCookie().map((c) => [c.split('=')[0], c.slice(c.indexOf('=') + 1).split(';')[0]]));
 
 // ---------- sin sesión: no se puede pagar, y el plan se recuerda
-await t('checkout sin sesión manda a ingresar recordando el plan', async () => {
+await t('checkout sin sesión manda directo a Google recordando el plan (el alta, por /ingresar/)', async () => {
   const env = mkEnv();
   for (const [qs, want] of [
-    ['plan=pos', '/ingresar/?plan=pos'],
-    ['plan=pos-bot&promo=1', '/ingresar/?plan=pos-bot'], // un link viejo con promo=1 ya no lleva el fundador
+    ['plan=pos', '/api/auth/google?plan=pos'],
+    ['plan=pos-bot&promo=1', '/api/auth/google?plan=pos-bot'], // un link viejo con promo=1 ya no lleva el fundador
     ['plan=bot&item=alta', '/ingresar/?plan=bot&item=alta'],
   ]) {
     const r = await go(env, qs);
@@ -42,7 +42,7 @@ await t('checkout sin sesión manda a ingresar recordando el plan', async () => 
 await t('checkout con sesión inexistente (cuenta eliminada) también exige ingresar', async () => {
   const env = mkEnv(); // hay sesión firmada pero el usuario no está en la base
   const r = await go(env, 'plan=pos', await sess(env, 'x@x.com', 's-gone'));
-  assert.equal(r.headers.get('Location'), 'https://horsepos.com/ingresar/?plan=pos');
+  assert.equal(r.headers.get('Location'), 'https://horsepos.com/api/auth/google?plan=pos');
 });
 await t('checkout: plan inválido o alta de un plan sin alta vuelven a /pagar/ (nunca redirige afuera)', async () => {
   const env = mkEnv();
@@ -68,7 +68,7 @@ await t('checkout: un link viejo con promo=1 va a Mercado Pago con el precio nor
 });
 await t('checkout sin base de datos: igual exige sesión y redirige', async () => {
   const env = mkEnv({ DB: undefined });
-  assert.equal((await go(env, 'plan=pos')).headers.get('Location'), 'https://horsepos.com/ingresar/?plan=pos');
+  assert.equal((await go(env, 'plan=pos')).headers.get('Location'), 'https://horsepos.com/api/auth/google?plan=pos');
   const r = await go(env, 'plan=pos', await sess(env, 'a@b.com', 's1'));
   assert.equal(r.headers.get('Location'), PLAN_CATALOG.pos.href);
 });
@@ -89,13 +89,22 @@ async function login(env, qs, email = 'ana@gmail.com', sub = 's1') {
   const res = await callback.onRequestGet({ request: new Request(`https://horsepos.com/api/auth/callback?code=c&state=${u.searchParams.get('state')}`, { headers: { Cookie: `ns_oauth=${flow}` } }), env });
   return { res, flow: await verify(flow, env.SESSION_SECRET) };
 }
-await t('registro con plan elegido: vuelve al pago con el plan, lo guarda en la base y en cookie', async () => {
+await t('registro con plan con alta: vuelve a /pagar/ con el plan, lo guarda en la base y en cookie', async () => {
   const env = mkEnv();
   const { res, flow } = await login(env, '?plan=bot&promo=1');
   assert.equal(flow.plan, 'bot'); assert.equal(flow.promo, undefined);
   assert.equal(res.headers.get('Location'), 'https://horsepos.com/pagar/?plan=bot');
   const u = row(env, 'ana@gmail.com'); assert.equal(u.plan_interest, 'bot');
   assert.equal(ck(res).ns_plan, 'bot'); assert.ok(ck(res).ns_session);
+});
+await t('registro con plan sin alta: sigue derecho a Mercado Pago, y esa vuelta ya tiene sesión', async () => {
+  for (const plan of ['pos', 'emprendedor']) {
+    const env = mkEnv();
+    const { res } = await login(env, '?plan=' + plan);
+    assert.equal(res.headers.get('Location'), 'https://horsepos.com/api/checkout?plan=' + plan);
+    const r = await go(env, 'plan=' + plan, 'ns_session=' + ck(res).ns_session);
+    assert.equal(r.headers.get('Location'), PLAN_CATALOG[plan].href, plan);
+  }
 });
 await t('registro sin plan o con plan inválido: va a Mi cuenta y no guarda nada', async () => {
   for (const qs of ['', '?plan=hack', '?promo=1']) {
