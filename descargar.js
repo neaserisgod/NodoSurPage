@@ -147,7 +147,7 @@
 
   var err = new URLSearchParams(location.search).get('e');
   fetch('/api/downloads', { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } }).then(function (r) {
-    if (r.status === 401) { location.replace('/ingresar/'); return null; }
+    if (r.status === 401) { location.replace('/api/auth/google?next=' + encodeURIComponent('/descargar/')); return null; } // directo a Google y de vuelta acá
     return r.json();
   }).then(function (d) { if (d) render(d, err); }).catch(function () {
     done(); var c = card('No pudimos cargar la descarga'); note(c, 'Recargá la página.'); root.appendChild(c);

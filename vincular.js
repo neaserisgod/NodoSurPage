@@ -21,7 +21,8 @@
   if (!valido) { error('El enlace no es válido. Volvé a abrir la vinculación desde la app.'); return; }
 
   fetch('/api/device/whoami' + (bot ? '?tipo=bot' : celular ? '?tipo=celular' : ''), { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } }).then(function (r) {
-    if (r.status === 401) { location.replace('/ingresar/?next=' + encodeURIComponent(location.pathname + location.search)); return null; }
+    // Sin sesión, directo a Google (sin la pantalla de /ingresar/, un clic menos) y de vuelta acá.
+    if (r.status === 401) { location.replace('/api/auth/google?next=' + encodeURIComponent(location.pathname + location.search)); return null; }
     return r.ok ? r.json() : Promise.reject();
   }).then(function (u) {
     if (!u) return;

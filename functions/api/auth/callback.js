@@ -1,6 +1,6 @@
 import { verify, sign, parseCookies, cookie, now, siteUrl, unb64u, safeNext, randomHex, fetchConPlazo } from '../../_lib/util.js';
 import { hasDB, upsertLogin, setIntent } from '../../_lib/db.js';
-import { isPlan } from '../../_lib/plans.js';
+import { isPlan, PLAN_CATALOG } from '../../_lib/plans.js';
 
 const back = (site, err) => {
   const h = new Headers({ Location: `${site}/ingresar/?error=${err}`, 'Cache-Control': 'no-store' });
@@ -61,9 +61,12 @@ export async function onRequestGet({ request, env }) {
     jti: randomHex(16), // para poder cerrarla de verdad (`cerrarSesion`)
   }, env.SESSION_SECRET);
   const first = encodeURIComponent(String(claims.given_name || claims.name || claims.email).split(' ')[0]);
-  // Con plan elegido se vuelve al pago con ese plan ya seleccionado; si no, a Mi cuenta.
-  const volver = safeNext(flow.next); // p. ej. la vinculación de la app: se vuelve ahí
-  const next = plan ? `${site}/pagar/?plan=${plan}` : volver ? `${site}${volver}` : `${site}/cuenta/`;
+  // Con un plan sin alta (los de autoservicio) se sigue derecho a Mercado Pago: el plan ya se eligió en /pagar/ y volver ahí
+  // era un clic de más (El dueño, 2026-10-16: "en 3-4 clics ya tenga la aplicación"). Con alta, a /pagar/, donde está ese pago.
+  // Sin plan, a donde pidió volver (la vinculación de la app, las descargas) o a Mi cuenta.
+  const volver = safeNext(flow.next);
+  const next = plan ? (PLAN_CATALOG[plan].alta ? `${site}/pagar/?plan=${plan}` : `${site}/api/checkout?plan=${plan}`)
+    : volver ? `${site}${volver}` : `${site}/cuenta/`;
   const h = new Headers({ Location: next, 'Cache-Control': 'no-store' });
   h.append('Set-Cookie', cookie('ns_oauth', '', { maxAge: 0, path: '/api/auth' }));
   h.append('Set-Cookie', cookie('ns_session', session, { maxAge: 30 * 24 * 3600 }));

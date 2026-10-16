@@ -158,10 +158,10 @@ await t('instalador: exige sesión y suscripción vigente; admin y cuentas eximi
   await publish(env, '1.0.0+2098', {}, 'INSTALADOR'); await publish(env, '1.1.0-beta.1', { channel: 'beta' }, 'BETA'); SUBS = [sub('ana@x.com', 'authorized'), sub('luis@x.com', 'cancelled')]; mockMP();
   const go = (qs, cookie, headers) => download.onRequestGet({ request: req('/api/download?' + qs, { cookie, headers }), env });
   const loc = (r) => r.headers.get('Location').replace('https://horsepos.com', '');
-  assert.equal(loc(await go('platform=windows')), '/ingresar/');
+  assert.equal(loc(await go('platform=windows')), '/api/auth/google?next=%2Fdescargar%2F'); // directo a Google y de vuelta a las descargas
   assert.equal(loc(await go('platform=ps5', await sess(env, 'ana@x.com', 's1'))), '/descargar/');
   assert.equal(loc(await go('platform=windows', await sess(env, 'luis@x.com', 's3'))), '/descargar/?e=no_subscription'); // cancelada
-  assert.equal(loc(await go('platform=windows', await sess(env, 'nadie@x.com', 'zz'))), '/ingresar/'); // sesión de cuenta inexistente
+  assert.equal(loc(await go('platform=windows', await sess(env, 'nadie@x.com', 'zz'))), '/api/auth/google?next=%2Fdescargar%2F'); // sesión de cuenta inexistente
   let r = await go('platform=windows', await sess(env, 'ana@x.com', 's1')); assert.equal(r.status, 200); assert.equal(await r.text(), 'INSTALADOR');
   assert.match(r.headers.get('content-disposition'), /attachment; filename="Setup-1\.0\.0\+2098\.exe"/);
   assert.equal((await go('platform=windows', await sess(env, 'admin@x.com', 'a'))).status, 200); assert.equal((await go('platform=windows', await sess(env, 'demo@x.com', 's2'))).status, 200);

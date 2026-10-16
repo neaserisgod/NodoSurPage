@@ -16,7 +16,7 @@ export async function onRequestGet({ request, env }) {
   if (!PLATFORMS.includes(platform)) return go(`${site}/descargar/`);
 
   const cu = await currentUser(request, env);
-  if (!cu.session || cu.gone) return go(`${site}/ingresar/`);
+  if (!cu.session || cu.gone) return go(`${site}/api/auth/google?next=${encodeURIComponent('/descargar/')}`); // y vuelve a las descargas
   const acc = await downloadAccess(env, cu);
   if (!acc.ok) return go(`${site}/descargar/?e=${acc.reason}`);
 

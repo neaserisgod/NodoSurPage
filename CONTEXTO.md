@@ -47,7 +47,12 @@ Figtree, poco texto). Home con `home.css`/`home.js`; páginas internas con `styl
 
 Todo "Probar 7 días gratis" del sitio lleva a `/pagar/` (Google + Mercado Pago, hoy $ 0); WhatsApp queda solo como
 "¿Dudas?". La instalación del sistema POS es del cliente, con ayuda opcional; el bot la sigue haciendo el dueño (la cubre
-el alta). Pendiente en Mercado Pago (lo hace el dueño, no se puede desde una sesión):
+el alta).
+
+Embudo corto (2026-10-16): "Probar gratis" (plan sin alta) → Google → **directo a Mercado Pago**, sin volver a `/pagar/`
+ni pasar por `/ingresar/`. En Mi cuenta, el botón baja **el archivo directo** según el dispositivo y el plan (Emprendedor
+= Nodo Sur Servicios; en iPhone/Mac abre `/app/`). La vinculación de la app y las descargas sin sesión también van directo a
+Google y vuelven (`safeNext` acepta `/descargar/`). Los planes con alta siguen pasando por `/pagar/`. Pendiente en Mercado Pago (lo hace el dueño, no se puede desde una sesión):
 
 - **Volver al sitio después de activar la prueba:** en cada plan de suscripción (Mercado Pago → Suscripciones → planes),
   poner como URL de retorno `https://horsepos.com/cuenta/`, donde aparece el botón de descarga.

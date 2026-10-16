@@ -112,11 +112,30 @@
     if (sinPago || (d.subscriptions && d.subscriptions.some(function (x) { return x.status === 'authorized'; }))) {
       var dl = card('Descargá el sistema'); dl.classList.add('acc-dl');
       dl.appendChild(el('p', 'acc-note', 'Instalador para tu compu y la app del celular, siempre en su última versión.'));
-      var dv = window.NS_DEVICE, da = el('a', 'btn', dv && ['windows', 'android'].indexOf(dv.id) >= 0 ? 'Descargar para ' + dv.name : 'Ir a las descargas'); da.href = '/descargar/'; da.style.alignSelf = 'flex-start'; dl.appendChild(da);
+      dl.appendChild(botonDescarga(d));
+      if (directa(d)) { var otras = el('a', 'lnk', 'Otras descargas'); otras.href = '/descargar/'; otras.style.alignSelf = 'flex-start'; dl.appendChild(otras); }
       root.appendChild(dl);
     }
     // Registrado sin suscripción: se le ofrecen los sistemas (o se sabe que no hay error de Mercado Pago).
     if (!d.mpError && (!d.mpConfigured || !d.subscriptions || !d.subscriptions.length) && !d.isAdmin && !d.exempt && !d.covered) root.appendChild(offerCard(d));
+  }
+
+  // La descarga que le toca, para bajarla con un clic sin pasar por /descargar/: el dispositivo lo dice el navegador y la app
+  // el plan (Emprendedor = Nodo Sur Servicios). En iPhone o Mac, Servicios se abre en el navegador. Si no hay versión
+  // publicada, /api/download vuelve solo a /descargar/ con el aviso.
+  function directa(d) {
+    var dv = window.NS_DEVICE || {}, serv = esServicios(d);
+    if (dv.id === 'windows' || dv.id === 'android') return { href: '/api/download?platform=' + dv.id + (serv ? '-servicios' : ''), txt: serv ? 'Descargar Nodo Sur Servicios' : 'Descargar para ' + dv.name };
+    if (serv && (dv.id === 'ios' || dv.id === 'macos')) return { href: '/app/', txt: 'Abrir Nodo Sur Servicios' };
+    return null;
+  }
+  function esServicios(d) {
+    if (d.intent && d.intent.plan === 'emprendedor') return true;
+    return (d.subscriptions || []).some(function (x) { return x.status === 'authorized' && x.plan === 'Emprendedor'; });
+  }
+  function botonDescarga(d) {
+    var x = directa(d), a = el('a', 'btn', x ? x.txt : 'Ir a las descargas');
+    a.href = x ? x.href : '/descargar/'; a.style.alignSelf = 'flex-start'; return a;
   }
 
   function offerCard(d) {
