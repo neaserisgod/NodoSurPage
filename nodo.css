@@ -84,8 +84,11 @@ p+p{margin-top:14px}
 .menu-p a:hover{background:var(--piedra);color:var(--tinta)}
 
 /* secciones */
-.sec{padding-top:160px}
+.sec{padding-top:128px}
 .sec-c{padding-top:110px}
+/* bloques de texto seguidos: se leen como uno solo, sin una pantalla vacía entre cada uno */
+.sec-t+.sec-t{padding-top:56px}
+.sec-t+.sec-t .cols{padding-top:40px;border-top:2px solid var(--linea)}
 .cols{display:flex;flex-wrap:wrap;gap:64px;align-items:center}
 .cols>*{min-width:0}
 .c1{flex:1 1 480px}.c2{flex:1 1 420px}.c-ch{flex:1 1 320px}.c-gr{flex:2 1 520px}
@@ -208,7 +211,7 @@ p+p{margin-top:14px}
 .lista-c li:first-child{padding-top:0}
 .item .lista-c{margin-top:10px}
 .aclara{margin-top:28px;padding:16px 20px;border-radius:var(--r-chico);background:var(--piedra);font-size:15px;color:var(--gris)}
-.capturas{margin-top:40px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.capturas{margin-top:40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px}
 .captura{border-radius:var(--r);background:var(--piedra);padding:14px;display:flex;flex-direction:column;gap:12px}
 .captura img{border-radius:14px;box-shadow:0 0 0 1px var(--linea)}
 .captura figcaption{font-size:15px;color:var(--gris);padding:0 6px 4px}
@@ -228,6 +231,18 @@ p+p{margin-top:14px}
 .tabla td{color:var(--gris)}
 .tabla tr:last-child th,.tabla tr:last-child td{border-bottom:0}
 .chat-caja{margin-top:36px;max-width:560px}
+.mas{margin-top:28px;border-radius:var(--r);background:var(--piedra)}
+.mas summary{min-height:64px;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:16px;font-weight:600;font-size:18px;cursor:pointer;list-style:none}
+.mas summary::-webkit-details-marker{display:none}
+.mas summary svg{transition:transform .2s ease}
+.mas[open] summary svg{transform:rotate(45deg)}
+.mas-c{padding:0 24px 28px}
+.mas-c .items{margin-top:8px}
+.guia{list-style:none;padding:0;margin-top:36px;display:flex;flex-direction:column;gap:10px;max-width:880px}
+.guia li{display:grid;grid-template-columns:minmax(0,2fr) minmax(0,3fr);gap:8px 40px;padding:26px 28px;border-radius:var(--r);background:var(--piedra)}
+.guia h3{font-size:24px;line-height:1.1}
+.guia .prosa>*+*{margin-top:10px}
+.guia .aclara{background:var(--blanco);margin-top:14px}
 .btn-sub{min-height:48px;font-weight:500;font-size:16px;text-decoration:underline;text-underline-offset:3px}
 
 /* barra fija del celular */
@@ -277,6 +292,9 @@ p+p{margin-top:14px}
   .fila b{min-width:0}
   .panel-fono{flex-direction:column;align-items:flex-start}
   .incluye{grid-template-columns:1fr}
+  .guia li{grid-template-columns:1fr;padding:22px 20px}
+  .sec-t+.sec-t{padding-top:40px}
+  .sec-t+.sec-t .cols{padding-top:32px;gap:16px}
   .capturas{grid-template-columns:1fr}
   .pantalla{margin-top:36px;border-radius:16px}
   .resultado{padding:24px}
