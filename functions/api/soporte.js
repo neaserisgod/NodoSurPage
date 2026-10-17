@@ -17,8 +17,11 @@ export async function onRequestPost({ request, env }) {
   const mensajes = charlaValida(b && b.mensajes);
   if (!mensajes) return json({ error: 'bad_request' }, 400);
   if (!(await usarCupo(env, request.headers.get('CF-Connecting-IP')))) return json({ error: 'tope' }, 429);
-  let r = null;
-  try { r = await contestarConIa(env, { mensajes, pagina: b.pagina }); } catch (e) { console.error('soporte_ia', e && e.message); }
-  if (!r) return json({ error: 'ia_no_contesto' }, 503);
+  let r;
+  try { r = await contestarConIa(env, { mensajes, pagina: b.pagina }); } catch (e) {
+    console.error('soporte_ia', e && e.message);
+    r = { error: 'sin_respuesta' };
+  }
+  if (r.error) return json({ error: 'ia_no_contesto', detalle: r }, 503);
   return json(r);
 }
