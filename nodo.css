@@ -43,6 +43,7 @@ strong{font-weight:600}
 .gris{color:var(--gris)}
 .chico{font-size:15px;color:var(--gris)}
 .nota{font-size:14px;color:var(--gris2)}
+.nota svg,.aclara svg{display:inline-block;vertical-align:-3px;margin-right:6px;width:16px;height:16px}
 p+p{margin-top:14px}
 
 /* botones: uno principal por pantalla */
@@ -189,6 +190,42 @@ p+p{margin-top:14px}
 .rel:active{transform:scale(.98)}
 .rel b{font-size:22px;letter-spacing:-.02em}
 .rel span{font-size:16px;color:var(--gris)}
+.t-h1{font-weight:800;font-size:clamp(40px,4.8vw,70px);line-height:.98;letter-spacing:-.045em;max-width:20ch}
+.hero-texto .bajada{margin-top:24px;max-width:52ch}
+.hechos{list-style:none;padding:0;margin-top:26px;display:flex;flex-wrap:wrap;gap:8px 22px;font-size:15px;color:var(--gris)}
+.hechos li{display:flex;align-items:center;gap:8px}
+.hechos li::before{content:'';width:7px;height:7px;border-radius:50%;background:var(--naranja);flex-shrink:0}
+.pantalla{margin-top:56px;border-radius:24px;overflow:hidden;background:var(--piedra);box-shadow:0 50px 90px -50px rgba(26,23,20,.45),0 0 0 1px var(--linea)}
+.pantalla img{width:100%}
+.prosa p,.prosa ul,.prosa ol{color:var(--gris)}
+.prosa strong{color:var(--tinta)}
+.prosa>*+*{margin-top:16px}
+.prosa a{font-weight:600}
+.intro{margin-top:18px;max-width:62ch}
+.lista-c li{padding:12px 0}
+.lista-c li:first-child{padding-top:0}
+.item .lista-c{margin-top:10px}
+.aclara{margin-top:28px;padding:16px 20px;border-radius:var(--r-chico);background:var(--piedra);font-size:15px;color:var(--gris)}
+.capturas{margin-top:40px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}
+.captura{border-radius:var(--r);background:var(--piedra);padding:14px;display:flex;flex-direction:column;gap:12px}
+.captura img{border-radius:14px;box-shadow:0 0 0 1px var(--linea)}
+.captura figcaption{font-size:15px;color:var(--gris);padding:0 6px 4px}
+.captura-fonos{flex-direction:row;justify-content:center;align-items:center;gap:16px;padding:28px 14px}
+.captura-fonos .fono-chico{width:min(30%,170px);box-shadow:none}
+.captura-fonos .fono-chico img{box-shadow:none}
+.capturas-nota{grid-column:1/-1}
+.pasos-l{list-style:none;padding:0;margin-top:40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;counter-reset:p}
+.pasos-l li{border-radius:var(--r);background:var(--piedra);padding:26px}
+.pasos-l h3{font-size:24px}
+.pasos-l p{margin-top:8px;color:var(--gris);font-size:16px}
+.tabla{margin-top:32px;overflow-x:auto;border-radius:var(--r);background:var(--piedra);padding:8px}
+.tabla table{width:100%;min-width:640px;border-collapse:collapse;font-size:16px}
+.tabla th,.tabla td{text-align:left;vertical-align:top;padding:14px 16px;border-bottom:2px solid var(--blanco)}
+.tabla thead th{font-family:var(--tit);font-size:20px;letter-spacing:-.02em}
+.tabla tbody th{font-weight:600;width:22%}
+.tabla td{color:var(--gris)}
+.tabla tr:last-child th,.tabla tr:last-child td{border-bottom:0}
+.chat-caja{margin-top:36px;max-width:560px}
 .btn-sub{min-height:48px;font-weight:500;font-size:16px;text-decoration:underline;text-underline-offset:3px}
 
 /* barra fija del celular */
@@ -238,6 +275,8 @@ p+p{margin-top:14px}
   .fila b{min-width:0}
   .panel-fono{flex-direction:column;align-items:flex-start}
   .incluye{grid-template-columns:1fr}
+  .capturas{grid-template-columns:1fr}
+  .pantalla{margin-top:36px;border-radius:16px}
   .resultado{padding:24px}
   .panel{padding:20px;border-radius:28px}
   .barra{display:block;position:sticky;bottom:12px;z-index:30;padding:0 12px 12px;transition:transform .25s var(--ease),opacity .25s ease}
