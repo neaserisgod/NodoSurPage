@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prospectos Instagram</title>
+<style>
+  :root { --bg:#fff; --block:#F3F4F7; --ink:#121317; --muted:#6b6f7b; --ok:#1a7f4b; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#121317; --block:#1e2027; --ink:#f3f4f7; --muted:#9a9eaa; --ok:#4cc38a; } }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.4 system-ui, sans-serif; }
+  main { max-width:640px; margin:0 auto; padding:20px 16px 60px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  h2 { font-size:15px; color:var(--muted); margin:28px 0 8px; text-transform:uppercase; letter-spacing:.04em; }
+  .msg { background:var(--block); border-radius:16px; padding:14px; margin:12px 0; }
+  .msg p { margin:0 0 10px; }
+  button, a.btn { border:0; border-radius:999px; padding:9px 16px; font:inherit; font-weight:600; cursor:pointer;
+    background:var(--ink); color:var(--bg); text-decoration:none; display:inline-block; white-space:nowrap; }
+  .card { background:var(--block); border-radius:16px; padding:12px 14px; margin:8px 0; display:flex; gap:12px; align-items:center; }
+  .card.done { opacity:.45; }
+  .info { flex:1; min-width:0; }
+  .user { font-weight:700; }
+  .meta, .hook { color:var(--muted); font-size:14px; }
+  label { display:flex; align-items:center; gap:4px; font-size:13px; color:var(--muted); }
+  .count { color:var(--ok); font-weight:600; }
+  #toast { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:var(--ink); color:var(--bg);
+    padding:8px 16px; border-radius:999px; font-size:14px; opacity:0; transition:opacity .2s; pointer-events:none; }
+  #toast.show { opacity:1; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Prospectos Instagram</h1>
+  <div class="meta">Tocá "Abrir chat": copia el mensaje y abre el DM. Pegalo y mandalo. <span class="count" id="count"></span></div>
+
+  <div class="msg">
+    <p id="texto">¡Hola! ¿Cómo va? Estoy hablando con gente que tiene emprendimientos para conocer un poco cómo se manejan en el día a día. ¿Te puedo hacer un par de preguntas?</p>
+    <button id="copiar">Copiar mensaje</button>
+  </div>
+
+  <h2>A — escribir primero</h2>
+  <div id="lista-a"></div>
+  <h2>B — si sobra cupo</h2>
+  <div id="lista-b"></div>
+</main>
+<div id="toast">Mensaje copiado</div>
+
+<script>
+const A = [
+  ["ezequieldiaznqn", "Barbería · Neuquén · 1.784", "Turnos por DM o WPP"],
+  ["nanis.dani.brc", "Uñas · Bariloche · 2.331", "Local: ofrecer ayuda en persona"],
+  ["mb.nails.ok", "Uñas · Rosario · 1.125", "Semi + capping, \"duran +25 días\""],
+  ["crazybeauty_studio", "Uñas · Mar del Plata · 953", "Capping baby color"],
+  ["lasunitas.devicky", "Uñas · Mar del Plata · 2.785", "Son dos: Vicky y Rochi"],
+  ["natonatalia_estudio", "Uñas + alisados · Mar del Plata · 496", "Capping para largo natural"],
+  ["esculpidas_cordoba", "Uñas · Córdoba · 1.185", "Arma cursos para noviembre"],
+  ["nataliacabalestudio", "Uñas + pestañas · Mar del Plata · 1.948", "Promo 2x1 por mensaje"],
+  ["kin_estudio", "Cejas, pestañas, uñas · Tucumán · 326", "Promos día de la madre"],
+  ["majohairstudio", "Peluquería · La Plata · 997", "Rulos y color"],
+  ["rebelde.estilistas", "Peluquería · La Plata · 3.189", "Balayage, 2x1 día de la madre"],
+  ["peluqueriaeigen", "Peluquería · La Plata · 1.316", "40 años de trayectoria"],
+  ["almabonitalp", "Peluquería + estética · La Plata · 5.781", "Promo sesión de regalo"],
+  ["peluqueriarastalaplata", "Rastas · La Plata · 4.833", "Reconstrucción de rastas"],
+];
+const B = [
+  ["ludmilag_nails", "Uñas · Mar del Plata · 2.494", "Poco activa último mes"],
+  ["peluquerialaplata", "Peluquería · La Plata · 1.593", "Poco activa último mes"],
+  ["nailishcordoba", "Uñas · Córdoba · 261", "Pocos seguidores"],
+  ["maryesteticatucuman", "Estética · Tucumán · 297", "Pocos seguidores"],
+];
+
+const KEY = "prospectos-enviados";
+let enviados = {};
+try { enviados = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) {}
+function guardar() { try { localStorage.setItem(KEY, JSON.stringify(enviados)); } catch (e) {} }
+
+const texto = document.getElementById("texto").textContent;
+const toast = document.getElementById("toast");
+async function copiar() {
+  try { await navigator.clipboard.writeText(texto); } catch (e) {
+    const t = document.createElement("textarea"); t.value = texto; document.body.appendChild(t);
+    t.select(); document.execCommand("copy"); t.remove();
+  }
+  toast.classList.add("show"); setTimeout(() => toast.classList.remove("show"), 1400);
+}
+document.getElementById("copiar").onclick = copiar;
+
+function contar() {
+  const total = A.length + B.length;
+  const n = Object.values(enviados).filter(Boolean).length;
+  document.getElementById("count").textContent = n + " / " + total + " enviados";
+}
+
+function armar(lista, cont) {
+  for (const [user, meta, hook] of lista) {
+    const card = document.createElement("div"); card.className = "card";
+    const info = document.createElement("div"); info.className = "info";
+    const u = document.createElement("a"); u.className = "user"; u.textContent = "@" + user;
+    u.href = "https://www.instagram.com/" + user + "/"; u.target = "_blank"; u.rel = "noopener";
+    u.style.color = "inherit";
+    const m = document.createElement("div"); m.className = "meta"; m.textContent = meta;
+    const h = document.createElement("div"); h.className = "hook"; h.textContent = hook;
+    info.append(u, m, h);
+
+    const btn = document.createElement("a"); btn.className = "btn"; btn.textContent = "Abrir chat";
+    btn.href = "https://ig.me/m/" + user; btn.target = "_blank"; btn.rel = "noopener";
+    btn.addEventListener("click", copiar);
+
+    const lab = document.createElement("label");
+    const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!enviados[user];
+    card.classList.toggle("done", cb.checked);
+    cb.onchange = () => { enviados[user] = cb.checked; card.classList.toggle("done", cb.checked); guardar(); contar(); };
+    lab.append(cb, "Enviado");
+
+    const der = document.createElement("div");
+    der.style.cssText = "display:flex;flex-direction:column;gap:6px;align-items:flex-end";
+    der.append(btn, lab);
+    card.append(info, der);
+    cont.append(card);
+  }
+}
+armar(A, document.getElementById("lista-a"));
+armar(B, document.getElementById("lista-b"));
+contar();
+</script>
+</body>
+</html>
