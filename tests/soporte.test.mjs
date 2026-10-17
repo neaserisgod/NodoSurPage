@@ -47,6 +47,7 @@ await t('contesta con la IA: manda lo que dice el sitio, la página y la charla;
   assert.ok(!url.includes(CLAVE));
   assert.equal(init.headers['x-goog-api-key'], CLAVE);
   const b = JSON.parse(init.body);
+  assert.equal(b.generationConfig.responseSchema.properties.plan.enum, undefined, 'sin enum: hay modelos que lo rechazan');
   assert.ok(b.systemInstruction.parts[0].text.includes(CONOCIMIENTO));
   assert.ok(b.systemInstruction.parts[0].text.includes('/app-de-turnos-para-barberia/'));
   assert.deepEqual(b.contents, [{ role: 'user', parts: [{ text: '¿Me sirve para mi barbería?' }] }]);
@@ -86,8 +87,10 @@ await t('tope total del día (SOPORTE_TOPE_DIA)', async () => {
 
 await t('si la IA falla o contesta algo raro, no se inventa nada (503) y un plan que no existe no se ofrece', async () => {
   const env = mkEnv({ SOPORTE_GEMINI_KEY: CLAVE });
-  estadoGoogle = 500;
-  assert.equal((await preguntar(env, CHARLA)).status, 503);
+  estadoGoogle = 400;
+  const r = await preguntar(env, CHARLA);
+  assert.equal(r.status, 503);
+  assert.deepEqual((await r.json()).detalle.status, 400, 'dice qué contestó Google, para saber qué pasó');
   estadoGoogle = 200;
   respuesta = 'no es json';
   assert.equal((await preguntar(env, CHARLA)).status, 503);
