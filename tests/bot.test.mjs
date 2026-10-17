@@ -123,6 +123,27 @@ await t('catálogo: la app lo publica, el bot lo baja; mandarlo igual no despier
   assert.equal((await post(bot.onRequestCatalogoPost, env, '/api/bot/catalogo', { items }, robot)).status, 403, 'el bot no publica el catálogo');
 });
 
+await t('catálogo de WhatsApp: el bot manda lo que tiene, la app lo trae y puede pedir que lo lea de nuevo', async () => {
+  const { env, app, robot } = await armar();
+  const items = [
+    { waId: '2484932', retailerId: 'ns-g-mila', nombre: 'Milanesa con papas', descripcion: 'Con fritas', precioCentavos: 650000, oculto: false },
+    { waId: '2484933', retailerId: null, nombre: ' Tarta de jamón y queso ', precioCentavos: 500000, oculto: true },
+  ];
+  assert.equal((await post(bot.onRequestCatalogoWaPost, env, '/api/bot/catalogo-wa', { items }, app)).status, 403, 'la app no lo manda');
+  const r = await post(bot.onRequestCatalogoWaPost, env, '/api/bot/catalogo-wa', { items }, robot);
+  assert.equal(r.status, 200);
+  assert.deepEqual(env.SYNC_HUB.avisos.at(-1).cuerpo, { bot: { para: 'equipos', aviso: { catalogoWa: true } } });
+  const j = await (await get(bot.onRequestCatalogoWaGet, env, '/api/bot/catalogo-wa', app)).json();
+  assert.equal(j.items.length, 2);
+  assert.deepEqual(j.items[1], { waId: '2484933', retailerId: null, nombre: 'Tarta de jamón y queso', descripcion: '', precioCentavos: 500000, oculto: true });
+  assert.ok(!JSON.stringify(one(env, 'SELECT * FROM bot_catalogo_wa')).includes('Milanesa'), 'guardado cifrado');
+  for (const malo of [[{ waId: 'a b', nombre: 'x', precioCentavos: 1 }], [{ waId: '1', nombre: '', precioCentavos: 1 }], [{ waId: '1', nombre: 'x', precioCentavos: -1 }]]) {
+    assert.equal((await post(bot.onRequestCatalogoWaPost, env, '/api/bot/catalogo-wa', { items: malo }, robot)).status, 400);
+  }
+  assert.equal((await post(bot.onRequestCatalogoWaPedir, env, '/api/bot/catalogo-wa/pedir', {}, app)).status, 200);
+  assert.deepEqual(env.SYNC_HUB.avisos.at(-1).cuerpo, { bot: { para: 'bots', aviso: { catalogoWa: true } } });
+});
+
 await t('pedido: el bot lo manda, entra "por confirmar" una sola vez (aunque reintente) y la app se entera', async () => {
   const { env, app, robot } = await armar();
   const r = await post(bot.onRequestPedidoPost, env, '/api/bot/pedido', PEDIDO, robot);
