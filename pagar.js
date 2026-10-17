@@ -13,7 +13,7 @@
   var saved=(d.cookie.match(/(?:^|; )ns_plan=([^;]*)/)||[])[1];
 
   function render(){
-    var k=(radios.filter(function(r){return r.checked})[0]||{}).value||'pos',p=PLANES[k];
+    var k=(radios.filter(function(r){return r.checked})[0]||{}).value||'emprendedor',p=PLANES[k];
     $('r-plan').textContent=p.nombre;
     $('r-price').textContent=fmt(p.precio);
     $('r-alta-row').hidden=!p.alta;
@@ -21,7 +21,7 @@
     var alta=$('alta');alta.hidden=!p.alta;alta.href='/api/checkout?item=alta&plan='+k;alta.textContent='Pagar el alta de $ 70.000';
     var b=$('pagar');
     b.href='/api/checkout?plan='+k;
-    b.textContent=logged?'Empezar la prueba en Mercado Pago':'Ingresar con Google para empezar';
+    b.textContent=p.wa?(logged?'Pedir la prueba por WhatsApp':'Ingresar con Google y pedir la prueba'):(logged?'Empezar la prueba en Mercado Pago':'Ingresar con Google para empezar');
     var ac=$('pg-acct');
     if(ac)ac.textContent=logged
       ?'Ingresaste como '+nombre+'. En Mercado Pago usá el mismo mail de tu cuenta de Google para ver tu suscripción en Mi cuenta.'

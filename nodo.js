@@ -39,25 +39,22 @@
     tapan.forEach(function(t){io.observe(t)});
   })();
 
-  /* chat de ejemplo: la visitante elige horario, paga la seña y ve el turno confirmado */
+  /* chat de ejemplo: cada botón dice lo que escribe la clienta (data-dice), lo que contesta el bot (data-responde, varios
+     mensajes separados por |) y a qué paso sigue (data-ir). data-elegido se recuerda y reemplaza {elegido} en lo que sigue. */
   (function(){
     var caja=$('[data-chat]');if(!caja)return;
-    var log=$('.chat',caja),fases=$$('[data-fase]',caja),base=log.children.length,hora='';
-    var decir=function(quien,txt){log.appendChild(el('div','burbuja '+quien,txt))};
+    var log=$('.chat',caja),fases=$$('[data-fase]',caja),base=log.children.length,elegido='';
+    var decir=function(quien,txt){if(txt)log.appendChild(el('div','burbuja '+quien,txt.replace(/\{elegido\}/g,elegido)))};
     var ir=function(n){fases.forEach(function(f){f.hidden=f.getAttribute('data-fase')!==String(n)})};
-    $$('[data-hora]',caja).forEach(function(b){b.addEventListener('click',function(){
-      hora=b.getAttribute('data-hora');
-      decir('ella','A las '+hora);
-      decir('bot','Te reservo el jueves a las '+hora+'. La seña es de $ 5.400 por Mercado Pago (el link vence en 30 minutos).');
-      ir(1);
-    })});
-    $$('[data-pagar]',caja).forEach(function(b){b.addEventListener('click',function(){
-      decir('bot','Seña recibida. Turno confirmado: jueves '+hora+'. Te mando el comprobante.');
-      ir(2);
+    $$('[data-responde]',caja).forEach(function(b){b.addEventListener('click',function(){
+      if(b.hasAttribute('data-elegido'))elegido=b.getAttribute('data-elegido');
+      decir('ella',b.getAttribute('data-dice'));
+      b.getAttribute('data-responde').split('|').forEach(function(t){decir(t.indexOf('!aviso ')===0?'noti':'bot',t.replace(/^!aviso /,''))});
+      ir(b.getAttribute('data-ir'));
     })});
     $$('[data-reiniciar]',caja).forEach(function(b){b.addEventListener('click',function(){
       while(log.children.length>base)log.removeChild(log.lastChild);
-      ir(0);var p=$('[data-hora]',caja);if(p)p.focus();
+      elegido='';ir(0);var p=$('[data-fase="0"] button',caja);if(p)p.focus();
     })});
     ir(0);
   })();
@@ -88,7 +85,8 @@
       $('[data-ver=turnos]',caja).textContent=String(v.turnos);
       $('[data-ver=perdida]',caja).textContent=pesos(v.precio*v.turnos);
       var n=Math.ceil(plan/v.precio);
-      $('[data-ver=veredicto]',caja).textContent='Con recuperar '+n+(n===1?' turno':' turnos')+' por mes, Nodo Sur se paga solo.';
+      var u=caja.getAttribute('data-unidad')||'turno';
+      $('[data-ver=veredicto]',caja).textContent='Con recuperar '+n+' '+u+(n===1?'':'s')+' por mes, Nodo Sur se paga solo.';
     };
     $$('[data-paso]',caja).forEach(function(b){b.addEventListener('click',function(){
       var p=b.getAttribute('data-paso').split(':'),k=p[0],l=lim[k];

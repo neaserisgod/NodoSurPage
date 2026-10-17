@@ -247,6 +247,47 @@ p+p{margin-top:14px}
 .guia .aclara{background:var(--blanco);margin-top:14px}
 .btn-sub{min-height:48px;font-weight:500;font-size:16px;text-decoration:underline;text-underline-offset:3px}
 
+/* home: puerta por rubro */
+.hero-puerta{padding-top:40px;padding-bottom:8px}
+.eds{margin-top:40px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+.ed{display:flex;flex-direction:column;border-radius:var(--r-grande);background:var(--piedra);text-decoration:none;color:var(--tinta);overflow:hidden;transition:transform .2s var(--ease),background-color .2s ease}
+.ed:hover{color:var(--tinta);background:var(--naranja-suave)}
+.ed:active{transform:scale(.985)}
+.ed-dest{background:var(--naranja-suave)}
+.ed-dest:hover{background:#F9DCC4}
+.ed-vis{height:250px;position:relative;display:flex;justify-content:center;align-items:flex-start;padding-top:28px;overflow:hidden}
+.fono-ed{position:relative;width:150px;padding:6px;border-radius:30px;box-shadow:0 30px 60px -30px rgba(26,23,20,.5)}
+.fono-ed img{border-radius:24px}
+.mini-chat{width:min(260px,86%);display:flex;flex-direction:column;gap:8px;padding-top:8px}
+.mini-chat .burbuja{max-width:92%;font-size:14px;animation:none}
+.mini-chat .noti{font-size:13px}
+.ed-txt{display:flex;flex-direction:column;gap:8px;padding:24px 26px 26px;flex:1}
+.ed-para{font-size:14px;color:var(--gris)}
+.ed-txt b{font-size:30px;letter-spacing:-.03em}
+.ed-que{color:var(--gris);font-size:16px}
+.ed-pie{margin-top:auto;padding-top:14px;display:flex;justify-content:space-between;align-items:center;gap:10px;font-weight:600;font-size:15px}
+.ed-ir{display:flex;align-items:center;gap:6px}
+.precios3{margin-top:36px;display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px}
+.p3{border-radius:var(--r);background:var(--piedra);padding:28px;display:flex;flex-direction:column;gap:6px}
+.p3-dest{background:var(--naranja-suave)}
+.p3 b{font-size:24px}
+.p3-m{font-family:var(--tit);font-weight:800;font-size:56px;letter-spacing:-.05em;line-height:1;margin-top:8px}
+.p3 .btn{margin-top:18px}
+/* comanda de ejemplo (Nodo Gastro) */
+.comanda{max-width:380px;margin:0 auto;border-radius:28px;background:var(--blanco);padding:24px;box-shadow:0 50px 90px -50px rgba(26,23,20,.45),0 0 0 2px var(--linea);font-size:15px}
+.cm-h{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.cm-h b{font-family:var(--tit);font-size:22px;letter-spacing:-.02em}
+.cm-chip{padding:5px 10px;border-radius:999px;background:#E6F4EA;color:#0D652D;font-size:13px;font-weight:600}
+.cm-cli{margin-top:6px;color:var(--gris)}
+.cm-items{list-style:none;padding:0;margin-top:16px;display:flex;flex-direction:column;gap:10px}
+.cm-items li,.cm-tot{display:flex;justify-content:space-between;gap:12px}
+.cm-tot{margin-top:14px;padding-top:14px;border-top:2px solid var(--linea);font-weight:600;font-size:17px}
+.cm-pasos{margin-top:18px;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;font-size:12px;text-align:center}
+.cm-pasos span{padding:8px 4px;border-radius:10px;background:var(--piedra);color:var(--gris)}
+.cm-pasos .on{background:var(--naranja);color:var(--tinta);font-weight:600}
+.cm-hora{margin-top:14px;text-align:center;font-weight:600}
+.burbuja.noti{max-width:90%}
+
 /* barra fija del celular */
 .barra{display:none}
 .barra nav{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 16px;border-radius:20px;background:var(--tinta);color:var(--blanco)}
@@ -294,6 +335,15 @@ p+p{margin-top:14px}
   .fila b{min-width:0}
   .panel-fono{flex-direction:column;align-items:flex-start}
   .incluye{grid-template-columns:1fr}
+  .eds,.precios3{grid-template-columns:1fr}
+  .ed{flex-direction:row}
+  .ed-vis{width:38%;height:auto;min-height:190px;padding-top:18px}
+  .fono-ed{width:110px}
+  .mini-chat{width:94%}
+  .mini-chat .burbuja{font-size:12px}
+  .ed-txt{padding:18px 18px 20px}
+  .ed-txt b{font-size:24px}
+  .ed-pie{flex-direction:column;align-items:flex-start;gap:4px}
   .guia li{grid-template-columns:1fr;padding:22px 20px}
   .sec-t+.sec-t{padding-top:40px}
   .sec-t+.sec-t .cols{padding-top:32px;gap:16px}
