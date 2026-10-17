@@ -18,11 +18,11 @@ export async function onRequestGet({ request, env }) {
   if (!hasDB(env) || !hasR2(env)) return xml(head + '</channel></rss>');
   const r = await latestForUpdate(env, platform, channel, null, cid, { conBeta: await cidIsPrivileged(env, cid) });
   if (!r) return xml(head + '</channel></rss>');
-  // Nodo Sur Servicios de Windows es otra app, pero para WinSparkle el sistema sigue siendo "windows".
-  const os = platform === 'windows-servicios' ? 'windows' : platform;
+  // Las ediciones aparte de Windows (Servicios, Gastronomía) son otra app, pero para WinSparkle el sistema sigue siendo "windows".
+  const os = platform.startsWith('windows-') ? 'windows' : platform;
   // La dirección termina en un nombre con extensión (la del archivo publicado): sin eso, WinSparkle guarda el
   // instalador como "file" y Windows no lo puede ejecutar.
-  const ext = (String(r.file_key || '').match(/\.([A-Za-z0-9]{2,5})$/) || [])[0] || ({ windows: '.exe', 'windows-servicios': '.exe', macos: '.dmg', linux: '.AppImage' }[platform] || '');
+  const ext = (String(r.file_key || '').match(/\.([A-Za-z0-9]{2,5})$/) || [])[0] || ({ windows: '.exe', macos: '.dmg', linux: '.AppImage' }[os] || '');
   const url = await urlArchivo(env, `${siteUrl(env)}/api/update/file/NodoSurPOS-Actualizacion${ext}?id=${r.id}`, r);
   const item = `<item><title>Versión ${esc(r.version)}</title><pubDate>${new Date(r.published_at * 1000).toUTCString()}</pubDate>`
     + `<sparkle:version>${esc(sparkleVersion(r.version))}</sparkle:version><sparkle:shortVersionString>${esc(String(r.version).split('+')[0])}</sparkle:shortVersionString>`

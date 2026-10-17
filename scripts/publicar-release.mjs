@@ -19,7 +19,8 @@ const notes = arg('notes-file') ? readFileSync(arg('notes-file'), 'utf8').trim()
 const dry = flag('dry-run');
 
 if (!file || !platform || !version) fail('faltan --file, --platform o --version');
-if (!['windows', 'macos', 'linux', 'android', 'android-servicios', 'windows-servicios'].includes(platform)) fail('--platform: windows | macos | linux | android | android-servicios | windows-servicios');
+const PLATAFORMAS = ['windows', 'macos', 'linux', 'android', 'android-servicios', 'windows-servicios', 'android-gastronomia', 'windows-gastronomia'];
+if (!PLATAFORMAS.includes(platform)) fail(`--platform: ${PLATAFORMAS.join(' | ')}`);
 if (!['stable', 'beta'].includes(channel)) fail('--channel: stable | beta');
 if (!/^\d+\.\d+\.\d+(?:\.\d{1,9}|\+\d{1,9}|-[0-9A-Za-z.-]{1,32})?$/.test(version)) fail('--version debe verse como 1.0.0.2099, 1.0.0+2099 o 1.0.0');
 if (arg('signature-type') && !['ed', 'dsa'].includes(arg('signature-type'))) fail('--signature-type: ed | dsa');

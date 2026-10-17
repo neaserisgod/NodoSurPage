@@ -12,11 +12,12 @@ import { puede } from '../_lib/permisos.js';
 import { syncAccess } from '../_lib/sync.js';
 import {
   botConfigurado, tieneBot, configValida, leerConfig, guardarConfig, itemsDeCatalogo, guardarCatalogo, leerCatalogo,
-  pedidoDesdeBot, crearPedido, pedidosDesde, resolverPedido, avisarBot, botsDeSucursal, MAX_CONFIG_BYTES,
+  pedidoDesdeBot, crearPedido, pedidoSinLink, pedidosDesde, resolverPedido, avanzarPedidoBot, avisarBot, botsDeSucursal, MAX_CONFIG_BYTES,
   anotarLector, pedidoConGramosPermitido, pedidoTieneGramos,
 } from '../_lib/bot.js';
 import { avisarConReintento, cuandoTexto } from '../_lib/push.js';
-import { linkDeSena } from '../_lib/mp_servicios.js';
+import { linkDeSena, linkDePedido } from '../_lib/mp_servicios.js';
+import { estadoConexion } from '../_lib/mp_conexion.js';
 import { upsertDevice, signDeviceToken, getDevice, validDeviceId, DEVICE_TTL } from '../_lib/devices.js';
 import { turnoDesdeBot, reservarTurno, ocupadosDesdeApp, publicarOcupados, cambiarTurno, turnosDesde, turnoIdValido, horarioValido, ESTADOS_TURNO } from '../_lib/bot_turnos.js';
 
@@ -65,9 +66,17 @@ export async function onRequestEstado({ request, env }) {
 }
 
 // GET /api/bot/config (la app o el bot): `{ version, config, actualizada }`; `config: null` y `version: 0` si nunca se guardó.
+// Al bot de un local gastronómico se le suma `pedidos.mp`: si el negocio conectó Mercado Pago, puede ofrecer pagar por link (la app
+// no lo sabe; el sitio sí). A la app no, así su comparación con lo que guarda no cambia.
 export async function onRequestConfigGet({ request, env }) {
   const w = await equipo(request, env); if (w.error) return w.error;
-  return json(await leerConfig(env, w.orgId, w.branchId));
+  const c = await leerConfig(env, w.orgId, w.branchId);
+  if (w.esBot && c.config && c.config.pedidos && typeof c.config.pedidos === 'object') {
+    let mp = false;
+    try { mp = Boolean((await estadoConexion(env, w.orgId))?.connected); } catch (e) { console.error('bot_config_mp', e && e.message); }
+    c.config = { ...c.config, pedidos: { ...c.config.pedidos, mp } };
+  }
+  return json(c);
 }
 
 // POST /api/bot/config (la app, dueño o encargado): `{ config }`. El bot se entera al toque y la recarga.
@@ -110,7 +119,19 @@ export async function onRequestPedidoPost({ request, env, ctx }) {
   if (!pedido) return json({ error: 'bad_request' }, 400);
   if (pedidoTieneGramos(pedido) && !(await pedidoConGramosPermitido(env, w.orgId, w.branchId))) return json({ error: 'gramos_no_soportado' }, 400);
   const p = await crearPedido(env, w.orgId, w.branchId, pedido);
-  if (!p.repetido) {
+  // Paga por Mercado Pago: el link para el cliente, y el pedido le llega al local cuando se acredita (`pedidoPagado`). Sin link,
+  // entra igual para pagar al recibir, y el bot se lo dice.
+  let pago = null;
+  let estado = p.estado;
+  if (estado === 'esperando_pago') {
+    try { pago = await linkDePedido(env, w.orgId, w.branchId, p.id); } catch (e) { console.error('link_pedido', e && e.message); }
+    if (!pago && await pedidoSinLink(env, w.orgId, w.branchId, p.id)) {
+      estado = 'por_confirmar';
+      pedido.datos.pago = 'al_entregar';
+      p.repetido = false;
+    }
+  }
+  if (!p.repetido && estado === 'por_confirmar') {
     await esperar(ctx, avisarBot(env, w.orgId, w.branchId, { para: 'equipos', aviso: { pedido: p.id } }));
     // Con la app cerrada también: la notificación del celular (si el negocio configuró Firebase).
     const d = pedido.datos;
@@ -120,7 +141,7 @@ export async function onRequestPedidoPost({ request, env, ctx }) {
       datos: { tipo: 'pedido', id: p.id },
     }));
   }
-  return json({ ok: true, id: p.id, repetido: p.repetido }, p.repetido ? 200 : 201);
+  return json({ ok: true, id: p.id, repetido: p.repetido, estado, ...(pago ? { pago } : {}), ...(pedido.datos.pago ? { formaPago: pedido.datos.pago } : {}) }, p.repetido ? 200 : 201);
 }
 
 // GET /api/bot/pedidos?desde=<ms>[&gramos=1] (la app o el bot): lo que cambió después de `desde`, con `hasta` para la próxima vez.
@@ -145,6 +166,21 @@ export async function onRequestResolver({ request, env, ctx }) {
   if (res.error === 'no_existe') return json({ error: 'no_existe' }, 404);
   if (res.error) return json({ error: res.error, estado: res.estado }, 409);
   await esperar(ctx, avisarBot(env, w.orgId, w.branchId, { para: 'bots', aviso: { pedido: b.id, estado: b.estado } }));
+  return json({ ok: true });
+}
+
+// POST /api/bot/pedido/estado (la app, locales gastronómicos §22): `{ id, estado: 'listo' | 'en_camino' | 'entregado' | 'cancelado' }`.
+// El pedido ya aceptado avanza y el bot le avisa al cliente ("tu pedido está listo", "salió"). Repetir el mismo estado no avisa de nuevo.
+export async function onRequestEstadoPedido({ request, env, ctx }) {
+  const w = await equipo(request, env, { bot: false }); if (w.error) return w.error;
+  const r = await cuerpo(request, 4 * 1024);
+  if (r && r.grande) return json({ error: 'too_large' }, 413);
+  const b = r && r.b;
+  if (!b || !Number.isSafeInteger(b.id) || b.id < 1 || !['listo', 'en_camino', 'entregado', 'cancelado'].includes(b.estado)) return json({ error: 'bad_request' }, 400);
+  const res = await avanzarPedidoBot(env, w.orgId, w.branchId, { id: b.id, estado: b.estado });
+  if (res.error === 'no_existe') return json({ error: 'no_existe' }, 404);
+  if (res.error) return json({ error: res.error, estado: res.estado }, 409);
+  if (!res.repetido) await esperar(ctx, avisarBot(env, w.orgId, w.branchId, { para: 'bots', aviso: { pedido: b.id, estado: b.estado } }));
   return json({ ok: true });
 }
 

@@ -128,7 +128,7 @@ await t('pedido: el bot lo manda, entra "por confirmar" una sola vez (aunque rei
   const r = await post(bot.onRequestPedidoPost, env, '/api/bot/pedido', PEDIDO, robot);
   assert.equal(r.status, 201); const { id } = await r.json();
   const otra = await post(bot.onRequestPedidoPost, env, '/api/bot/pedido', PEDIDO, robot);
-  assert.equal(otra.status, 200); assert.deepEqual(await otra.json(), { ok: true, id, repetido: true });
+  assert.equal(otra.status, 200); assert.deepEqual(await otra.json(), { ok: true, id, repetido: true, estado: 'por_confirmar' });
   assert.equal(one(env, 'SELECT COUNT(*) c FROM bot_pedidos').c, 1);
   assert.ok(!JSON.stringify(one(env, 'SELECT * FROM bot_pedidos')).includes('Sofi'), 'el cliente no queda en claro');
   assert.deepEqual(env.SYNC_HUB.avisos.map((a) => a.cuerpo), [{ bot: { para: 'equipos', aviso: { pedido: id } } }], 'avisa una vez, a la app');
@@ -204,6 +204,35 @@ await t('resolver: la app acepta o rechaza una sola vez y el bot se entera; otra
   assert.equal((await post(bot.onRequestResolver, env, '/api/bot/pedido/resolver', { id: 999, estado: 'aceptado' }, app)).status, 404);
   assert.equal((await post(bot.onRequestResolver, env, '/api/bot/pedido/resolver', { id: id2, estado: 'aceptado' }, robot)).status, 403, 'el bot no resuelve');
   assert.equal((await get(bot.onRequestPedidosGet, env, '/api/bot/pedidos?desde=-1', app)).status, 400);
+});
+
+await t('local gastronómico: el pedido trae entrega, pago y hora, y después de aceptado avanza y el bot se entera', async () => {
+  const { env, app, robot } = await armar();
+  const conEnvio = { ...PEDIDO, id: 'pedido-gastro-0001', pago: 'alias', horaEstimada: 1760000000000, programado: true,
+    entrega: { forma: 'CADETE', direccion: ' Mitre 100 ', zona: 'Centro', costoEnvioCentavos: 150000 } };
+  const { id } = await (await post(bot.onRequestPedidoPost, env, '/api/bot/pedido', conEnvio, robot)).json();
+  const p = (await (await get(bot.onRequestPedidosGet, env, '/api/bot/pedidos?desde=0', app)).json()).pedidos.find((x) => x.id === id);
+  assert.deepEqual(p.entrega, { forma: 'CADETE', direccion: 'Mitre 100', zona: 'Centro', costoEnvioCentavos: 150000 });
+  assert.equal(p.pago, 'alias'); assert.equal(p.horaEstimada, 1760000000000); assert.equal(p.programado, true);
+  for (const malo of [{ forma: 'DRON' }, { forma: 'CADETE', zona: 'Centro' }, { forma: 'REPARTO', direccion: 'Mitre 100' }, { forma: 'CADETE', direccion: 'x', zona: 'y', costoEnvioCentavos: -1 }]) {
+    assert.equal((await post(bot.onRequestPedidoPost, env, '/api/bot/pedido', { ...PEDIDO, id: 'pedido-gastro-malo1', entrega: malo }, robot)).status, 400, JSON.stringify(malo));
+  }
+  assert.equal((await post(bot.onRequestPedidoPost, env, '/api/bot/pedido', { ...PEDIDO, id: 'pedido-gastro-malo2', pago: 'cheque' }, robot)).status, 400);
+
+  // Sin aceptar no avanza.
+  assert.equal((await post(bot.onRequestEstadoPedido, env, '/api/bot/pedido/estado', { id, estado: 'listo' }, app)).status, 409);
+  await post(bot.onRequestResolver, env, '/api/bot/pedido/resolver', { id, estado: 'aceptado' }, app);
+  env.SYNC_HUB.avisos.length = 0;
+  assert.equal((await post(bot.onRequestEstadoPedido, env, '/api/bot/pedido/estado', { id, estado: 'listo' }, app)).status, 200);
+  assert.equal((await post(bot.onRequestEstadoPedido, env, '/api/bot/pedido/estado', { id, estado: 'listo' }, app)).status, 200, 'repetir no es error');
+  assert.equal((await post(bot.onRequestEstadoPedido, env, '/api/bot/pedido/estado', { id, estado: 'en_camino' }, app)).status, 200);
+  assert.deepEqual(env.SYNC_HUB.avisos.map((a) => a.cuerpo), [
+    { bot: { para: 'bots', aviso: { pedido: id, estado: 'listo' } } }, { bot: { para: 'bots', aviso: { pedido: id, estado: 'en_camino' } } }], 'repetir no avisa dos veces');
+  assert.equal((await post(bot.onRequestEstadoPedido, env, '/api/bot/pedido/estado', { id, estado: 'cancelado' }, app)).status, 409, 'en camino ya no se cancela');
+  assert.equal((await post(bot.onRequestEstadoPedido, env, '/api/bot/pedido/estado', { id, estado: 'entregado' }, app)).status, 200);
+  assert.equal((await post(bot.onRequestEstadoPedido, env, '/api/bot/pedido/estado', { id, estado: 'entregado' }, robot)).status, 403, 'el bot no lo mueve');
+  assert.equal((await post(bot.onRequestEstadoPedido, env, '/api/bot/pedido/estado', { id, estado: 'aceptado' }, app)).status, 400);
+  assert.equal((await post(bot.onRequestEstadoPedido, env, '/api/bot/pedido/estado', { id: 999, estado: 'listo' }, app)).status, 404);
 });
 
 await t('los pedidos de más de 30 días se borran solos (tienen datos de clientes)', async () => {
