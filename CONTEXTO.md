@@ -39,9 +39,15 @@ cubre lo propio del sitio. Los detalles de cada función del servidor están en 
 
 ## Diseño
 
-Mismo lenguaje que el POS: estilo antigravity.google (fondo blanco, bloques `#F3F4F7`, tinta `#121317`, pastillas,
-Figtree, poco texto). Home con `home.css`/`home.js`; páginas internas con `styles.css` + `theme.css`/`theme.js` +
-`fx.js`. Mocks del rediseño en `mocks/antigravity/` (no se publican). Las capturas del POS que muestra el sitio (`img/pos/*-v4.webp`, 2026-10-07) salen del mock v4 de la PC (`Nodo-Sur-Pos/docs/mock-pc/NodoSurPC-v4.html`) y de las capturas reales del celular (`flutter test test/companion/capturas_mock_test.dart`); `/img/*` tiene caché inmutable, así que una imagen nueva lleva nombre nuevo. Detalle en `README.md` ("Rediseño del index").
+**Rediseño 2026-10 (en curso, por etapas):** estilo claro tipo Apple, Bricolage Grotesque (títulos) + Geist (texto),
+alojadas en `/fonts/`; blanco, piedra `#F5F4F2`, tinta `#1A1714`, gris `#57534E`, naranja `#E4580B` con texto negro
+encima. Protagonista de la home: Nodo Sur Servicios (plan Emprendedor). Todo en un sistema compartido: `nodo.css` +
+`nodo.js` (aviso "elegí tu sistema", nombre en "Ingresar", barra fija del celular, chat de ejemplo y calculadora; todo
+con `textContent`). La home ya lo usa; las demás páginas pasan de a una etapa (Servicios y rubros → POS, bot y páginas
+web → guías y legal → cuenta). Plan y maquetas en `mocks/remake/`.
+
+Lo anterior (hasta que cada página pase al sistema nuevo): estilo antigravity.google (fondo blanco, bloques `#F3F4F7`,
+tinta `#121317`, Figtree); páginas internas con `styles.css` + `theme.css`/`theme.js` + `fx.js` + `main.js`. Mocks del rediseño en `mocks/antigravity/` (no se publican). Las capturas del POS que muestra el sitio (`img/pos/*-v4.webp`, 2026-10-07) salen del mock v4 de la PC (`Nodo-Sur-Pos/docs/mock-pc/NodoSurPC-v4.html`) y de las capturas reales del celular (`flutter test test/companion/capturas_mock_test.dart`); `/img/*` tiene caché inmutable, así que una imagen nueva lleva nombre nuevo. Detalle en `README.md` ("Rediseño del index").
 
 ## Prueba por autoservicio (2026-10-12)
 
