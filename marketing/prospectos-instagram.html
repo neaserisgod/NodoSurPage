@@ -23,6 +23,10 @@
   .fila a, .fila button { flex:1; padding:12px; border-radius:12px; border:0; background:var(--bg); color:var(--ink);
     font:inherit; font-weight:600; text-decoration:none; text-align:center; cursor:pointer; }
   .fin { font-size:22px; font-weight:800; padding:30px 0; }
+  .tabs { display:flex; gap:6px; margin-bottom:12px; }
+  .tabs button { flex:1; border:0; border-radius:999px; padding:10px; font:inherit; font-weight:700; cursor:pointer;
+    background:var(--block); color:var(--ink); }
+  .tabs button.on { background:var(--ink); color:var(--bg); }
   details { margin-top:24px; }
   summary { color:var(--muted); cursor:pointer; }
   .item { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--block); }
@@ -35,6 +39,7 @@
 </head>
 <body>
 <main>
+  <div class="tabs" id="tabs"></div>
   <div class="top"><span id="count"></span><span>Copiar → abrir → pegar → enviar</span></div>
   <div class="bar"><div id="prog"></div></div>
   <div id="foco"></div>
@@ -46,8 +51,31 @@
 <div id="toast">Copiado ✓ pegalo en el chat</div>
 
 <script>
-// [cuenta, rubro · ciudad, saludo]. Primero los A, después los B.
-const P = [
+// [cuenta, rubro · ciudad, saludo]. En cada lista, primero los A y después los B.
+const BARILOCHE = [
+  ["nails.bright_", "Uñas · Bariloche", "¡Hola Iara!"],
+  ["nailsrock_22", "Uñas · Bariloche", "¡Hola Vir!"],
+  ["candesol_nails", "Uñas · Bariloche (Km 12)", "¡Hola Cande!"],
+  ["beautyboxls", "Uñas + pestañas · Bariloche", "¡Hola!"],
+  ["miminails.brc", "Uñas · Bariloche", "¡Hola!"],
+  ["majoreddel.estetica", "Cosmetología + manicura · Bariloche", "¡Hola!"],
+  ["barbara_lashes.bybarbie", "Pestañas y cejas · Bariloche", "¡Hola Bárbara!"],
+  ["serena.estetica.brc", "Manos y pies · Bariloche", "¡Hola Anita!"],
+  ["vittoria.bariloche", "Estética · Bariloche", "¡Hola!"],
+  ["peluqueria.genesis.bariloche", "Peluquería · Bariloche", "¡Hola Marcela!"],
+  ["patagoniabarbershop", "Barbería · Bariloche", "¡Buenas!"],
+  ["apolo.barberia_", "Barbería · Bariloche", "¡Buenas!"],
+  ["kamada.barber", "Barbería · Bariloche", "¡Buenas!"],
+  ["ibiza_barber_shop", "Barbería · Bariloche", "¡Buenas!"],
+  ["aurasalondebelleza_", "Peluquería + depilación · Bariloche", "¡Hola!"],
+  ["candela_estetica", "Salón de belleza · Bariloche", "¡Hola!"],
+  ["studiobeldadok", "Uñas + pestañas · Bariloche", "¡Hola!"],
+  ["nanis.dani.brc", "Uñas · Bariloche", "¡Hola Dani!"],
+  ["nailsbariloche", "Uñas · Bariloche", "¡Hola Ivy y Guada!"],
+  ["carolina_manicura_bariloche", "Uñas · Bariloche", "¡Hola Carolina!"],
+  ["rasgunadas.bylour", "Uñas + lifting · Bariloche", "¡Hola Lourdes!"],
+];
+const PAIS = [
   ["ezequieldiaznqn", "Barbería · Neuquén", "¡Hola Eze!"],
   ["nanis.dani.brc", "Uñas · Bariloche", "¡Hola Dani!"],
   ["mb.nails.ok", "Uñas · Rosario", "¡Hola Mica!"],
@@ -67,6 +95,11 @@ const P = [
   ["nailishcordoba", "Uñas · Córdoba", "¡Hola!"],
   ["maryesteticatucuman", "Estética · Tucumán", "¡Hola María!"],
 ];
+const LISTAS = { "Bariloche": BARILOCHE, "Resto del país": PAIS.filter(p => p[0] !== "nanis.dani.brc") };
+let lista = "Bariloche";
+try { lista = localStorage.getItem("prospectos-lista") || lista; } catch (e) {}
+if (!LISTAS[lista]) lista = "Bariloche";
+let P = LISTAS[lista];
 const RESTO = "¿Cómo va? Estoy hablando con gente que tiene emprendimientos para conocer un poco cómo se manejan en el día a día. ¿Te puedo hacer un par de preguntas?";
 const msg = (p) => p[2] + " " + RESTO;
 
@@ -97,6 +130,12 @@ function el(tag, props, ...hijos) {
 }
 
 function render() {
+  const tabs = document.getElementById("tabs"); tabs.replaceChildren();
+  for (const nombre of Object.keys(LISTAS)) {
+    const t = el("button", { textContent: nombre, className: nombre === lista ? "on" : "" });
+    t.onclick = () => { lista = nombre; P = LISTAS[nombre]; try { localStorage.setItem("prospectos-lista", nombre); } catch (e) {} render(); };
+    tabs.append(t);
+  }
   const hechos = P.filter(p => enviados[p[0]]).length;
   document.getElementById("count").textContent = hechos + " / " + P.length + " enviados";
   document.getElementById("prog").style.width = (hechos / P.length * 100) + "%";
@@ -123,11 +162,11 @@ function render() {
         saltar, listo)));
   }
 
-  const lista = document.getElementById("lista"); lista.replaceChildren();
+  const cont = document.getElementById("lista"); cont.replaceChildren();
   for (const q of P) {
     const b = el("button", { textContent: enviados[q[0]] ? "Desmarcar" : "Marcar" });
     b.onclick = () => { enviados[q[0]] = !enviados[q[0]]; guardar(); render(); };
-    lista.append(el("div", { className: "item" + (enviados[q[0]] ? " done" : "") },
+    cont.append(el("div", { className: "item" + (enviados[q[0]] ? " done" : "") },
       el("span", { textContent: "@" + q[0] }), b));
   }
 }

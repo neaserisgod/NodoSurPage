@@ -45,3 +45,16 @@ Ya usan otra app de turnos (competencia, no escribir): @nails_club.rosario y @ri
 - "barbería mendoza" trae casi todo gente de apellido Mendoza de otros países: buscar por barrio o "barber mza".
 - "nails rosario" mezcla gente llamada Rosario: usar "uñas rosario".
 - Uñas y peluquería en ciudades medianas (MDP, La Plata) dieron la mejor proporción de prospectos.
+
+## Bariloche (2026-10-17)
+
+Búsquedas: uñas, manicura, pestañas, estética, cosmetóloga, peluquería, barbería y barber + "bariloche". 45 cuentas →
+17 A y 4 B (`prospectos-instagram.html`, pestaña "Bariloche"; incluye a @nanis.dani.brc de la tanda anterior).
+
+- **A:** @nails.bright_, @nailsrock_22, @candesol_nails, @beautyboxls, @miminails.brc, @majoreddel.estetica,
+  @barbara_lashes.bybarbie, @serena.estetica.brc, @vittoria.bariloche, @peluqueria.genesis.bariloche,
+  @patagoniabarbershop, @apolo.barberia_, @kamada.barber, @ibiza_barber_shop, @aurasalondebelleza_,
+  @candela_estetica, @studiobeldadok.
+- **B (menos activas):** @nailsbariloche, @carolina_manicura_bariloche, @rasgunadas.bylour.
+- **Ya usan app de turnos (competencia):** @elixir.bariloche, @ownstyle.barberia y @bosquebarberhouse (AgendaPro),
+  @glowstudiobrc (DoyTurnos), @su_beautiful_ (agenda virtual), @esteticageraldin (turno online), @soma.bariloche (Medicloud).
