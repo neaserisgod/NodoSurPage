@@ -1,8 +1,10 @@
 /* Páginas de cuenta (ingresar, pagar, cuenta, negocio, descargar, vincular, unirse) con la apariencia del sitio nuevo.
    Va DESPUÉS de styles.css y theme.css: sus pantallas las arma el JS con esas clases, así que acá solo se cambia el aspecto
    (colores, fuentes, botones, encabezado y pie), sin tocar la estructura. El resto del sitio usa nodo.css. */
-@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:500 800;font-stretch:100%;font-display:swap;src:url(/fonts/bricolage-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
-@font-face{font-family:'Geist';font-style:normal;font-weight:400 600;font-display:swap;src:url(/fonts/geist-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Bricolage Grotesque';font-style:normal;font-weight:600 800;font-display:swap;src:url(/fonts/bricolage-v2.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Geist';font-style:normal;font-weight:400 600;font-display:swap;src:url(/fonts/geist-v2.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}
+@font-face{font-family:'Geist fallback';src:local('Arial'),local('Helvetica Neue'),local('Roboto');size-adjust:103.16%;ascent-override:97.42%;descent-override:28.60%;line-gap-override:0%}
+@font-face{font-family:'Bricolage Grotesque fallback';src:local('Arial Bold'),local('Arial'),local('Roboto');font-weight:700 800;size-adjust:91%;ascent-override:102.2%;descent-override:29.67%;line-gap-override:0%}
 
 :root{
   --ink:#1A1714;--muted:#57534E;--soft:#8A847D;--bg:#FFFFFF;--bg2:#F5F4F2;--line:#EAE8E5;--card:#F5F4F2;
@@ -10,8 +12,8 @@
   --grad:linear-gradient(#E4580B,#E4580B);
   --naranja:#E4580B;--naranja-osc:#9A3A07;
 }
-body{font-family:'Geist',system-ui,-apple-system,sans-serif;background:#FFFFFF;color:var(--ink)}
-h1,h2,h3,.h2,.wm,.logo{font-family:'Bricolage Grotesque',system-ui,sans-serif}
+body{font-family:'Geist','Geist fallback',system-ui,-apple-system,sans-serif;background:#FFFFFF;color:var(--ink)}
+h1,h2,h3,.h2,.wm,.logo{font-family:'Bricolage Grotesque','Bricolage Grotesque fallback',system-ui,sans-serif}
 h1,h2,.h2{letter-spacing:-.035em}
 .ph h1{font-weight:800;letter-spacing:-.045em}
 .grad-t{background:none;-webkit-background-clip:border-box;background-clip:border-box;color:var(--naranja)}
@@ -25,7 +27,7 @@ header.px,header.px.lifted{background:#FFFFFF;backdrop-filter:none;-webkit-backd
 .nav .cta:hover{color:#FFFFFF;filter:brightness(1.15)}
 
 /* botones */
-.btn{border-radius:18px;font-weight:600;font-family:'Geist',system-ui,sans-serif;background:var(--ink);color:#FFFFFF;transition:transform .18s cubic-bezier(.2,.8,.2,1),filter .18s ease}
+.btn{border-radius:18px;font-weight:600;font-family:'Geist','Geist fallback',system-ui,sans-serif;background:var(--ink);color:#FFFFFF;transition:transform .18s cubic-bezier(.2,.8,.2,1),filter .18s ease}
 .btn:hover{background:var(--ink);color:#FFFFFF;filter:brightness(1.15)}
 .btn:active{transform:scale(.97)}
 .btn-w,.btn-w:hover{background:var(--bg2);color:var(--ink);filter:none}

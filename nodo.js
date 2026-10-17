@@ -62,6 +62,21 @@
     ir(0);
   })();
 
+  /* navegadores sin reglas de precarga (Firefox): al apuntar o tocar un link del sitio, se baja la página antes del click */
+  (function(){
+    if(window.HTMLScriptElement&&HTMLScriptElement.supports&&HTMLScriptElement.supports('speculationrules'))return;
+    var vistos={};
+    var pedir=function(e){
+      var a=e.target.closest&&e.target.closest('a[href^="/"]');
+      if(!a||a.target||/^\/(api|app|demo|admin)(\/|$)/.test(a.getAttribute('href')))return;
+      var u=a.href.split('#')[0];
+      if(vistos[u]||u===location.href.split('#')[0])return;
+      vistos[u]=1;var l=d.createElement('link');l.rel='prefetch';l.href=u;d.head.appendChild(l);
+    };
+    d.addEventListener('pointerover',pedir,{passive:true});
+    d.addEventListener('touchstart',pedir,{passive:true});
+  })();
+
   /* calculadora: precio del servicio × turnos perdidos, y cuántos turnos pagan el plan */
   (function(){
     var caja=$('[data-calc]');if(!caja)return;

@@ -50,6 +50,13 @@ primera persona.
   `theme.css` + `main.js` (su JS arma las pantallas con esas clases) y encima `cuenta.css`, que les da la apariencia
   nueva sin tocar la estructura. `/admin/` quedó como estaba.
 - Plan y maquetas en `mocks/remake/`.
+- **Rendimiento:** las fuentes están recortadas a lo que usa el sitio (`fonts/bricolage-v2.woff2`: peso 600–800 y tamaño
+  óptico fijo; `fonts/geist-v2.woff2`: 400–600; solo latín y español), con una fuente de reemplazo de medidas iguales
+  para que el texto no salte al cargar. Las capturas grandes tienen versión chica (`*-v4-800.webp`, y `*-v4-260.webp`
+  para las del celular) servida con `srcset`. Cada página trae reglas de precarga del navegador
+  (`<script type="speculationrules">`, permitido por `'inline-speculation-rules'` en la CSP): al apuntar o tocar un link
+  público, Chrome deja lista la página siguiente; las de cuenta y pago solo se bajan, no se ejecutan por adelantado.
+  Si se usa un carácter fuera de latín/español, hay que volver a generar las fuentes.
 
 Lo anterior (estilo antigravity.google, Figtree) sobrevive solo como base de las páginas de cuenta y de `/admin/`. Mocks del rediseño en `mocks/antigravity/` (no se publican). Las capturas del POS que muestra el sitio (`img/pos/*-v4.webp`, 2026-10-07) salen del mock v4 de la PC (`Nodo-Sur-Pos/docs/mock-pc/NodoSurPC-v4.html`) y de las capturas reales del celular (`flutter test test/companion/capturas_mock_test.dart`); `/img/*` tiene caché inmutable, así que una imagen nueva lleva nombre nuevo. Detalle en `README.md` ("Rediseño del index").
 
