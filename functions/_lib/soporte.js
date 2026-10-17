@@ -13,7 +13,8 @@ import { sha256Hex } from './backups.js';
 import { CONOCIMIENTO, PREGUNTAS } from './soporte_datos.js';
 
 const GEMINI = 'https://generativelanguage.googleapis.com/v1beta';
-export const MODELO_SOPORTE = 'gemini-2.5-flash-lite';
+// Google retiró gemini-2.5-flash-lite para cuentas nuevas (404, 2026-10-17): el que recomienda es este.
+export const MODELO_SOPORTE = 'gemini-3.5-flash-lite';
 export const PLANES_SOPORTE = ['emprendedor', 'pos', 'bot', 'pos-bot', 'ninguno'];
 export const MAX_MENSAJES = 12;
 export const MAX_LARGO = 600;
