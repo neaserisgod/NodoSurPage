@@ -71,6 +71,12 @@ el alta). Pendiente en Mercado Pago (lo hace el dueño, no se puede desde una se
 
 ## Marketing (2026-10-14)
 
+- **Burbuja de ayuda (2026-10-17):** en todas las páginas públicas (`soporte.js`). Contesta lo común con un guión (precio,
+  prueba, dónde anda, bot, cobros, factura) y lo demás con la IA (`/api/soporte`, Gemini con la clave de Nodo Sur
+  `SOPORTE_GEMINI_KEY`), que solo sabe lo que dice el sitio: `functions/_lib/soporte_datos.js`, que se arma con
+  `node scripts/armar-soporte.mjs` desde `llms.txt` y las preguntas de cada página (la prueba avisa si quedó viejo). Lleva
+  a "Probar 7 días gratis" del plan que corresponde a la página; lo que no sabe, a WhatsApp.
+
 - Plan Emprendedor primero, todo el país, $ 0 de publicidad: páginas por rubro (`/app-de-turnos-para-unas|peluqueria|barberia|estetica/`),
   enlazadas desde `/servicios/`, en `sitemap.xml` y `llms.txt`. Repiten solo lo que ya promete `/servicios/`.
 - **Estadísticas**: Cloudflare Web Analytics, ya activo en el panel (inyección automática, sin cookies). La política de
