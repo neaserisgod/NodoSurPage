@@ -158,6 +158,39 @@ p+p{margin-top:14px}
 .pie a{min-height:44px;display:flex;align-items:center;color:var(--gris)}
 .pie a:hover{color:var(--tinta)}
 
+/* páginas internas */
+.migas ol{list-style:none;padding:0;display:flex;flex-wrap:wrap;gap:6px;font-size:14px;color:var(--gris2)}
+.migas li+li::before{content:'›';margin-right:6px}
+.migas a{color:var(--gris);text-decoration:none}
+.migas a:hover{color:var(--tinta)}
+.hero-int{padding-top:32px;padding-bottom:24px}
+.items{margin-top:40px;display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:40px 56px}
+.items-2{grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.item h3{font-size:26px;line-height:1.08}
+.item p{margin-top:10px;color:var(--gris)}
+.lista{list-style:none;padding:0;display:flex;flex-direction:column}
+.lista li{padding:20px 0;border-bottom:2px solid var(--linea);color:var(--gris)}
+.lista li:first-child{padding-top:4px}
+.lista li:last-child{border-bottom:0}
+.lista strong{color:var(--tinta)}
+.chat-hd{display:flex;align-items:center;gap:12px;padding:0 4px 14px}
+.chat-hd .av{width:44px;height:44px;border-radius:50%;background:var(--naranja);display:flex;align-items:center;justify-content:center;font-family:var(--tit);font-weight:800;font-size:20px}
+.chat-hd b{display:block;font-weight:600}
+.chat-hd span{font-size:14px;color:var(--gris)}
+.chat-quieto{min-height:0;background:var(--blanco)}
+.chat-quieto .burbuja{animation:none}
+.chat-quieto .burbuja.bot{background:var(--piedra)}
+.noti{align-self:center;margin-top:8px;padding:10px 16px;border-radius:16px;background:var(--tinta);color:var(--blanco);font-size:14px;display:flex;flex-direction:column;align-items:center;text-align:center}
+.noti b{font-weight:600}
+.noti span{color:#C9C4BE}
+.rels{margin-top:24px;display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px}
+.rel{display:flex;flex-direction:column;gap:6px;padding:24px;border-radius:var(--r);background:var(--piedra);text-decoration:none;transition:transform .18s var(--ease),background-color .18s ease}
+.rel:hover{background:var(--naranja-suave);color:var(--tinta)}
+.rel:active{transform:scale(.98)}
+.rel b{font-size:22px;letter-spacing:-.02em}
+.rel span{font-size:16px;color:var(--gris)}
+.btn-sub{min-height:48px;font-weight:500;font-size:16px;text-decoration:underline;text-underline-offset:3px}
+
 /* barra fija del celular */
 .barra{display:none}
 .barra nav{display:flex;align-items:center;gap:8px;padding:6px 6px 6px 16px;border-radius:20px;background:var(--tinta);color:var(--blanco)}
@@ -195,7 +228,7 @@ p+p{margin-top:14px}
   body{font-size:17px}
   .wrap{padding-left:20px;padding-right:20px}
   .hd .wrap{height:68px}
-  .hd .ingresar{display:none}
+  .hd-der>.ingresar{display:none}
   .fones{height:500px}
   .fono{padding:7px;border-radius:38px}
   .fono img{border-radius:30px}
