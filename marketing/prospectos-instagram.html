@@ -7,117 +7,131 @@
 <style>
   :root { --bg:#fff; --block:#F3F4F7; --ink:#121317; --muted:#6b6f7b; --ok:#1a7f4b; }
   @media (prefers-color-scheme: dark) { :root { --bg:#121317; --block:#1e2027; --ink:#f3f4f7; --muted:#9a9eaa; --ok:#4cc38a; } }
-  * { box-sizing:border-box; }
+  * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
   body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.4 system-ui, sans-serif; }
-  main { max-width:640px; margin:0 auto; padding:20px 16px 60px; }
-  h1 { font-size:22px; margin:0 0 4px; }
-  h2 { font-size:15px; color:var(--muted); margin:28px 0 8px; text-transform:uppercase; letter-spacing:.04em; }
-  .msg { background:var(--block); border-radius:16px; padding:14px; margin:12px 0; }
-  .msg p { margin:0 0 10px; }
-  button, a.btn { border:0; border-radius:999px; padding:9px 16px; font:inherit; font-weight:600; cursor:pointer;
-    background:var(--ink); color:var(--bg); text-decoration:none; display:inline-block; white-space:nowrap; }
-  .card { background:var(--block); border-radius:16px; padding:12px 14px; margin:8px 0; display:flex; gap:12px; align-items:center; }
-  .card.done { opacity:.45; }
-  .info { flex:1; min-width:0; }
-  .user { font-weight:700; }
-  .meta, .hook { color:var(--muted); font-size:14px; }
-  label { display:flex; align-items:center; gap:4px; font-size:13px; color:var(--muted); }
-  .count { color:var(--ok); font-weight:600; }
-  #toast { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:var(--ink); color:var(--bg);
+  main { max-width:560px; margin:0 auto; padding:16px 16px 60px; }
+  .top { display:flex; justify-content:space-between; align-items:center; color:var(--muted); font-size:14px; }
+  .bar { height:6px; background:var(--block); border-radius:9px; margin:8px 0 16px; overflow:hidden; }
+  .bar div { height:100%; background:var(--ok); width:0; transition:width .3s; }
+  .foco { background:var(--block); border-radius:20px; padding:20px; text-align:center; }
+  .foco .user { font-size:24px; font-weight:800; word-break:break-all; }
+  .foco .meta { color:var(--muted); margin:2px 0 14px; }
+  .foco .texto { text-align:left; background:var(--bg); border-radius:14px; padding:12px; font-size:15px; margin-bottom:16px; }
+  .go { display:block; width:100%; padding:20px; border-radius:16px; background:var(--ink); color:var(--bg);
+    font-size:20px; font-weight:800; text-decoration:none; }
+  .fila { display:flex; gap:8px; margin-top:10px; }
+  .fila a, .fila button { flex:1; padding:12px; border-radius:12px; border:0; background:var(--bg); color:var(--ink);
+    font:inherit; font-weight:600; text-decoration:none; text-align:center; cursor:pointer; }
+  .fin { font-size:22px; font-weight:800; padding:30px 0; }
+  details { margin-top:24px; }
+  summary { color:var(--muted); cursor:pointer; }
+  .item { display:flex; justify-content:space-between; align-items:center; padding:10px 0; border-bottom:1px solid var(--block); }
+  .item.done span { text-decoration:line-through; color:var(--muted); }
+  .item button { border:0; background:var(--block); color:var(--ink); border-radius:999px; padding:6px 12px; font:inherit; font-size:13px; }
+  #toast { position:fixed; left:50%; bottom:20px; transform:translateX(-50%); background:var(--ok); color:#fff;
     padding:8px 16px; border-radius:999px; font-size:14px; opacity:0; transition:opacity .2s; pointer-events:none; }
   #toast.show { opacity:1; }
 </style>
 </head>
 <body>
 <main>
-  <h1>Prospectos Instagram</h1>
-  <div class="meta">Tocá "Abrir chat": copia el mensaje de esa cuenta y abre el DM. Pegalo y mandalo. <span class="count" id="count"></span></div>
-
-  <h2>A — escribir primero</h2>
-  <div id="lista-a"></div>
-  <h2>B — si sobra cupo</h2>
-  <div id="lista-b"></div>
+  <div class="top"><span id="count"></span><span>Copiar → abrir → pegar → enviar</span></div>
+  <div class="bar"><div id="prog"></div></div>
+  <div id="foco"></div>
+  <details>
+    <summary>Ver lista completa</summary>
+    <div id="lista"></div>
+  </details>
 </main>
-<div id="toast">Mensaje copiado</div>
+<div id="toast">Copiado ✓ pegalo en el chat</div>
 
 <script>
-// [cuenta, rubro · ciudad · seguidores, saludo]
-const A = [
-  ["ezequieldiaznqn", "Barbería · Neuquén · 1.784", "¡Hola Eze!"],
-  ["nanis.dani.brc", "Uñas · Bariloche · 2.331", "¡Hola Dani!"],
-  ["mb.nails.ok", "Uñas · Rosario · 1.125", "¡Hola Mica!"],
-  ["crazybeauty_studio", "Uñas · Mar del Plata · 953", "¡Hola!"],
-  ["lasunitas.devicky", "Uñas · Mar del Plata · 2.785", "¡Hola Vicky y Rochi!"],
-  ["natonatalia_estudio", "Uñas + alisados · Mar del Plata · 496", "¡Hola Natalia!"],
-  ["esculpidas_cordoba", "Uñas · Córdoba · 1.185", "¡Hola!"],
-  ["nataliacabalestudio", "Uñas + pestañas · Mar del Plata · 1.948", "¡Hola Natalia!"],
-  ["kin_estudio", "Cejas, pestañas, uñas · Tucumán · 326", "¡Hola!"],
-  ["majohairstudio", "Peluquería · La Plata · 997", "¡Hola Majo!"],
-  ["rebelde.estilistas", "Peluquería · La Plata · 3.189", "¡Hola!"],
-  ["peluqueriaeigen", "Peluquería · La Plata · 1.316", "¡Hola!"],
-  ["almabonitalp", "Peluquería + estética · La Plata · 5.781", "¡Hola!"],
-  ["peluqueriarastalaplata", "Rastas · La Plata · 4.833", "¡Hola!"],
-];
-const B = [
-  ["ludmilag_nails", "Uñas · Mar del Plata · 2.494", "¡Hola Ludmila!"],
-  ["peluquerialaplata", "Peluquería · La Plata · 1.593", "¡Hola!"],
-  ["nailishcordoba", "Uñas · Córdoba · 261", "¡Hola!"],
-  ["maryesteticatucuman", "Estética · Tucumán · 297", "¡Hola María!"],
+// [cuenta, rubro · ciudad, saludo]. Primero los A, después los B.
+const P = [
+  ["ezequieldiaznqn", "Barbería · Neuquén", "¡Hola Eze!"],
+  ["nanis.dani.brc", "Uñas · Bariloche", "¡Hola Dani!"],
+  ["mb.nails.ok", "Uñas · Rosario", "¡Hola Mica!"],
+  ["crazybeauty_studio", "Uñas · Mar del Plata", "¡Hola!"],
+  ["lasunitas.devicky", "Uñas · Mar del Plata", "¡Hola Vicky y Rochi!"],
+  ["natonatalia_estudio", "Uñas + alisados · Mar del Plata", "¡Hola Natalia!"],
+  ["esculpidas_cordoba", "Uñas · Córdoba", "¡Hola!"],
+  ["nataliacabalestudio", "Uñas + pestañas · Mar del Plata", "¡Hola Natalia!"],
+  ["kin_estudio", "Cejas, pestañas, uñas · Tucumán", "¡Hola!"],
+  ["majohairstudio", "Peluquería · La Plata", "¡Hola Majo!"],
+  ["rebelde.estilistas", "Peluquería · La Plata", "¡Hola!"],
+  ["peluqueriaeigen", "Peluquería · La Plata", "¡Hola!"],
+  ["almabonitalp", "Peluquería + estética · La Plata", "¡Hola!"],
+  ["peluqueriarastalaplata", "Rastas · La Plata", "¡Hola!"],
+  ["ludmilag_nails", "Uñas · Mar del Plata", "¡Hola Ludmila!"],
+  ["peluquerialaplata", "Peluquería · La Plata", "¡Hola!"],
+  ["nailishcordoba", "Uñas · Córdoba", "¡Hola!"],
+  ["maryesteticatucuman", "Estética · Tucumán", "¡Hola María!"],
 ];
 const RESTO = "¿Cómo va? Estoy hablando con gente que tiene emprendimientos para conocer un poco cómo se manejan en el día a día. ¿Te puedo hacer un par de preguntas?";
+const msg = (p) => p[2] + " " + RESTO;
 
 const KEY = "prospectos-enviados";
 let enviados = {};
 try { enviados = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) {}
-function guardar() { try { localStorage.setItem(KEY, JSON.stringify(enviados)); } catch (e) {} }
+const guardar = () => { try { localStorage.setItem(KEY, JSON.stringify(enviados)); } catch (e) {} };
 
 const toast = document.getElementById("toast");
-async function copiar(texto) {
-  try { await navigator.clipboard.writeText(texto); } catch (e) {
-    const t = document.createElement("textarea"); t.value = texto; document.body.appendChild(t);
-    t.select(); document.execCommand("copy"); t.remove();
+function copiar(texto) {
+  try { navigator.clipboard.writeText(texto).catch(() => copiarViejo(texto)); } catch (e) { copiarViejo(texto); }
+  toast.classList.add("show"); setTimeout(() => toast.classList.remove("show"), 1600);
+}
+function copiarViejo(texto) {
+  const t = document.createElement("textarea"); t.value = texto; document.body.appendChild(t);
+  t.select(); document.execCommand("copy"); t.remove();
+}
+
+// Al tocar el botón grande: copia, abre el chat y marca como enviado.
+// Cuando volvés a esta pestaña, ya está el siguiente.
+let abierto = null;
+document.addEventListener("visibilitychange", () => {
+  if (document.visibilityState === "visible" && abierto) { abierto = null; render(); }
+});
+
+function el(tag, props, ...hijos) {
+  const e = document.createElement(tag); Object.assign(e, props); e.append(...hijos); return e;
+}
+
+function render() {
+  const hechos = P.filter(p => enviados[p[0]]).length;
+  document.getElementById("count").textContent = hechos + " / " + P.length + " enviados";
+  document.getElementById("prog").style.width = (hechos / P.length * 100) + "%";
+
+  const foco = document.getElementById("foco"); foco.replaceChildren();
+  const p = P.find(p => !enviados[p[0]]);
+  if (!p) {
+    foco.append(el("div", { className: "foco fin", textContent: "¡Listo! Mandaste todos 🎉" }));
+  } else {
+    const go = el("a", { className: "go", textContent: "Copiar y abrir chat →",
+      href: "https://ig.me/m/" + p[0], target: "_blank", rel: "noopener" });
+    go.addEventListener("click", () => { copiar(msg(p)); enviados[p[0]] = true; guardar(); abierto = p[0]; });
+    const saltar = el("button", { textContent: "Saltar" });
+    saltar.onclick = () => { P.push(P.splice(P.indexOf(p), 1)[0]); render(); };
+    const listo = el("button", { textContent: "Ya lo mandé ✓" });
+    listo.onclick = () => { enviados[p[0]] = true; guardar(); render(); };
+    foco.append(el("div", { className: "foco" },
+      el("div", { className: "user", textContent: "@" + p[0] }),
+      el("div", { className: "meta", textContent: p[1] }),
+      el("div", { className: "texto", textContent: msg(p) }),
+      go,
+      el("div", { className: "fila" },
+        el("a", { textContent: "Ver perfil", href: "https://www.instagram.com/" + p[0] + "/", target: "_blank", rel: "noopener" }),
+        saltar, listo)));
   }
-  toast.classList.add("show"); setTimeout(() => toast.classList.remove("show"), 1400);
-}
 
-function contar() {
-  const total = A.length + B.length;
-  const n = Object.values(enviados).filter(Boolean).length;
-  document.getElementById("count").textContent = n + " / " + total + " enviados";
-}
-
-function armar(lista, cont) {
-  for (const [user, meta, apertura] of lista) {
-    const texto = apertura + " " + RESTO;
-    const card = document.createElement("div"); card.className = "card";
-    const info = document.createElement("div"); info.className = "info";
-    const u = document.createElement("a"); u.className = "user"; u.textContent = "@" + user;
-    u.href = "https://www.instagram.com/" + user + "/"; u.target = "_blank"; u.rel = "noopener";
-    u.style.color = "inherit";
-    const m = document.createElement("div"); m.className = "meta"; m.textContent = meta;
-    const h = document.createElement("div"); h.className = "hook"; h.textContent = texto;
-    info.append(u, m, h);
-
-    const btn = document.createElement("a"); btn.className = "btn"; btn.textContent = "Abrir chat";
-    btn.href = "https://ig.me/m/" + user; btn.target = "_blank"; btn.rel = "noopener";
-    btn.addEventListener("click", () => copiar(texto));
-
-    const lab = document.createElement("label");
-    const cb = document.createElement("input"); cb.type = "checkbox"; cb.checked = !!enviados[user];
-    card.classList.toggle("done", cb.checked);
-    cb.onchange = () => { enviados[user] = cb.checked; card.classList.toggle("done", cb.checked); guardar(); contar(); };
-    lab.append(cb, "Enviado");
-
-    const der = document.createElement("div");
-    der.style.cssText = "display:flex;flex-direction:column;gap:6px;align-items:flex-end";
-    der.append(btn, lab);
-    card.append(info, der);
-    cont.append(card);
+  const lista = document.getElementById("lista"); lista.replaceChildren();
+  for (const q of P) {
+    const b = el("button", { textContent: enviados[q[0]] ? "Desmarcar" : "Marcar" });
+    b.onclick = () => { enviados[q[0]] = !enviados[q[0]]; guardar(); render(); };
+    lista.append(el("div", { className: "item" + (enviados[q[0]] ? " done" : "") },
+      el("span", { textContent: "@" + q[0] }), b));
   }
 }
-armar(A, document.getElementById("lista-a"));
-armar(B, document.getElementById("lista-b"));
-contar();
+render();
 </script>
 </body>
 </html>
