@@ -9,12 +9,14 @@
 //  * SEÑA POR LINK que manda el bot por WhatsApp (Checkout Pro), que vence a la media hora. Cuando Mercado Pago avisa el pago, el
 //    turno se confirma solo, el bot le manda el recibo a la clienta y la dueña recibe la notificación.
 //  * DEVOLVER la seña cuando la dueña lo confirma (cancelación con tiempo).
+//  * PAGO DE UN PEDIDO por link (Nodo Gastro, REGLAS-NEGOCIO §22): el cliente elige pagar por Mercado Pago, el bot le manda el link
+//    y el pedido le llega al local recién cuando se acredita (antes queda "esperando el pago").
 //
 // La comisión la paga la emprendedora (El dueño, 2026-10-10): la clienta paga la seña justa.
 import { now, once, siteUrl } from './util.js';
 import { mpFetch, estadoConexion, anotarOrden, VENCIMIENTO_ORDEN } from './mp_conexion.js';
 import { cifrar, descifrar } from './backups.js';
-import { avisarBot } from './bot.js';
+import { avisarBot, totalPedidoCentavos } from './bot.js';
 import { avisarConReintento, cuandoTexto } from './push.js';
 
 const decimal = (centavos) => `${Math.trunc(centavos / 100)}.${String(centavos % 100).padStart(2, '0')}`;
@@ -154,4 +156,62 @@ export async function devolverSena(env, orgId, branchId, turnoId, tMs = Date.now
   return { ok: true, centavos: pago.centavos };
 }
 
-export { turnoDeReferencia };
+// --- Pago de un pedido por link ---------------------------------------------------------------------------------------------
+export const referenciaPedido = (id) => `pedido-${id}`;
+const pedidoDeReferencia = (ref) => (typeof ref === 'string' && /^pedido-\d{1,15}$/.test(ref) ? Number(ref.slice(7)) : null);
+export const VIDA_LINK_PEDIDO_MS = 30 * 60 * 1000;
+
+// El link de pago de un pedido que espera el pago. `{ url, vence }`, o null sin Mercado Pago conectado o si no lo creó. Se guarda en el
+// pedido: reintentar devuelve el mismo.
+export async function linkDePedido(env, orgId, branchId, id, tMs = Date.now()) {
+  const f = await env.DB.prepare('SELECT * FROM bot_pedidos WHERE id = ?1 AND org_id = ?2 AND branch_id = ?3').bind(id, orgId, branchId).first();
+  if (!f || f.estado !== 'esperando_pago') return null;
+  const datos = await descifrarJson(env, f.datos_enc);
+  if (datos.pagoUrl) return { url: datos.pagoUrl, vence: datos.pagoVence };
+  const monto = totalPedidoCentavos(datos);
+  if (!Number.isSafeInteger(monto) || monto < 100) return null;
+  const conexion = await estadoConexion(env, orgId);
+  if (!conexion || !conexion.connected) return null;
+  const vence = tMs + VIDA_LINK_PEDIDO_MS;
+  const r = await mpFetch(env, orgId, '/checkout/preferences', {
+    method: 'POST',
+    body: JSON.stringify({
+      items: [{ id: referenciaPedido(id), title: `Pedido de ${datos.cliente.nombre}`.slice(0, 120), quantity: 1, unit_price: Number(decimal(monto)), currency_id: 'ARS' }],
+      external_reference: referenciaPedido(id),
+      notification_url: `${siteUrl(env)}/api/mp/webhook`,
+      binary_mode: true,
+      expires: true, expiration_date_from: new Date(tMs - 60_000).toISOString(), expiration_date_to: new Date(vence).toISOString(),
+    }),
+  });
+  const url = r.status >= 200 && r.status < 300 && r.j ? r.j.init_point : null;
+  if (typeof url !== 'string' || !url.startsWith('https://')) return null;
+  await env.DB.prepare("UPDATE bot_pedidos SET datos_enc = ?4 WHERE id = ?1 AND org_id = ?2 AND branch_id = ?3 AND estado = 'esperando_pago'")
+    .bind(id, orgId, branchId, await cifrarJson(env, { ...datos, pagoUrl: url, pagoVence: vence })).run();
+  return { url, vence };
+}
+
+// Mercado Pago avisó un pago aprobado con referencia de pedido (ya verificado que es de la cuenta del negocio). Si esperaba el pago,
+// pasa a "por confirmar" y les llega a la app (la notificación del pedido nuevo) y al bot (le avisa al cliente que se acreditó). Si
+// ya no lo esperaba (pagó dos veces el mismo link, por ejemplo) queda anotado para que el local lo vea. Una vez por pago. Devuelve
+// `{ branchId }`, o null si no es de un pedido de este negocio.
+export async function pedidoPagado(env, orgId, { referencia, pagoId, montoCentavos }, tMs = Date.now()) {
+  const id = pedidoDeReferencia(referencia);
+  if (id == null) return null;
+  const f = await env.DB.prepare('SELECT * FROM bot_pedidos WHERE org_id = ?1 AND id = ?2').bind(orgId, id).first();
+  if (!f) return null;
+  const datos = await descifrarJson(env, f.datos_enc);
+  if (datos.pagoMp && datos.pagoMp.pagoId === String(pagoId)) return { branchId: f.branch_id, repetido: true };
+  const esperaba = f.estado === 'esperando_pago';
+  const nuevos = { ...datos, pagoMp: { centavos: montoCentavos, pagoId: String(pagoId), fecha: tMs, ...(esperaba ? {} : { tarde: true }) } };
+  await env.DB.prepare('UPDATE bot_pedidos SET estado = ?3, datos_enc = ?4, actualizado = MAX(?5, actualizado + 1) WHERE org_id = ?1 AND id = ?2')
+    .bind(orgId, id, esperaba ? 'por_confirmar' : f.estado, await cifrarJson(env, nuevos), tMs).run();
+  await avisarBot(env, orgId, f.branch_id, { para: 'bots', aviso: { pedido: id, estado: esperaba ? 'por_confirmar' : f.estado } });
+  await avisarBot(env, orgId, f.branch_id, { para: 'equipos', aviso: { pedido: id } });
+  const plata = `$${Math.round((montoCentavos || 0) / 100).toLocaleString('es-AR')}`;
+  await avisarConReintento(env, orgId, f.branch_id, `pedido:${id}`, esperaba
+    ? { titulo: '🛒 Pedido por WhatsApp (pagado)', cuerpo: `${datos.cliente.nombre} pagó ${plata} por Mercado Pago`, datos: { tipo: 'pedido', id } }
+    : { titulo: '⚠️ Pago de un pedido', cuerpo: `${datos.cliente.nombre} pagó ${plata} de un pedido que ya no esperaba el pago. Revisalo.`, datos: { tipo: 'pedido', id } });
+  return { branchId: f.branch_id };
+}
+
+export { turnoDeReferencia, pedidoDeReferencia };

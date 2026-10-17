@@ -23,7 +23,9 @@ export const MAX_CATALOGO_ITEMS = 5000;
 export const MAX_ITEMS_PEDIDO = 50;
 export const MAX_PEDIDOS_LISTA = 200;
 export const VIDA_PEDIDO = 30 * 24 * 3600; // un pedido viejo (resuelto o no) se borra a los 30 días
-export const ESTADOS_PEDIDO = ['por_confirmar', 'aceptado', 'rechazado', 'listo', 'en_camino', 'entregado', 'cancelado'];
+// `esperando_pago`: eligió pagar por Mercado Pago y el link todavía no se pagó; la app no lo ve hasta que se acredita
+// (`pedidoPagado`, `mp_servicios.js`), y ahí pasa a "por confirmar" con el pago hecho.
+export const ESTADOS_PEDIDO = ['esperando_pago', 'por_confirmar', 'aceptado', 'rechazado', 'listo', 'en_camino', 'entregado', 'cancelado'];
 // Locales gastronómicos (Nodo Gastro, Nodo-Sur-Pos `REGLAS-NEGOCIO.md` §22): después de aceptado, el pedido avanza y el bot le avisa
 // al cliente. A dónde puede pasar cada uno (lo terminado no cambia más).
 export const PASOS_PEDIDO = {
@@ -186,21 +188,46 @@ export function pedidoDesdeBot(b) {
     ...(b.horaEstimada !== undefined ? { horaEstimada: b.horaEstimada } : {}), ...(b.programado ? { programado: true } : {}) } };
 }
 
-// Inserta el pedido "por confirmar". Si el bot reintenta con el mismo id, devuelve el que ya estaba (`repetido`).
+// Lo que paga el cliente: cada línea con su precio (lo pesable con el precio por kilo, redondeado como el bot) más el envío.
+export function totalPedidoCentavos(datos) {
+  let total = 0;
+  for (const x of datos.items) {
+    const p = x.precioCentavos ?? 0;
+    total += x.gramos !== undefined ? Math.floor((p * x.gramos + 500) / 1000) : p * x.cantidad;
+  }
+  return total + (datos.entrega?.costoEnvioCentavos ?? 0);
+}
+
+// Inserta el pedido "por confirmar" (o "esperando el pago", si paga por Mercado Pago). Si el bot reintenta con el mismo id, devuelve
+// el que ya estaba (`repetido`) con su estado.
 export async function crearPedido(env, orgId, branchId, { pedidoId, datos }, tMs = Date.now()) {
   await ensureBotTables(env);
+  const estado = datos.pago === 'mp' ? 'esperando_pago' : 'por_confirmar';
   const r = await env.DB.prepare(
-    `INSERT INTO bot_pedidos (org_id, branch_id, pedido_id, estado, datos_enc, creado, actualizado) VALUES (?1, ?2, ?3, 'por_confirmar', ?4, ?5, ?5)
+    `INSERT INTO bot_pedidos (org_id, branch_id, pedido_id, estado, datos_enc, creado, actualizado) VALUES (?1, ?2, ?3, ?6, ?4, ?5, ?5)
      ON CONFLICT(org_id, branch_id, pedido_id) DO NOTHING`
-  ).bind(orgId, branchId, pedidoId, await cifrarJson(env, datos), tMs).run();
+  ).bind(orgId, branchId, pedidoId, await cifrarJson(env, datos), tMs, estado).run();
   if (!r.meta.changes) {
-    const ya = await env.DB.prepare('SELECT id FROM bot_pedidos WHERE org_id = ?1 AND branch_id = ?2 AND pedido_id = ?3').bind(orgId, branchId, pedidoId).first();
-    return { id: ya.id, repetido: true };
+    const ya = await env.DB.prepare('SELECT id, estado FROM bot_pedidos WHERE org_id = ?1 AND branch_id = ?2 AND pedido_id = ?3').bind(orgId, branchId, pedidoId).first();
+    return { id: ya.id, estado: ya.estado, repetido: true };
   }
   // Limpieza oportunista: lo de más de 30 días ya no le sirve a nadie (y tiene datos de clientes).
   await env.DB.prepare('DELETE FROM bot_pedidos WHERE org_id = ?1 AND branch_id = ?2 AND creado < ?3').bind(orgId, branchId, tMs - VIDA_PEDIDO * 1000).run();
-  return { id: Number(r.meta.last_row_id), repetido: false };
+  return { id: Number(r.meta.last_row_id), estado, repetido: false };
 }
+
+// Sin link de Mercado Pago (el negocio no lo conectó, o Mercado Pago no contestó): el pedido entra igual, para pagar al recibir.
+export async function pedidoSinLink(env, orgId, branchId, id, tMs = Date.now()) {
+  const f = await env.DB.prepare("SELECT datos_enc FROM bot_pedidos WHERE id = ?1 AND org_id = ?2 AND branch_id = ?3 AND estado = 'esperando_pago'").bind(id, orgId, branchId).first();
+  if (!f) return false;
+  const datos = { ...(await descifrarJson(env, f.datos_enc)), pago: 'al_entregar' };
+  const r = await env.DB.prepare(
+    "UPDATE bot_pedidos SET estado = 'por_confirmar', datos_enc = ?4, actualizado = MAX(?5, actualizado + 1) WHERE id = ?1 AND org_id = ?2 AND branch_id = ?3 AND estado = 'esperando_pago'"
+  ).bind(id, orgId, branchId, await cifrarJson(env, datos), tMs).run();
+  return r.meta.changes > 0;
+}
+
+export { cifrarJson, descifrarJson };
 
 const pedidoPublico = async (env, f) => ({ id: f.id, pedidoId: f.pedido_id, estado: f.estado, ...(await descifrarJson(env, f.datos_enc)), creado: f.creado, actualizado: f.actualizado });
 

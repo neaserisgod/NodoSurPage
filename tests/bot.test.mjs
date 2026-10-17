@@ -128,7 +128,7 @@ await t('pedido: el bot lo manda, entra "por confirmar" una sola vez (aunque rei
   const r = await post(bot.onRequestPedidoPost, env, '/api/bot/pedido', PEDIDO, robot);
   assert.equal(r.status, 201); const { id } = await r.json();
   const otra = await post(bot.onRequestPedidoPost, env, '/api/bot/pedido', PEDIDO, robot);
-  assert.equal(otra.status, 200); assert.deepEqual(await otra.json(), { ok: true, id, repetido: true });
+  assert.equal(otra.status, 200); assert.deepEqual(await otra.json(), { ok: true, id, repetido: true, estado: 'por_confirmar' });
   assert.equal(one(env, 'SELECT COUNT(*) c FROM bot_pedidos').c, 1);
   assert.ok(!JSON.stringify(one(env, 'SELECT * FROM bot_pedidos')).includes('Sofi'), 'el cliente no queda en claro');
   assert.deepEqual(env.SYNC_HUB.avisos.map((a) => a.cuerpo), [{ bot: { para: 'equipos', aviso: { pedido: id } } }], 'avisa una vez, a la app');
@@ -208,12 +208,12 @@ await t('resolver: la app acepta o rechaza una sola vez y el bot se entera; otra
 
 await t('local gastronómico: el pedido trae entrega, pago y hora, y después de aceptado avanza y el bot se entera', async () => {
   const { env, app, robot } = await armar();
-  const conEnvio = { ...PEDIDO, id: 'pedido-gastro-0001', pago: 'mp', horaEstimada: 1760000000000, programado: true,
+  const conEnvio = { ...PEDIDO, id: 'pedido-gastro-0001', pago: 'alias', horaEstimada: 1760000000000, programado: true,
     entrega: { forma: 'CADETE', direccion: ' Mitre 100 ', zona: 'Centro', costoEnvioCentavos: 150000 } };
   const { id } = await (await post(bot.onRequestPedidoPost, env, '/api/bot/pedido', conEnvio, robot)).json();
   const p = (await (await get(bot.onRequestPedidosGet, env, '/api/bot/pedidos?desde=0', app)).json()).pedidos.find((x) => x.id === id);
   assert.deepEqual(p.entrega, { forma: 'CADETE', direccion: 'Mitre 100', zona: 'Centro', costoEnvioCentavos: 150000 });
-  assert.equal(p.pago, 'mp'); assert.equal(p.horaEstimada, 1760000000000); assert.equal(p.programado, true);
+  assert.equal(p.pago, 'alias'); assert.equal(p.horaEstimada, 1760000000000); assert.equal(p.programado, true);
   for (const malo of [{ forma: 'DRON' }, { forma: 'CADETE', zona: 'Centro' }, { forma: 'REPARTO', direccion: 'Mitre 100' }, { forma: 'CADETE', direccion: 'x', zona: 'y', costoEnvioCentavos: -1 }]) {
     assert.equal((await post(bot.onRequestPedidoPost, env, '/api/bot/pedido', { ...PEDIDO, id: 'pedido-gastro-malo1', entrega: malo }, robot)).status, 400, JSON.stringify(malo));
   }
