@@ -49,6 +49,10 @@ const DDL = [
   `CREATE TABLE IF NOT EXISTS bot_pedidos (id INTEGER PRIMARY KEY AUTOINCREMENT, org_id INTEGER NOT NULL, branch_id INTEGER NOT NULL,
      pedido_id TEXT NOT NULL, estado TEXT NOT NULL, datos_enc TEXT NOT NULL, creado INTEGER NOT NULL, actualizado INTEGER NOT NULL,
      resuelto_por TEXT, UNIQUE (org_id, branch_id, pedido_id))`,
+  // El catálogo de WhatsApp Business del local tal como lo leyó el bot, para que la app traiga a su carta lo que el local cargó
+  // allá (Nodo Gastro; el otro sentido, la carta copiada a WhatsApp, lo hace el bot solo).
+  `CREATE TABLE IF NOT EXISTS bot_catalogo_wa (org_id INTEGER NOT NULL, branch_id INTEGER NOT NULL, datos_enc TEXT NOT NULL,
+     items INTEGER NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY (org_id, branch_id))`,
   `CREATE INDEX IF NOT EXISTS idx_bot_pedidos_cambio ON bot_pedidos(org_id, branch_id, actualizado)`,
   // Qué equipos de la app leen los pedidos y si entienden gramos (`?gramos=1`, ver `pedidoConGramosPermitido`). `visto` en segundos.
   `CREATE TABLE IF NOT EXISTS bot_lectores (device_id TEXT PRIMARY KEY, org_id INTEGER NOT NULL, branch_id INTEGER NOT NULL,
@@ -138,6 +142,42 @@ export async function guardarCatalogo(env, orgId, branchId, items, t = now()) {
 export async function leerCatalogo(env, orgId, branchId) {
   await ensureBotTables(env);
   const f = await env.DB.prepare('SELECT datos_enc, updated_at FROM bot_catalogo WHERE org_id = ?1 AND branch_id = ?2').bind(orgId, branchId).first();
+  return f ? { items: await descifrarJson(env, f.datos_enc), actualizado: f.updated_at } : { items: [], actualizado: null };
+}
+
+// --- Catálogo de WhatsApp Business (lo lee el bot, lo trae la app) -------------------------------------------------------------
+export const MAX_CATALOGO_WA = 1000;
+
+// `[{ waId, retailerId, nombre, descripcion, precioCentavos, oculto }]`: lo que hace falta para crear el plato en la app y saber
+// si ya es uno de la carta (`retailerId` = `ns-<global_id>` si lo puso el bot).
+export function itemsDeCatalogoWa(items) {
+  if (!Array.isArray(items) || items.length > MAX_CATALOGO_WA) return null;
+  const limpios = [];
+  for (const x of items) {
+    if (!x || typeof x !== 'object') return null;
+    const { waId, retailerId, nombre, descripcion, precioCentavos, oculto } = x;
+    if (typeof waId !== 'string' || !/^[\w-]{1,64}$/.test(waId)) return null;
+    if (retailerId != null && (typeof retailerId !== 'string' || retailerId.length > 100)) return null;
+    if (typeof nombre !== 'string' || !nombre.trim() || nombre.length > 200) return null;
+    if (descripcion != null && (typeof descripcion !== 'string' || descripcion.length > 1000)) return null;
+    if (!Number.isSafeInteger(precioCentavos) || precioCentavos < 0) return null;
+    limpios.push({ waId, retailerId: retailerId || null, nombre: nombre.trim().slice(0, 120), descripcion: (descripcion || '').trim().slice(0, 500),
+      precioCentavos, oculto: oculto === true });
+  }
+  return limpios;
+}
+
+export async function guardarCatalogoWa(env, orgId, branchId, items, t = now()) {
+  await ensureBotTables(env);
+  await env.DB.prepare(
+    `INSERT INTO bot_catalogo_wa (org_id, branch_id, datos_enc, items, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)
+     ON CONFLICT(org_id, branch_id) DO UPDATE SET datos_enc = ?3, items = ?4, updated_at = ?5`
+  ).bind(orgId, branchId, await cifrarJson(env, items), items.length, t).run();
+}
+
+export async function leerCatalogoWa(env, orgId, branchId) {
+  await ensureBotTables(env);
+  const f = await env.DB.prepare('SELECT datos_enc, updated_at FROM bot_catalogo_wa WHERE org_id = ?1 AND branch_id = ?2').bind(orgId, branchId).first();
   return f ? { items: await descifrarJson(env, f.datos_enc), actualizado: f.updated_at } : { items: [], actualizado: null };
 }
 

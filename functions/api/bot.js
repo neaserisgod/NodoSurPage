@@ -13,7 +13,7 @@ import { syncAccess } from '../_lib/sync.js';
 import {
   botConfigurado, tieneBot, configValida, leerConfig, guardarConfig, itemsDeCatalogo, guardarCatalogo, leerCatalogo,
   pedidoDesdeBot, crearPedido, pedidoSinLink, pedidosDesde, resolverPedido, avanzarPedidoBot, avisarBot, botsDeSucursal, MAX_CONFIG_BYTES,
-  anotarLector, pedidoConGramosPermitido, pedidoTieneGramos,
+  anotarLector, pedidoConGramosPermitido, pedidoTieneGramos, itemsDeCatalogoWa, guardarCatalogoWa, leerCatalogoWa,
 } from '../_lib/bot.js';
 import { avisarConReintento, cuandoTexto } from '../_lib/push.js';
 import { linkDeSena, linkDePedido } from '../_lib/mp_servicios.js';
@@ -106,6 +106,33 @@ export async function onRequestCatalogoPost({ request, env, ctx }) {
 export async function onRequestCatalogoGet({ request, env }) {
   const w = await equipo(request, env); if (w.error) return w.error;
   return json(await leerCatalogo(env, w.orgId, w.branchId));
+}
+
+// POST /api/bot/catalogo-wa (el bot): `{ items }` (`itemsDeCatalogoWa`), lo que tiene el catálogo de WhatsApp Business del local. La
+// app se entera al toque (puede estar esperando para traerlo a la carta).
+export async function onRequestCatalogoWaPost({ request, env, ctx }) {
+  const w = await equipo(request, env, { bot: true }); if (w.error) return w.error;
+  const r = await cuerpo(request);
+  if (r && r.grande) return json({ error: 'too_large' }, 413);
+  const items = r && itemsDeCatalogoWa(r.b.items);
+  if (!items) return json({ error: 'bad_request' }, 400);
+  await guardarCatalogoWa(env, w.orgId, w.branchId, items);
+  await esperar(ctx, avisarBot(env, w.orgId, w.branchId, { para: 'equipos', aviso: { catalogoWa: true } }));
+  return json({ ok: true, items: items.length });
+}
+
+// GET /api/bot/catalogo-wa (la app): `{ items, actualizado }`, lo último que mandó el bot.
+export async function onRequestCatalogoWaGet({ request, env }) {
+  const w = await equipo(request, env, { bot: false }); if (w.error) return w.error;
+  return json(await leerCatalogoWa(env, w.orgId, w.branchId));
+}
+
+// POST /api/bot/catalogo-wa/pedir (la app): que el bot lea el catálogo de WhatsApp ahora (el local recién cargó algo allá).
+export async function onRequestCatalogoWaPedir({ request, env, ctx }) {
+  const w = await equipo(request, env, { bot: false }); if (w.error) return w.error;
+  const avisado = await avisarBot(env, w.orgId, w.branchId, { para: 'bots', aviso: { catalogoWa: true } });
+  void ctx;
+  return json({ ok: true, avisado });
 }
 
 // POST /api/bot/pedido (el bot): `{ id, cliente: { nombre, telefono }, items: [{ gid?, nombre, cantidad | gramos, precioCentavos? }],
