@@ -101,9 +101,9 @@
     } else if (!d.subscriptions || !d.subscriptions.length) {
       s.appendChild(el('p', 'acc-note', 'No encontramos una suscripción asociada a ' + u.email + '.'));
       if (d.covered) s.appendChild(el('p', 'acc-note', 'Tu negocio está cubierto por la suscripción de otra persona. Revisá la facturación en Mi negocio.'));
-      s.appendChild(el('p', 'acc-note', 'Si ya pagaste con otro mail de Mercado Pago, escribime y la vinculamos a mano. Si todavía no te suscribiste, elegí tu sistema acá abajo.'));
+      s.appendChild(el('p', 'acc-note', 'Si ya pagaste con otro mail de Mercado Pago, escribinos y la vinculamos a mano. Si todavía no te suscribiste, elegí tu sistema acá abajo.'));
       var acts = el('div', 'acc-actions');
-      var a2 = el('a', 'btn btn-w', 'Escribime por WhatsApp'); a2.rel = 'noopener'; a2.href = WA + encodeURIComponent('Hola, ingresé con ' + u.email + ' y no veo mi suscripción'); acts.appendChild(a2);
+      var a2 = el('a', 'btn btn-w', 'Escribinos por WhatsApp'); a2.rel = 'noopener'; a2.href = WA + encodeURIComponent('Hola, ingresé con ' + u.email + ' y no veo mi suscripción'); acts.appendChild(a2);
       s.appendChild(acts);
     } else {
       d.subscriptions.forEach(function (sub) { s.appendChild(subCard(sub)); });
@@ -199,7 +199,7 @@
     }).then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
       .then(function (r) {
         btn.disabled = false; btn.textContent = 'Sí, cancelar';
-        if (!r.ok) { document.getElementById('cancelar-err').textContent = 'No pudimos cancelarla. Probá de nuevo o escribime por WhatsApp.'; return; }
+        if (!r.ok) { document.getElementById('cancelar-err').textContent = 'No pudimos cancelarla. Probá de nuevo o escribinos por WhatsApp.'; return; }
         dlg.close ? dlg.close() : dlg.removeAttribute('open');
         return load().then(function (d) { if (d) render(d); });
       }).catch(function () { btn.disabled = false; btn.textContent = 'Sí, cancelar'; document.getElementById('cancelar-err').textContent = 'Error de conexión. Probá de nuevo.'; });
