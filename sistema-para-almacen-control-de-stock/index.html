@@ -29,10 +29,10 @@
 <link rel="icon" type="image/png" href="/favicon-48.png" sizes="48x48">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="preload" href="/fonts/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/img/pos/proveedores-v4.webp" as="image" fetchpriority="high">
-<link rel="stylesheet" href="/nodo.css?v=bdd024b024">
+<link rel="preload" href="/fonts/bricolage-v2.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/geist-v2.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/img/pos/proveedores-v4.webp" as="image" fetchpriority="high" imagesrcset="/img/pos/proveedores-v4-800.webp 800w, /img/pos/proveedores-v4.webp 1600w" imagesizes="(max-width:760px) calc(100vw - 40px), (max-width:1200px) calc(100vw - 64px), 1136px">
+<link rel="stylesheet" href="/nodo.css?v=3d2780fb64">
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -149,6 +149,7 @@
  ]
 }
 </script>
+<script type="speculationrules">{"prerender":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/api/*","/app","/app/*","/demo","/demo/*","/admin/*","/cuenta/*","/negocio/*","/vincular/*","/unirse/*","/descargar/*","/ingresar/*","/pagar/*"]}},{"not":{"selector_matches":"[rel~=nofollow],[target=_blank]"}}]},"eagerness":"moderate"}],"prefetch":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/api/*","/app","/app/*","/demo","/demo/*","/admin/*"]}}]},"eagerness":"moderate"}]}</script>
 </head>
 <body>
 <a class="saltar" href="#inicio">Ir al contenido</a>
@@ -192,11 +193,11 @@
 <a class="btn btn-a btn-g" href="/pagar/?plan=pos">Probar 7 días gratis</a>
 <a class="link" href="/pagar/">Ver precios</a>
 </div>
-<ul class="hechos"><li>Hecho por un almacenero de Bariloche</li><li>Funciona sin internet</li><li>Te ayudamos a instalarlo</li><li>7 días gratis</li><li>Soporte a distancia incluido</li></ul>
-<figure class="pantalla rev"><img src="/img/pos/proveedores-v4.webp" width="1600" height="900" alt="Pantalla de proveedores con lo que le debés a cada uno" fetchpriority="high"></figure>
+<ul class="hechos"><li>Hecho por un almacenero de Bariloche</li><li>Funciona sin internet</li><li>Te ayudamos a instalarlo</li></ul>
+<figure class="pantalla rev"><img src="/img/pos/proveedores-v4.webp" srcset="/img/pos/proveedores-v4-800.webp 800w, /img/pos/proveedores-v4.webp 1600w" sizes="(max-width:760px) calc(100vw - 40px), (max-width:1200px) calc(100vw - 64px), 1136px" width="1600" height="900" alt="Pantalla de proveedores con lo que le debés a cada uno" fetchpriority="high"></figure>
 </section>
 
-<section id="b-1" class="wrap sec" aria-labelledby="t-2">
+<section id="b-1" class="wrap sec sec-t" aria-labelledby="t-2">
 <div class="cols arriba">
 <div class="c-ch"><h2 id="t-2" class="tit t-m rev">El problema de un almacén: mucha mercadería y muchos proveedores</h2></div>
 <div class="c-gr prosa">
@@ -210,14 +211,13 @@
 <h2 id="t-4" class="tit t-m rev">Así se ve</h2>
 
 <div class="capturas">
-<figure class="captura"><img alt="Conteo de stock con diferencias" decoding="async" height="598" loading="lazy" src="/img/pos/conteo-stock-v4.webp" width="1600"/><figcaption>Conteo de stock: lo que contaste contra lo que debería haber.</figcaption></figure>
-<figure class="captura"><img alt="Comparar el costo de un producto entre proveedores" decoding="async" height="900" loading="lazy" src="/img/pos/comparar-precios-v4.webp" width="1600"/><figcaption>Comparar precios: quién te vende más barato cada producto.</figcaption></figure>
-<figure class="captura"><img alt="Proveedores y sus productos" decoding="async" height="900" loading="lazy" src="/img/pos/proveedores-v4.webp" width="1600"/><figcaption>Proveedores: datos, productos y cambios de precio.</figcaption></figure>
+<figure class="captura"><img alt="Conteo de stock con diferencias" decoding="async" height="598" loading="lazy" src="/img/pos/conteo-stock-v4.webp" srcset="/img/pos/conteo-stock-v4-800.webp 800w, /img/pos/conteo-stock-v4.webp 1600w" sizes="(max-width:760px) calc(100vw - 68px), 380px" width="1600"/><figcaption>Conteo de stock: lo que contaste contra lo que debería haber.</figcaption></figure>
+<figure class="captura"><img alt="Comparar el costo de un producto entre proveedores" decoding="async" height="900" loading="lazy" src="/img/pos/comparar-precios-v4.webp" srcset="/img/pos/comparar-precios-v4-800.webp 800w, /img/pos/comparar-precios-v4.webp 1600w" sizes="(max-width:760px) calc(100vw - 68px), 380px" width="1600"/><figcaption>Comparar precios: quién te vende más barato cada producto.</figcaption></figure>
 <p class="nota capturas-nota"><svg aria-hidden="true" fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="18"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg><span>Las imágenes son de orientación, con datos de ejemplo: el sistema evoluciona todos los días y puede verse distinto.</span></p>
 </div>
 </section>
 
-<section id="b-5" class="wrap sec" aria-labelledby="t-6">
+<section id="b-5" class="wrap sec sec-t" aria-labelledby="t-6">
 <div class="cols arriba">
 <div class="c-ch"><h2 id="t-6" class="tit t-m rev">Control de stock</h2></div>
 <div class="c-gr prosa">
@@ -226,7 +226,7 @@
 </div>
 </section>
 
-<section id="b-7" class="wrap sec" aria-labelledby="t-8">
+<section id="b-7" class="wrap sec sec-t" aria-labelledby="t-8">
 <div class="cols arriba">
 <div class="c-ch"><h2 id="t-8" class="tit t-m rev">Proveedores y cambios de precio</h2></div>
 <div class="c-gr prosa">
@@ -235,7 +235,7 @@
 </div>
 </section>
 
-<section id="b-9" class="wrap sec" aria-labelledby="t-10">
+<section id="b-9" class="wrap sec sec-t" aria-labelledby="t-10">
 <div class="cols arriba">
 <div class="c-ch"><h2 id="t-10" class="tit t-m rev">Cuánta plata separar para cada proveedor</h2></div>
 <div class="c-gr prosa">
@@ -247,30 +247,21 @@
 <section id="b-11" class="wrap sec" aria-labelledby="t-12">
 <h2 id="t-12" class="tit t-m rev">Cierre de caja y respaldo</h2>
 <div class="prosa intro"><ul class="lista lista-c"><li>Cerrás la caja contando la plata: el sistema te dice si cierra o cuánto falta.</li><li>Historial de ventas y de cierres de caja.</li><li>Respaldo automático de tus datos en una carpeta de tu nube. Los datos son tuyos.</li><li>Funciona sin internet.</li></ul></div>
-<p class="aclara">Los montos y las imágenes de esta página son de ejemplo y sirven de orientación: el sistema evoluciona todos los días y puede verse distinto.</p>
+
 </section>
 
-<section id="b-13" class="wrap sec" aria-labelledby="t-14">
+<section id="b-13" class="wrap sec sec-t" aria-labelledby="t-14">
 <div class="cols arriba">
-<div class="c-ch"><h2 id="t-14" class="tit t-m rev">Quién está detrás</h2></div>
-<div class="c-gr prosa">
-<p>Nodo Sur nació en un almacén de Bariloche, de la necesidad de cobrar, controlar el stock y cerrar la caja sin planillas ni cuadernos. El sistema se usa todos los días en ese mostrador y mejora con lo que pasa ahí. Si tenés una duda, escribinos: te contesta quien lo hizo.</p>
-</div>
-</div>
-</section>
-
-<section id="b-15" class="wrap sec" aria-labelledby="t-16">
-<div class="cols arriba">
-<div class="c-ch"><h2 id="t-16" class="tit t-m rev">Precio</h2></div>
+<div class="c-ch"><h2 id="t-14" class="tit t-m rev">Precio</h2></div>
 <div class="c-gr prosa">
 <p><strong>$ 35.000 por mes</strong>, <strong>sin costo de alta</strong> (la instalación y la carga de tus productos están incluidas). Probás 7 días antes de pagar. <a href="/pagar/">Ver todos los precios</a>.</p>
 </div>
 </div>
 </section>
 
-<section id="preguntas" class="wrap cols arriba sec" aria-labelledby="t-18">
+<section id="preguntas" class="wrap cols arriba sec" aria-labelledby="t-16">
 <div class="c-ch">
-<h2 id="t-18" class="tit t-m rev">Preguntas frecuentes</h2>
+<h2 id="t-16" class="tit t-m rev">Preguntas frecuentes</h2>
 <p class="gris" style="margin-top:14px">¿Otra duda? <a class="link" href="https://wa.me/5492944796044">Escribinos por WhatsApp</a>.</p>
 </div>
 <div class="c-gr faq">
@@ -288,7 +279,6 @@
 <a class="rel" href="/sistema-pos/"><b class="tit">Sistema POS completo</b><span>Ventas, caja, stock y proveedores.</span></a>
 <a class="rel" href="/sistema-de-ventas-para-kioscos/"><b class="tit">Sistema de ventas para kioscos</b><span>Cobrar rápido y cerrar la caja sin errores.</span></a>
 <a class="rel" href="/diferencias-sistema-pos-y-bot-whatsapp/"><b class="tit">Sistema POS vs bot de WhatsApp</b><span>Qué hace cada uno y cuál necesita tu comercio.</span></a>
-<a class="rel" href="/como-calcular-margen-de-ganancia-almacen/"><b class="tit">Cómo calcular el margen de ganancia</b><span>Margen y recargo, con fórmulas y ejemplos.</span></a>
 </div>
 </section>
 
@@ -326,6 +316,6 @@
 </nav>
 </div>
 
-<script src="/nodo.js?v=cb6cc360b2" defer></script>
+<script src="/nodo.js?v=7b0ddee91b" defer></script>
 </body>
 </html>

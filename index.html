@@ -29,10 +29,10 @@
 <link rel="icon" type="image/png" href="/favicon-48.png" sizes="48x48">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="preload" href="/fonts/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/bricolage-v2.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/geist-v2.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="preload" href="/img/servicios/agenda-v1.webp" as="image" fetchpriority="high">
-<link rel="stylesheet" href="/nodo.css?v=bdd024b024">
+<link rel="stylesheet" href="/nodo.css?v=3d2780fb64">
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -123,6 +123,7 @@
  ]
 }
 </script>
+<script type="speculationrules">{"prerender":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/api/*","/app","/app/*","/demo","/demo/*","/admin/*","/cuenta/*","/negocio/*","/vincular/*","/unirse/*","/descargar/*","/ingresar/*","/pagar/*"]}},{"not":{"selector_matches":"[rel~=nofollow],[target=_blank]"}}]},"eagerness":"moderate"}],"prefetch":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/api/*","/app","/app/*","/demo","/demo/*","/admin/*"]}}]},"eagerness":"moderate"}]}</script>
 </head>
 <body>
 <a class="saltar" href="#inicio">Ir al contenido</a>
@@ -158,7 +159,7 @@
 </div>
 </div>
 <div class="c2 fones">
-<div class="fono fono-atras"><img src="/img/servicios/servicios-v1.webp" width="520" height="1126" alt="Pantalla de servicios con lo que cuesta y lo que te deja cada uno"></div>
+<div class="fono fono-atras"><img src="/img/servicios/servicios-v1.webp" decoding="async" width="520" height="1126" alt="Pantalla de servicios con lo que cuesta y lo que te deja cada uno"></div>
 <div class="fono fono-frente"><div class="isla"></div><img src="/img/servicios/agenda-v1.webp" width="520" height="1126" alt="Agenda del día: turnos por hora, huecos libres y señas" fetchpriority="high"></div>
 </div>
 </section>
@@ -200,7 +201,7 @@
 </div>
 </div>
 <div class="c2 panel panel-fono rev" style="display:flex;gap:28px;align-items:center">
-<div class="fono fono-chico"><img src="/img/servicios/servicios-v1.webp" width="520" height="1126" alt="Servicios con su costo y su ganancia" loading="lazy"></div>
+<div class="fono fono-chico"><img src="/img/servicios/servicios-v1.webp" decoding="async" width="520" height="1126" alt="Servicios con su costo y su ganancia" loading="lazy"></div>
 <div>
 <p class="tit t-s">Android, iPhone y compu.</p>
 <p class="gris" style="margin-top:12px;font-size:17px">En Android, la app. En iPhone y en la compu, el navegador. Los mismos datos en todos.</p>
@@ -300,6 +301,6 @@
 </nav>
 </div>
 
-<script src="/nodo.js?v=cb6cc360b2" defer></script>
+<script src="/nodo.js?v=7b0ddee91b" defer></script>
 </body>
 </html>

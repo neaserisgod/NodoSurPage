@@ -29,10 +29,10 @@
 <link rel="icon" type="image/png" href="/favicon-48.png" sizes="48x48">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="preload" href="/fonts/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="preload" href="/img/pos/vender-v4.webp" as="image" fetchpriority="high">
-<link rel="stylesheet" href="/nodo.css?v=bdd024b024">
+<link rel="preload" href="/fonts/bricolage-v2.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/geist-v2.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/img/pos/vender-v4.webp" as="image" fetchpriority="high" imagesrcset="/img/pos/vender-v4-800.webp 800w, /img/pos/vender-v4.webp 1600w" imagesizes="(max-width:760px) calc(100vw - 40px), (max-width:1200px) calc(100vw - 64px), 1136px">
+<link rel="stylesheet" href="/nodo.css?v=3d2780fb64">
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -149,6 +149,7 @@
  ]
 }
 </script>
+<script type="speculationrules">{"prerender":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/api/*","/app","/app/*","/demo","/demo/*","/admin/*","/cuenta/*","/negocio/*","/vincular/*","/unirse/*","/descargar/*","/ingresar/*","/pagar/*"]}},{"not":{"selector_matches":"[rel~=nofollow],[target=_blank]"}}]},"eagerness":"moderate"}],"prefetch":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/api/*","/app","/app/*","/demo","/demo/*","/admin/*"]}}]},"eagerness":"moderate"}]}</script>
 </head>
 <body>
 <a class="saltar" href="#inicio">Ir al contenido</a>
@@ -192,11 +193,11 @@
 <a class="btn btn-a btn-g" href="/pagar/?plan=pos">Probar 7 días gratis</a>
 <a class="link" href="/pagar/">Ver precios</a>
 </div>
-<ul class="hechos"><li>Hecho por un almacenero de Bariloche</li><li>Funciona sin internet</li><li>Te ayudamos a instalarlo</li><li>7 días gratis</li><li>Soporte a distancia incluido</li></ul>
-<figure class="pantalla rev"><img src="/img/pos/vender-v4.webp" width="1600" height="900" alt="Pantalla de venta: buscás el producto, lo tocás y cobrás" fetchpriority="high"></figure>
+<ul class="hechos"><li>Hecho por un almacenero de Bariloche</li><li>Funciona sin internet</li><li>Te ayudamos a instalarlo</li></ul>
+<figure class="pantalla rev"><img src="/img/pos/vender-v4.webp" srcset="/img/pos/vender-v4-800.webp 800w, /img/pos/vender-v4.webp 1600w" sizes="(max-width:760px) calc(100vw - 40px), (max-width:1200px) calc(100vw - 64px), 1136px" width="1600" height="900" alt="Pantalla de venta: buscás el producto, lo tocás y cobrás" fetchpriority="high"></figure>
 </section>
 
-<section id="b-1" class="wrap sec" aria-labelledby="t-2">
+<section id="b-1" class="wrap sec sec-t" aria-labelledby="t-2">
 <div class="cols arriba">
 <div class="c-ch"><h2 id="t-2" class="tit t-m rev">Qué necesita un sistema de ventas para un kiosco</h2></div>
 <div class="c-gr prosa">
@@ -210,13 +211,12 @@
 <h2 id="t-4" class="tit t-m rev">Así se ve</h2>
 
 <div class="capturas">
-<figure class="captura"><img alt="Pantalla Vender pensada para kioscos" decoding="async" height="900" loading="lazy" src="/img/pos/vender-v4.webp" width="1600"/><figcaption>Vender: buscás, tocás y cobrás.</figcaption></figure>
-<figure class="captura"><img alt="Cierre de caja con la diferencia en vivo" decoding="async" height="900" loading="lazy" src="/img/pos/cierre-v4.webp" width="1600"/><figcaption>Cierre de caja: lo que tiene que haber contra lo que contaste.</figcaption></figure>
+<figure class="captura"><img alt="Cierre de caja con la diferencia en vivo" decoding="async" height="900" loading="lazy" src="/img/pos/cierre-v4.webp" srcset="/img/pos/cierre-v4-800.webp 800w, /img/pos/cierre-v4.webp 1600w" sizes="(max-width:760px) calc(100vw - 68px), 380px" width="1600"/><figcaption>Cierre de caja: lo que tiene que haber contra lo que contaste.</figcaption></figure>
 <p class="nota capturas-nota"><svg aria-hidden="true" fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="18"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg><span>Las imágenes son de orientación, con datos de ejemplo: el sistema evoluciona todos los días y puede verse distinto.</span></p>
 </div>
 </section>
 
-<section id="b-5" class="wrap sec" aria-labelledby="t-6">
+<section id="b-5" class="wrap sec sec-t" aria-labelledby="t-6">
 <div class="cols arriba">
 <div class="c-ch"><h2 id="t-6" class="tit t-m rev">Cómo se vende en un toque</h2></div>
 <div class="c-gr prosa">
@@ -225,7 +225,7 @@
 </div>
 </section>
 
-<section id="b-7" class="wrap sec" aria-labelledby="t-8">
+<section id="b-7" class="wrap sec sec-t" aria-labelledby="t-8">
 <div class="cols arriba">
 <div class="c-ch"><h2 id="t-8" class="tit t-m rev">Cierre de caja sin errores</h2></div>
 <div class="c-gr prosa">
@@ -237,30 +237,21 @@
 <section id="b-9" class="wrap sec" aria-labelledby="t-10">
 <h2 id="t-10" class="tit t-m rev">Stock, precios y ganancia</h2>
 <div class="prosa intro"><ul class="lista lista-c"><li><strong>Stock:</strong> contás y ves qué te falta antes de quedarte sin mercadería.</li><li><strong>Precios:</strong> te avisa cuando un proveedor te subió un producto, antes de que se coma tu margen.</li><li><strong>Ganancia:</strong> ves cuánto ganaste en el día y cuánta plata separar para cada proveedor.</li><li><strong>Carga por Excel:</strong> pasás tu planilla de productos y queda listo, sin cargar uno por uno.</li></ul></div>
-<p class="aclara">Los montos y las imágenes de esta página son de ejemplo y sirven de orientación: el sistema evoluciona todos los días y puede verse distinto.</p>
+
 </section>
 
-<section id="b-11" class="wrap sec" aria-labelledby="t-12">
+<section id="b-11" class="wrap sec sec-t" aria-labelledby="t-12">
 <div class="cols arriba">
-<div class="c-ch"><h2 id="t-12" class="tit t-m rev">Quién está detrás</h2></div>
-<div class="c-gr prosa">
-<p>Nodo Sur nació en un almacén de Bariloche, de la necesidad de cobrar, controlar el stock y cerrar la caja sin planillas ni cuadernos. El sistema se usa todos los días en ese mostrador y mejora con lo que pasa ahí. Si tenés una duda, escribinos: te contesta quien lo hizo.</p>
-</div>
-</div>
-</section>
-
-<section id="b-13" class="wrap sec" aria-labelledby="t-14">
-<div class="cols arriba">
-<div class="c-ch"><h2 id="t-14" class="tit t-m rev">Precio</h2></div>
+<div class="c-ch"><h2 id="t-12" class="tit t-m rev">Precio</h2></div>
 <div class="c-gr prosa">
 <p><strong>$ 35.000 por mes</strong>, <strong>sin costo de alta</strong> (la instalación y la carga de tus productos están incluidas). Probás 7 días antes de pagar y, una vez que pagás, tenés 30 días para pedir la devolución. <a href="/pagar/">Ver todos los precios</a>.</p>
 </div>
 </div>
 </section>
 
-<section id="preguntas" class="wrap cols arriba sec" aria-labelledby="t-16">
+<section id="preguntas" class="wrap cols arriba sec" aria-labelledby="t-14">
 <div class="c-ch">
-<h2 id="t-16" class="tit t-m rev">Preguntas frecuentes</h2>
+<h2 id="t-14" class="tit t-m rev">Preguntas frecuentes</h2>
 <p class="gris" style="margin-top:14px">¿Otra duda? <a class="link" href="https://wa.me/5492944796044">Escribinos por WhatsApp</a>.</p>
 </div>
 <div class="c-gr faq">
@@ -278,7 +269,6 @@
 <a class="rel" href="/sistema-pos/"><b class="tit">Sistema POS completo</b><span>Todo lo que hace el sistema de caja.</span></a>
 <a class="rel" href="/sistema-para-almacen-control-de-stock/"><b class="tit">Sistema para almacén y stock</b><span>Control de stock, proveedores y precios.</span></a>
 <a class="rel" href="/como-elegir-sistema-pos-kiosco-almacen/"><b class="tit">Cómo elegir un sistema POS</b><span>Checklist de 10 puntos antes de contratar.</span></a>
-<a class="rel" href="/como-hacer-cierre-de-caja-kiosco/"><b class="tit">Cómo hacer el cierre de caja</b><span>Método paso a paso para no perder plata.</span></a>
 </div>
 </section>
 
@@ -316,6 +306,6 @@
 </nav>
 </div>
 
-<script src="/nodo.js?v=cb6cc360b2" defer></script>
+<script src="/nodo.js?v=7b0ddee91b" defer></script>
 </body>
 </html>
