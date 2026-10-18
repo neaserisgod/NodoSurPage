@@ -127,6 +127,10 @@ td.acts{display:table-cell;margin:0}
 .dl-hero h2{font-family:var(--tit);font-weight:800;font-size:clamp(32px,4.4vw,50px);line-height:.98;letter-spacing:-.045em;text-wrap:balance;max-width:16ch}
 .dl-hero .btn{background:var(--naranja);color:var(--tinta);min-height:60px;padding:0 34px;font-size:18px;border-radius:18px;margin-top:6px}
 .dl-hero .btn:hover{color:var(--tinta)}
+.dl-btns{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.dl-btns .btn{margin-top:0}
+.dl-hero .btn-w{background:transparent;color:var(--blanco);box-shadow:inset 0 0 0 2px #4A4440}
+.dl-hero .btn-w:hover{color:var(--blanco);box-shadow:inset 0 0 0 2px #8A847D}
 .dl-detect{display:inline-flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:#C9C4BE}
 .dl-detect.on::before{content:'';width:8px;height:8px;border-radius:50%;background:#4ADE80;box-shadow:0 0 0 4px rgba(74,222,128,.18)}
 .dl-meta{display:flex;flex-wrap:wrap;gap:8px}
@@ -269,7 +273,7 @@ td.acts{display:table-cell;margin:0}
   .app-cab{margin-bottom:20px}
   .acc{border-radius:24px}
   .dl-hero{border-radius:26px}
-  .dl-hero .btn{width:100%}
+  .dl-hero .btn,.dl-btns{width:100%}
   .acc-me{flex-direction:column;align-items:stretch}
   .acc-me .acc-actions .btn{width:100%}
   .acc-actions{flex-direction:column;align-items:stretch}
