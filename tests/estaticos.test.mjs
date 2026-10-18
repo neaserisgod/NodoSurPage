@@ -1,7 +1,7 @@
 // Los .js y .css se guardan un año (immutable) porque llevan la huella de su contenido en la dirección. Estas pruebas hacen que
 // NO se pueda olvidar actualizarla: si un archivo cambia y la página sigue con la dirección vieja, falla acá, antes de publicar.
 import assert from 'node:assert/strict';
-import { mkdtempSync, writeFileSync, mkdirSync, readFileSync } from 'node:fs';
+import { mkdtempSync, writeFileSync, mkdirSync, readFileSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { revisar } from '../scripts/versionar-estaticos.mjs';
@@ -46,10 +46,19 @@ await t('la política de contenido no permite scripts en línea y ninguna págin
   }
 });
 await t('los scripts que muestran datos de la base o del servidor (nombres, mails, importes) no arman HTML con ellos', () => {
-  // home.js / main.js / descargar.js usan innerHTML solo con texto fijo del propio archivo (íconos, la animación del titular).
-  for (const js of ['cuenta.js', 'admin.js', 'device.js', 'vincular.js', 'pagar.js', 'unirse.js', 'negocio.js']) {
+  for (const js of ['cuenta.js', 'descargar.js', 'admin.js', 'device.js', 'vincular.js', 'pagar.js', 'unirse.js', 'negocio.js']) {
     const src = readFileSync(new URL(`../${js}`, import.meta.url), 'utf8');
     assert.ok(!/innerHTML|outerHTML|insertAdjacentHTML|document\.write|eval\(/.test(src), `${js}: solo textContent / createElement`);
+  }
+});
+await t('todo archivo que pide una página (fuentes, imágenes, íconos, hojas y scripts) existe', async () => {
+  const { paginas } = await import('../scripts/versionar-estaticos.mjs');
+  const raiz = new URL('..', import.meta.url);
+  for (const pagina of paginas()) {
+    const html = readFileSync(pagina, 'utf8');
+    const pedidos = [...html.matchAll(/<(?:link|script|img|source)\b[^>]*?\s(?:href|src)="(\/[^"?#]*\.[a-z0-9]+)(?:[?#][^"]*)?"/gi)].map((m) => m[1]);
+    for (const m of html.matchAll(/\ssrcset="([^"]+)"/gi)) for (const parte of m[1].split(',')) { const u = parte.trim().split(/\s+/)[0]; if (u.startsWith('/')) pedidos.push(u.split('?')[0]); }
+    for (const u of pedidos) assert.ok(existsSync(new URL('.' + decodeURI(u), raiz)), `${pagina}: pide ${u} y no existe`);
   }
 });
 console.log(`\n${pass} pruebas OK (direcciones con huella)`);
