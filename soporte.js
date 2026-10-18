@@ -53,6 +53,15 @@
     }},
     {siempre:true,si:/\b(factura|facturar|afip|arca|monotributo)\b/,r:function(){return {t:'La factura electrónica está en desarrollo: todavía no se puede facturar desde Nodo Sur.',ch:['¿Qué incluye?']}}},
     {siempre:true,si:/\b(hablar con|una persona|humano|asesor|llamar|telefono)\b/,r:function(){return {t:'Dale, seguí por WhatsApp y te responde una persona.',ac:[whatsapp]}}},
+    {siempre:true,si:/\b(emprend\w*|en (mi )?casa|a domicilio|domicilio|independiente|por mi cuenta|trabajo sola?|soy sola?|solo yo|sola yo|particular)\b/,r:function(){
+      return {t:'¡Sí! Nodo Estudio está pensado justo para eso: si das turnos desde tu casa o a domicilio, te ordena la agenda, cobra las señas por Mercado Pago y el bot de WhatsApp da los turnos solo. No hace falta local ni computadora: anda en el celular (Android o iPhone). Plan Emprendedor, '+pesos(plan('emprendedor').precio)+' por mes, sin alta.',ac:[probar('emprendedor'),demo],ch:['¿Cómo lo pruebo?','¿Anda en iPhone?']};
+    }},
+    {si:/\b(me sirve|sirve para|sirve si|le sirve|para mi negocio|para que sirve)\b/,r:function(){
+      var k=PLAN||'emprendedor';
+      return k==='gastro'?{t:'Si tenés una rotisería o un local de comida para llevar, sí: Nodo Gastro toma los pedidos por WhatsApp con tu carta, pregunta envío o retiro y los cobra. Contame qué vendés y te digo cómo te ayuda.',ac:[probar('gastro')]}
+        :k==='pos'?{t:'Si tenés un kiosco, almacén o comercio, sí: Nodo Gestión te ordena la caja, el stock y la ganancia. Contame qué vendés y te digo cómo te ayuda.',ac:[probar('pos')]}
+        :{t:'Si das turnos (uñas, peluquería, barbería, estética, masajes…), sí: tenés agenda, señas por Mercado Pago y el bot de WhatsApp que da los turnos solo. Contame a qué te dedicás y te digo cómo te ayuda.',ac:[probar('emprendedor'),demo]};
+    }},
     {si:/\b(salon|unas|peluqueria|barberia|barbero|estetica|turnos|agenda)\b/,r:function(){return {t:'Para tu rubro está Nodo Estudio ('+pesos(plan('emprendedor').precio)+' por mes, sin alta): agenda, señas por Mercado Pago, cobro con QR y el bot de WhatsApp que da los turnos solo.',ac:[probar('emprendedor'),demo]}}},
     {si:/\b(rotiseria|rotiserias|comida|comidas|pedidos|delivery|viandas|pizzeria|empanadas|gastronomia|restaurante)\b/,r:function(){return {t:'Para tu local está Nodo Gastro ('+pesos(plan('gastro').precio)+' por mes, con el bot incluido y sin alta): el bot toma los pedidos con tu carta, pregunta envío o retiro y cobra por Mercado Pago.',ac:[probar('gastro')]}}},
     {si:/\b(kiosco|almacen|comercio|negocio|despensa|fiambreria|caja|stock)\b/,r:function(){return {t:'Para tu negocio está Nodo Gestión ('+pesos(plan('pos').precio)+' por mes, sin alta): ventas, cierre de caja, stock, proveedores y ganancia, con app para el celular.',ac:[probar('pos')],ch:['¿Anda en mi PC?','¿Cuánto sale?']}}}

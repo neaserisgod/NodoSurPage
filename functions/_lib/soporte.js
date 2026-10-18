@@ -90,7 +90,8 @@ ${preguntas}`;
 
 const paginaValida = (p) => (typeof p === 'string' && /^\/[\w\-/]{0,80}$/.test(p) ? p : '/');
 
-// La respuesta de la IA: `{ texto, plan, persona }`, o null si no contestó algo usable.
+// La respuesta de la IA: `{ texto, plan, persona }`, o `{ error, status? }` si no contestó algo usable (el estado de Google va en el
+// error para saber qué pasó sin adivinar: nunca trae la clave).
 export async function contestarConIa(env, { mensajes, pagina }) {
   const modelo = typeof env.SOPORTE_MODELO === 'string' && /^[\w.-]{1,64}$/.test(env.SOPORTE_MODELO) ? env.SOPORTE_MODELO : MODELO_SOPORTE;
   const r = await fetch(`${GEMINI}/models/${modelo}:generateContent`, {
@@ -105,19 +106,25 @@ export async function contestarConIa(env, { mensajes, pagina }) {
         responseMimeType: 'application/json',
         responseSchema: {
           type: 'OBJECT',
-          properties: { texto: { type: 'STRING' }, plan: { type: 'STRING', enum: PLANES_SOPORTE }, persona: { type: 'BOOLEAN' } },
+          // Sin `enum`: no todos los modelos lo aceptan en el esquema (con él, Google rechazaba el pedido). El plan se valida acá.
+          properties: { texto: { type: 'STRING' }, plan: { type: 'STRING' }, persona: { type: 'BOOLEAN' } },
           required: ['texto', 'plan', 'persona'],
         },
       },
     }),
   });
-  if (!r.ok) return null;
+  if (!r.ok) {
+    let motivo = '';
+    try { motivo = String((await r.json())?.error?.message || '').slice(0, 200); } catch { /* sin cuerpo */ }
+    console.error('soporte_google', r.status, motivo);
+    return { error: 'google', status: r.status, motivo };
+  }
   let j;
-  try { j = await r.json(); } catch { return null; }
+  try { j = await r.json(); } catch { return { error: 'respuesta_rara' }; }
   const crudo = j?.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('') || '';
   let x;
-  try { x = JSON.parse(crudo); } catch { return null; }
+  try { x = JSON.parse(crudo); } catch { return { error: 'respuesta_rara', fin: j?.candidates?.[0]?.finishReason || null }; }
   const texto = typeof x.texto === 'string' ? x.texto.trim().slice(0, 1200) : '';
-  if (!texto) return null;
+  if (!texto) return { error: 'respuesta_vacia' };
   return { texto, plan: PLANES_SOPORTE.includes(x.plan) && x.plan !== 'ninguno' ? x.plan : null, persona: x.persona === true };
 }
