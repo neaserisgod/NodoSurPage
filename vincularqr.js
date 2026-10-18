@@ -1,4 +1,4 @@
-// /vincular/qr/?p=<pedido>: el QR que muestra Nodo Sur Servicios en la compu, escaneado con la cámara del celular (sin la app).
+// /vincular/qr/?p=<pedido>: el QR que muestra Nodo Estudio en la compu, escaneado con la cámara del celular (sin la app).
 // Con la sesión del sitio se confirma y la compu entra sola (`functions/api/device/qr.js`). Desde la app del celular es lo mismo
 // sin pasar por acá.
 (function () {
@@ -15,7 +15,7 @@
   };
   var vencido = function () { aviso('Este código venció', 'En la compu tocá «Mostrar otro código» y escanealo de nuevo.'); };
   post('/api/device/qr/ver').then(function (r) {
-    if (r.status === 401) { location.replace('/ingresar/?next=' + encodeURIComponent(location.pathname + location.search)); return null; }
+    if (r.status === 401) { location.replace('/api/auth/google?next=' + encodeURIComponent(location.pathname + location.search)); return null; }
     if (r.status === 410) { vencido(); return null; }
     return r.ok ? r.json() : Promise.reject();
   }).then(function (j) {
@@ -23,7 +23,7 @@
     done();
     var c = card('¿Entrar en la compu con tu cuenta?');
     c.appendChild(el('p', 'acc-note', 'Vas a entrar en «' + j.nombre + '» con tu cuenta, en tu negocio. Lo que se haga desde esa compu queda a tu nombre.'));
-    c.appendChild(el('p', 'acc-note', 'Hacelo solo si tenés esa compu adelante y vos abriste Nodo Sur Servicios en ella.'));
+    c.appendChild(el('p', 'acc-note', 'Hacelo solo si tenés esa compu adelante y vos abriste Nodo Estudio en ella.'));
     var msg = el('p', 'login-err'); msg.setAttribute('role', 'alert');
     var acts = el('div', 'acc-actions');
     var ok = el('button', 'btn', 'Entrar'); ok.type = 'button';
