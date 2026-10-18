@@ -22,6 +22,7 @@ import * as deviceWhoami from './functions/api/device/whoami.js';
 import * as deviceAuthorize from './functions/api/device/authorize.js';
 import * as deviceToken from './functions/api/device/token.js';
 import * as deviceGoogle from './functions/api/device/google.js';
+import * as deviceQr from './functions/api/device/qr.js';
 import * as devicePing from './functions/api/device/ping.js';
 import { reintentarAvisos } from './functions/_lib/push.js';
 import * as devicePush from './functions/api/device/push.js';
@@ -72,6 +73,11 @@ const ROUTES = {
   'POST /api/device/token': deviceToken.onRequestPost,
   'GET /api/device/google': deviceGoogle.onRequestGet,
   'POST /api/device/google': deviceGoogle.onRequestPost,
+  // Vincular un equipo con un QR desde el celular (Nodo Sur Servicios de Windows, `functions/api/device/qr.js`).
+  'POST /api/device/qr': deviceQr.onRequestPost,
+  'POST /api/device/qr/estado': deviceQr.onEstado,
+  'POST /api/device/qr/ver': deviceQr.onVer,
+  'POST /api/device/qr/aprobar': deviceQr.onAprobar,
   'POST /api/device/ping': devicePing.onRequestPost,
   'POST /api/device/push': devicePush.onRequestPost,
   'GET /api/device/me': deviceMe.onRequestGet,
