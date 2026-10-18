@@ -48,7 +48,7 @@ await t('nada fuera de la carpeta de la versión: rutas raras, archivos que no e
 await t('rutaSegura y tipoDe', () => {
   assert.equal(rutaSegura(''), 'index.html'); assert.equal(rutaSegura('icons/'), 'icons/index.html'); assert.equal(rutaSegura('assets/fonts/Figtree-Regular.ttf'), 'assets/fonts/Figtree-Regular.ttf');
   for (const r of ['..', 'a/../b', 'a//b', './a', 'a\\b', 'a?b']) assert.equal(rutaSegura(r), null, r);
-  assert.equal(tipoDe('x.wasm'), 'application/wasm'); assert.equal(tipoDe('flutter_bootstrap.js'), 'text/javascript; charset=utf-8'); assert.equal(tipoDe('raro.xyz'), 'application/octet-stream');
+  assert.equal(tipoDe('x.wasm'), 'application/wasm'); assert.equal(tipoDe('flutter_bootstrap.js'), 'text/javascript; charset=utf-8'); assert.equal(tipoDe('raro.xyz'), 'application/octet-stream'); assert.equal(tipoDe('assets/sonidos/pago.wav'), 'audio/wav');
 });
 await t('el worker manda /app/ a la app (no a los archivos del sitio) y el resto sigue igual', async () => {
   const env = await conVersion(); let assets = 0; env.ASSETS = { fetch: async () => { assets++; return new Response('sitio'); } };
