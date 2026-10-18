@@ -294,3 +294,18 @@ td.acts{display:table-cell;margin:0}
   .acc-in>*,.dlg[open]{animation:none}
   .sk{animation:none}
 }
+
+/* administración */
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.kpi{display:flex;flex-direction:column;gap:6px;padding:18px 20px;border-radius:22px;background:var(--piedra)}
+.kpi span{font-size:14px;color:var(--gris)}
+.kpi strong{font-family:var(--tit);font-weight:800;font-size:32px;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums}
+.kpi:first-child{background:var(--tinta);color:var(--blanco)}
+.kpi:first-child span{color:#C9C4BE}
+.sk-kpi{height:84px;border-radius:22px}
+.sim:empty{display:none}
+.sim{display:flex;flex-direction:column;gap:10px}
+.app input[type=number]{min-height:44px;padding:0 10px;border:2px solid var(--linea);border-radius:12px;background:var(--blanco);font-size:15px}
+.adm .tbl table{min-width:640px}
+@media (max-width:760px){.adm .tbl table{min-width:0}}
+.acts .lnk{white-space:nowrap}

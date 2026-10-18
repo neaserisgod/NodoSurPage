@@ -54,9 +54,10 @@ primera persona.
 - **Páginas públicas** (home, Servicios y rubros, POS y variantes, bot, páginas web, guías, Privacidad, 404): `nodo.css`
   + `nodo.js` (aviso "elegí tu sistema", nombre en "Ingresar", barra fija del celular, chat de ejemplo y calculadora;
   todo con `textContent`). Las preguntas visibles coinciden con el `FAQPage` del JSON-LD de cada página.
-- **Páginas de cuenta** (ingresar, pagar, cuenta, negocio, descargar, vincular, unirse): siguen con `styles.css` +
-  `theme.css` + `main.js` (su JS arma las pantallas con esas clases) y encima `cuenta.css`, que les da la apariencia
-  nueva sin tocar la estructura. `/admin/` quedó como estaba.
+- **Páginas de cuenta** (ingresar, pagar, cuenta, negocio, vincular, unirse y `/admin/`; `/descargar/` redirige a
+  `/cuenta/`): `nodo.css` + `app.css` + `nodo.js`, con `<body class="app">`. Cada script arma su pantalla con las clases
+  de siempre (`acc`, `subc`, `pays`, `dl-…`, `kpi`…) y `app.css` las dibuja. Ya no existen `styles.css`, `theme.css`,
+  `cuenta.css`, `main.js`, `fx.js` ni `theme.js`.
 - Plan y maquetas en `mocks/remake/`.
 - **Rendimiento:** las fuentes están recortadas a lo que usa el sitio (`fonts/bricolage-v2.woff2`: peso 600–800 y tamaño
   óptico fijo; `fonts/geist-v2.woff2`: 400–600; solo latín y español), con una fuente de reemplazo de medidas iguales

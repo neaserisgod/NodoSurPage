@@ -128,10 +128,9 @@ await t('páginas /negocio/ y /unirse/: existen, no se indexan y cargan su scrip
     assert.ok(!leer('sitemap.xml').includes(`/${dir}/`), 'fuera del sitemap');
   }
 });
-await t('en /negocio/ y /unirse/ no aparecen ni el botón flotante de WhatsApp ni la barra "Elegí tu sistema" (quien se une a un negocio ya está cubierto)', async () => {
-  const main = leer('main.js');
-  assert.match(main, /\^\\\/\(pagar\|cuenta\|ingresar\|admin\|negocio\|unirse\)/, 'barra "Elegí tu sistema"');
-  assert.ok(main.includes("'/negocio','/unirse'"), 'botón flotante de WhatsApp');
+await t('en las páginas de cuenta no aparecen ni la burbuja de soporte ni la barra "Elegí tu sistema" (quien se une a un negocio ya está cubierto)', async () => {
+  assert.match(leer('nodo.js'), /\^\\\/\(pagar\|cuenta\|ingresar\|admin\|negocio\|unirse\|vincular\|descargar\)/, 'barra "Elegí tu sistema"');
+  assert.match(leer('soporte.js'), /\^\\\/\(pagar\|cuenta\|ingresar\|admin\|negocio\|unirse\|vincular\|descargar\)/, 'burbuja de soporte');
 });
 await t('admin.js: los manejadores de los diálogos se registran al nivel principal (no adentro de otra función, donde nunca se enganchan)', async () => {
   const src = leer('admin.js');
@@ -139,8 +138,12 @@ await t('admin.js: los manejadores de los diálogos se registran al nivel princi
   const dentro = src.slice(src.indexOf('function bajaBtn'), src.indexOf('  var cd = document.getElementById'));
   assert.ok(!dentro.includes('cobro-si'), 'el manejador de «mail de cobro» no puede quedar dentro de bajaBtn');
 });
-await t('las páginas internas no llevan las partículas del resto del sitio (theme.js) y /cuenta/, /vincular/, /admin/ cargan los scripts actualizados', async () => {
-  assert.match(leer('theme.js'), /\(pagar\|cuenta\|ingresar\|vincular\|admin\|descargar\|negocio\|unirse\)/);
-  for (const p of ['cuenta', 'vincular', 'admin']) new vm.Script(leer(p + '.js'), { filename: p + '.js' });
+await t('las páginas de cuenta usan el sistema del sitio (nodo.css + app.css + nodo.js) y sus scripts tienen sintaxis válida', async () => {
+  for (const p of ['ingresar', 'pagar', 'cuenta', 'negocio', 'vincular', 'unirse', 'admin']) {
+    const html = leer(p + '/index.html');
+    for (const f of ['/nodo.css?v=', '/app.css?v=', '/nodo.js?v=']) assert.ok(html.includes(f), `${p}: ${f}`);
+    assert.ok(html.includes('<body class="app">'), p);
+  }
+  for (const p of ['cuenta', 'vincular', 'admin', 'descargar']) new vm.Script(leer(p + '.js'), { filename: p + '.js' });
 });
 console.log(`\n${pass} pruebas OK (negocio, pantallas e integración)`);

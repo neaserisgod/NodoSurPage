@@ -7,7 +7,10 @@
   var ago = function (s) { var d = Math.floor((Date.now() / 1000 - s) / 86400); return d <= 0 ? 'hoy' : d === 1 ? 'ayer' : 'hace ' + d + ' días'; };
   var ST = { authorized: ['Activa', 'ok'], pending: ['Pendiente', 'wait'], paused: ['Pausada', 'wait'], cancelled: ['Cancelada', 'bad'], canceled: ['Cancelada', 'bad'] };
   var HDR = { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' };
-  var PLAN_NAMES = { pos: 'Sistema POS', 'pos-bot': 'Sistema + Bot', bot: 'Solo el bot', emprendedor: 'Emprendedor' };
+  var PLAN_NAMES = { pos: 'Nodo Gestión', 'pos-bot': 'Nodo Gestión + Bot', bot: 'Solo el bot', emprendedor: 'Nodo Estudio', gastro: 'Nodo Gastro' };
+  // Mercado Pago guarda los nombres de siempre; en pantalla, los de ahora.
+  var MP_NAMES = { 'Emprendedor': 'Nodo Estudio', 'Sistema POS': 'Nodo Gestión', 'Sistema + Bot': 'Nodo Gestión + Bot' };
+  var mpName = function (p) { return MP_NAMES[p] || p; };
   var ACTIVE = { authorized: 1, paused: 1, pending: 1 };
   var target = null, bajaTarget = null, cobroTarget = null;
 
@@ -85,7 +88,7 @@
       else cp.appendChild(el('small', null, '—'));
       tr.appendChild(cp);
       var cs = el('td');
-      if (u.subscription) { var st = ST[u.subscription.status] || [u.subscription.status, 'wait']; cs.appendChild(chip(st[0], st[1])); cs.appendChild(document.createTextNode(' ' + u.subscription.plan)); }
+      if (u.subscription) { var st = ST[u.subscription.status] || [u.subscription.status, 'wait']; cs.appendChild(chip(st[0], st[1])); cs.appendChild(document.createTextNode(' ' + mpName(u.subscription.plan))); }
       else cs.appendChild(el('small', null, 'Sin suscripción'));
       tr.appendChild(cs);
       var ce = el('td');
@@ -122,7 +125,7 @@
       if (o.billingEmail && o.billingEmail !== o.ownerEmail) { c2.appendChild(document.createElement('br')); c2.appendChild(el('small', null, 'cobra: ' + o.billingEmail)); }
       tr.appendChild(c2);
       var cs = el('td');
-      if (o.subscription) { var st = ST[o.subscription.status] || [o.subscription.status, 'wait']; cs.appendChild(chip(st[0], st[1])); cs.appendChild(document.createTextNode(' ' + o.subscription.plan)); }
+      if (o.subscription) { var st = ST[o.subscription.status] || [o.subscription.status, 'wait']; cs.appendChild(chip(st[0], st[1])); cs.appendChild(document.createTextNode(' ' + mpName(o.subscription.plan))); }
       else cs.appendChild(el('small', null, 'Sin suscripción'));
       tr.appendChild(cs);
       var ce = el('td'); ce.appendChild(document.createTextNode(String(o.members))); if (o.overSoftCap) { ce.appendChild(document.createTextNode(' ')); ce.appendChild(chip('Pasó el tope', 'wait')); } tr.appendChild(ce);
@@ -139,7 +142,7 @@
       var s2 = el('section', 'acc'); s2.appendChild(el('h2', null, 'Suscriptores sin cuenta en el sitio'));
       s2.appendChild(el('p', 'acc-note', 'Pagaron en Mercado Pago pero todavía no ingresaron con Google (o usaron otro mail).'));
       var ul = el('ul', 'pays');
-      d.subscribersWithoutAccount.forEach(function (x) { var li = el('li'); li.appendChild(el('span', null, x.email)); li.appendChild(el('span', null, x.plan + ' · ' + (x.status || ''))); li.appendChild(el('strong', null, money(x.amount))); if (ACTIVE[x.status]) li.appendChild(bajaBtn(x, x.email)); ul.appendChild(li); });
+      d.subscribersWithoutAccount.forEach(function (x) { var li = el('li'); li.appendChild(el('span', null, x.email)); li.appendChild(el('span', null, mpName(x.plan) + ' · ' + (x.status || ''))); li.appendChild(el('strong', null, money(x.amount))); if (ACTIVE[x.status]) li.appendChild(bajaBtn(x, x.email)); ul.appendChild(li); });
       s2.appendChild(ul); root.appendChild(s2);
     }
 
@@ -212,7 +215,7 @@
     b.addEventListener('click', function () {
       bajaTarget = sub;
       document.getElementById('baja-who').textContent = who;
-      document.getElementById('baja-plan').textContent = sub.plan;
+      document.getElementById('baja-plan').textContent = mpName(sub.plan);
       document.getElementById('baja-err').textContent = '';
       var bd = document.getElementById('baja'); bd.showModal ? bd.showModal() : bd.setAttribute('open', '');
     });

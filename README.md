@@ -158,14 +158,11 @@ Todas (Node 22): `for f in tests/*.test.mjs; do node --experimental-sqlite "$f" 
 Se sacó el 2026-10-13 (El dueño: "eliminemos los precios de fundador"): el sitio cobra siempre el precio de lista. Quedan en la
 base, sin usar, la columna `users.promo_interest` y la fila `promo_fundador` de `settings` (borrarlas no gana nada).
 
-## Rediseño del index (estilo "antigravity")
+## Diseño del sitio
 
-El index usa `home.css` + `home.js` (el resto de las páginas siguen con `styles.css`).
-Para volver a una versión anterior: `git checkout index-pre-antigravity -- index.html` (original) o `index-antigravity-v1` (primera versión del rediseño). Hay que acompañar con `home.css`/`home.js` de ese tag si se usa v1.
-
-Las páginas internas (sistema-pos, bot-whatsapp, guías, ingresar, pagar, 404, etc.) usan `theme.css` + `theme.js` encima de `styles.css`, con `fx.js` (partículas, compartido con el index). Para quitar el tema de esas páginas basta con sacar los `<link>`/`<script>` de `theme.*` y `fx.js`.
-
-Disposición de las páginas de contenido (12 páginas): el HTML se reordenó en bloques `.blk` (título a la izquierda, texto a la derecha, tarjetas `.card2`, pasos `.steps2`, capturas `.halo`, preguntas `<details class="q2">`). El texto es el mismo. Para volver a la disposición anterior de una página: `git checkout <commit anterior a este cambio> -- <pagina>/index.html`.
+Todo el sitio usa `nodo.css` + `nodo.js` (ver `CONTEXTO.md`). Las páginas de cuenta (ingresar, pagar, cuenta, negocio,
+vincular, unirse, admin) suman `app.css` y llevan `<body class="app">`. El diseño anterior (`styles.css`, `theme.css`,
+`home.*`, `fx.js`) se puede ver en el historial de git.
 
 ### Nodo Sur Servicios en el navegador (`/app/`, 2026-10-12)
 
@@ -193,4 +190,4 @@ La app del celular (edición servicios) compilada para web, en `horsepos.com/app
 
 ## Cambiar un .js o .css de las páginas
 
-Los `.js` y `.css` se guardan un año en el navegador (`_headers`, `immutable`) porque su dirección lleva la huella del contenido (`/main.js?v=77beb36bb3`). Si editás uno, **corré `node scripts/versionar-estaticos.mjs`** antes de commitear: actualiza la huella en todas las páginas. Si te olvidás, la prueba `tests/estaticos.test.mjs` falla antes de publicar.
+Los `.js` y `.css` se guardan un año en el navegador (`_headers`, `immutable`) porque su dirección lleva la huella del contenido (`/nodo.js?v=77beb36bb3`). Si editás uno, **corré `node scripts/versionar-estaticos.mjs`** antes de commitear: actualiza la huella en todas las páginas. Si te olvidás, la prueba `tests/estaticos.test.mjs` falla antes de publicar.
