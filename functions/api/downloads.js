@@ -4,7 +4,7 @@ import { downloadAccess } from '../_lib/access.js';
 import { PLATFORMS, hasR2, historyForInstall, latestForInstall } from '../_lib/releases.js';
 import { hasDB } from '../_lib/db.js';
 
-// Qué puede descargar esta persona (lo consulta /descargar/). Nunca expone claves internas del archivo.
+// Qué puede descargar esta persona (lo consulta la descarga de Mi cuenta, `descargar.js`). Nunca expone claves internas del archivo.
 export async function onRequestGet({ request, env }) {
   const cu = await currentUser(request, env);
   if (!cu.session) return json({ error: 'no_session' }, 401);

@@ -2,7 +2,8 @@ import { sign, verify } from './util.js';
 // Versiones del sistema POS (instaladores y actualizaciones). Los archivos viven en R2 (binding RELEASES)
 // y los metadatos en D1. Las tablas se crean solas la primera vez que se publica una versión.
 // android-servicios y windows-servicios: Nodo Sur Servicios (la app de turnos con el bot adentro), aparte de la de almacén.
-export const PLATFORMS = ['windows', 'macos', 'linux', 'android', 'android-servicios', 'windows-servicios'];
+// android-gastronomia y windows-gastronomia: Nodo Gastro (rotisería y comida para llevar, El dueño, 2026-10-16).
+export const PLATFORMS = ['windows', 'macos', 'linux', 'android', 'android-servicios', 'windows-servicios', 'android-gastronomia', 'windows-gastronomia'];
 export const CHANNELS = ['stable', 'beta'];
 export const hasR2 = (env) => Boolean(env.RELEASES);
 

@@ -39,9 +39,34 @@ cubre lo propio del sitio. Los detalles de cada función del servidor están en 
 
 ## Diseño
 
-Mismo lenguaje que el POS: estilo antigravity.google (fondo blanco, bloques `#F3F4F7`, tinta `#121317`, pastillas,
-Figtree, poco texto). Home con `home.css`/`home.js`; páginas internas con `styles.css` + `theme.css`/`theme.js` +
-`fx.js`. Mocks del rediseño en `mocks/antigravity/` (no se publican). Las capturas del POS que muestra el sitio (`img/pos/*-v4.webp`, 2026-10-07) salen del mock v4 de la PC (`Nodo-Sur-Pos/docs/mock-pc/NodoSurPC-v4.html`) y de las capturas reales del celular (`flutter test test/companion/capturas_mock_test.dart`); `/img/*` tiene caché inmutable, así que una imagen nueva lleva nombre nuevo. Detalle en `README.md` ("Rediseño del index").
+**Marca (2026-10-17): una app, tres ediciones** con el bot de WhatsApp adentro. **Nodo Estudio** (servicios con turnos:
+uñas, peluquería, barbería, estética; página `/servicios/`, plan `emprendedor`, $ 18.000), **Nodo Gastro** (rotisería y
+comida para llevar; `/gastro/`, plan `gastro`, $ 18.000 con bot, sin alta) y **Nodo Gestión** (kioscos y almacenes; `/sistema-pos/`,
+planes `pos` / `pos-bot`). La home es la puerta por rubro. Los nombres internos de los planes en Mercado Pago (`mp.js`:
+«Emprendedor», «Sistema POS»…) no cambiaron: de ellos depende qué cuentas tienen el bot. **Nodo Gastro todavía no tiene plan en
+Mercado Pago**: su «probar» va a WhatsApp; cuando el dueño pase el link, va en `functions/_lib/plans.js` (`gastro.href`), el id
+en `PLANS` y `PLANES_CON_BOT` de `mp.js`, y los botones de `/gastro/` y de la home pasan a `/pagar/?plan=gastro`.
+
+**Rediseño 2026-10 (terminado, PR #76 a #80):** estilo claro tipo Apple, Bricolage Grotesque (títulos) + Geist (texto),
+alojadas en `/fonts/`; blanco, piedra `#F5F4F2`, tinta `#1A1714`, gris `#57534E`, naranja `#E4580B` con texto negro
+encima. Protagonista de la home: Nodo Sur Servicios (plan Emprendedor). El sitio habla como Nodo Sur, de "vos" y sin
+primera persona.
+- **Páginas públicas** (home, Servicios y rubros, POS y variantes, bot, páginas web, guías, Privacidad, 404): `nodo.css`
+  + `nodo.js` (aviso "elegí tu sistema", nombre en "Ingresar", barra fija del celular, chat de ejemplo y calculadora;
+  todo con `textContent`). Las preguntas visibles coinciden con el `FAQPage` del JSON-LD de cada página.
+- **Páginas de cuenta** (ingresar, pagar, cuenta, negocio, descargar, vincular, unirse): siguen con `styles.css` +
+  `theme.css` + `main.js` (su JS arma las pantallas con esas clases) y encima `cuenta.css`, que les da la apariencia
+  nueva sin tocar la estructura. `/admin/` quedó como estaba.
+- Plan y maquetas en `mocks/remake/`.
+- **Rendimiento:** las fuentes están recortadas a lo que usa el sitio (`fonts/bricolage-v2.woff2`: peso 600–800 y tamaño
+  óptico fijo; `fonts/geist-v2.woff2`: 400–600; solo latín y español), con una fuente de reemplazo de medidas iguales
+  para que el texto no salte al cargar. Las capturas grandes tienen versión chica (`*-v4-800.webp`, y `*-v4-260.webp`
+  para las del celular) servida con `srcset`. Cada página trae reglas de precarga del navegador
+  (`<script type="speculationrules">`, permitido por `'inline-speculation-rules'` en la CSP): al apuntar o tocar un link
+  público, Chrome deja lista la página siguiente; las de cuenta y pago solo se bajan, no se ejecutan por adelantado.
+  Si se usa un carácter fuera de latín/español, hay que volver a generar las fuentes.
+
+Lo anterior (estilo antigravity.google, Figtree) sobrevive solo como base de las páginas de cuenta y de `/admin/`. Mocks del rediseño en `mocks/antigravity/` (no se publican). Las capturas del POS que muestra el sitio (`img/pos/*-v4.webp`, 2026-10-07) salen del mock v4 de la PC (`Nodo-Sur-Pos/docs/mock-pc/NodoSurPC-v4.html`) y de las capturas reales del celular (`flutter test test/companion/capturas_mock_test.dart`); `/img/*` tiene caché inmutable, así que una imagen nueva lleva nombre nuevo. Detalle en `README.md` ("Rediseño del index").
 
 ## Prueba por autoservicio (2026-10-12)
 
@@ -53,6 +78,12 @@ el alta). Pendiente en Mercado Pago (lo hace el dueño, no se puede desde una se
   poner como URL de retorno `https://horsepos.com/cuenta/`, donde aparece el botón de descarga.
 
 ## Marketing (2026-10-14)
+
+- **Burbuja de ayuda (2026-10-17):** en todas las páginas públicas (`soporte.js`). Contesta lo común con un guión (precio,
+  prueba, dónde anda, bot, cobros, factura) y lo demás con la IA (`/api/soporte`, Gemini con la clave de Nodo Sur
+  `SOPORTE_GEMINI_KEY`), que solo sabe lo que dice el sitio: `functions/_lib/soporte_datos.js`, que se arma con
+  `node scripts/armar-soporte.mjs` desde `llms.txt` y las preguntas de cada página (la prueba avisa si quedó viejo). Lleva
+  a "Probar 7 días gratis" del plan que corresponde a la página; lo que no sabe, a WhatsApp.
 
 - Plan Emprendedor primero, todo el país, $ 0 de publicidad: páginas por rubro (`/app-de-turnos-para-unas|peluqueria|barberia|estetica/`),
   enlazadas desde `/servicios/`, en `sitemap.xml` y `llms.txt`. Repiten solo lo que ya promete `/servicios/`.

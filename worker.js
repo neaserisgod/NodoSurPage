@@ -33,6 +33,7 @@ import * as mpConexion from './functions/api/mp/conexion.js';
 import * as mpOrden from './functions/api/mp/orden.js';
 import * as mpWebhook from './functions/api/mp/webhook.js';
 import * as ia from './functions/api/ia.js';
+import * as soporte from './functions/api/soporte.js';
 import * as bot from './functions/api/bot.js';
 import * as devices from './functions/api/devices.js';
 import * as backup from './functions/api/backup.js';
@@ -132,14 +133,19 @@ const ROUTES = {
   'GET /api/ia/estado': ia.onRequestGet,
   'POST /api/ia/clave': ia.onRequestClave,
   'POST /api/ia/generar': ia.onRequestGenerar,
+  'POST /api/soporte': soporte.onRequestPost,
   'GET /api/bot/estado': bot.onRequestEstado,
   'GET /api/bot/config': bot.onRequestConfigGet,
   'POST /api/bot/config': bot.onRequestConfigPost,
   'GET /api/bot/catalogo': bot.onRequestCatalogoGet,
   'POST /api/bot/catalogo': bot.onRequestCatalogoPost,
+  'GET /api/bot/catalogo-wa': bot.onRequestCatalogoWaGet,
+  'POST /api/bot/catalogo-wa': bot.onRequestCatalogoWaPost,
+  'POST /api/bot/catalogo-wa/pedir': bot.onRequestCatalogoWaPedir,
   'POST /api/bot/pedido': bot.onRequestPedidoPost,
   'GET /api/bot/pedidos': bot.onRequestPedidosGet,
   'POST /api/bot/pedido/resolver': bot.onRequestResolver,
+  'POST /api/bot/pedido/estado': bot.onRequestEstadoPedido,
   'POST /api/bot/turno': bot.onRequestTurnoPost,
   'POST /api/bot/turno/cambio': bot.onRequestTurnoCambio,
   'POST /api/bot/ocupados': bot.onRequestOcupadosPost,
@@ -169,6 +175,8 @@ export default {
     if (url.pathname === '/app' || url.pathname.startsWith('/app/')) return servirApp(request, env);
     // La demo: la misma app, sin cuenta y con datos de ejemplo.
     if (url.pathname === '/demo' || url.pathname.startsWith('/demo/')) return servirDemo(request, env);
+    // Las descargas viven en Mi cuenta (2026-10-16): /descargar/ queda como atajo para los enlaces viejos (la app, mails, favoritos).
+    if (url.pathname === '/descargar' || url.pathname === '/descargar/') return Response.redirect(`${url.origin}/cuenta/${url.search}`, 302);
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
 
     // El feed de actualizaciones apunta a /api/update/file/<nombre>.exe?id=N: WinSparkle guarda el instalador con el

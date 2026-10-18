@@ -7,7 +7,7 @@ import * as conexion from '../functions/api/mp/conexion.js';
 import * as orden from '../functions/api/mp/orden.js';
 import * as bot from '../functions/api/bot.js';
 import { procesarAvisoMp } from '../functions/_lib/mp_avisos.js';
-import { idCajaQr, referenciaSena } from '../functions/_lib/mp_servicios.js';
+import { idCajaQr, referenciaSena, referenciaPedido } from '../functions/_lib/mp_servicios.js';
 import { mkEnv, addUser, sess, req, web, mp, mpSub, mockMP, nowS } from './helpers-nube.mjs';
 
 let pass = 0; const t = async (n, f) => { await f(); pass++; console.log('ok  ', n); };
@@ -165,6 +165,55 @@ await t('devolver la seña es de dueño y encargado: un empleado no puede, y el 
   assert.equal((await post(orden.onRequestDevolverSena, env, '/api/mp/sena/devolver', { turnoId: 'turno-sena-0005' }, robot)).status, 401);
   assert.equal((await post(orden.onRequestPost, env, '/api/mp/orden', { externalReference: 'v-1', idempotencyKey: 'clave-0001', montoCentavos: 10000, canal: 'qr' }, robot)).status, 401);
   assert.deepEqual(m.devoluciones, [], 'nadie devolvió nada');
+});
+
+// --- Pago de un pedido por link (Nodo Gastro) ---
+const PEDIDO_MP = {
+  id: 'wa-pedido-mp-0001', cliente: { nombre: 'Caro', telefono: '5492944333333' },
+  items: [{ gid: 'g-mila', nombre: 'Milanesa con papas', cantidad: 2, precioCentavos: 650000 }],
+  entrega: { forma: 'CADETE', direccion: 'Mitre 100', zona: 'Centro', costoEnvioCentavos: 150000 }, pago: 'mp', horaEstimada: Date.now() + H,
+};
+const pedidosDeLaApp = async (env, app) => (await (await bot.onRequestPedidosGet({ request: req('/api/bot/pedidos?desde=0', { headers: app }), env })).json()).pedidos;
+
+await t('pedido por Mercado Pago: el bot recibe el link por el total con envío y el local no lo ve hasta que se paga', async () => {
+  const { env, m, app, robot } = await armar();
+  const r = await post(bot.onRequestPedidoPost, env, '/api/bot/pedido', PEDIDO_MP, robot);
+  assert.equal(r.status, 201);
+  const j = await r.json();
+  assert.equal(j.estado, 'esperando_pago');
+  assert.match(j.pago.url, /^https:\/\/www\.mercadopago\.com\.ar\//);
+  const pref = m.llamadas.find((x) => x.path === '/checkout/preferences').cuerpo;
+  assert.equal(pref.items[0].unit_price, 14500, 'dos milanesas y el envío');
+  assert.equal(pref.external_reference, referenciaPedido(j.id));
+  assert.equal((await pedidosDeLaApp(env, app))[0].estado, 'esperando_pago');
+  const otra = await (await post(bot.onRequestPedidoPost, env, '/api/bot/pedido', PEDIDO_MP, robot)).json();
+  assert.equal(otra.pago.url, j.pago.url, 'reintentar da el mismo link');
+
+  m.pagos['88001'] = { id: 88001, status: 'approved', transaction_amount: 14500, external_reference: referenciaPedido(j.id), collector_id: CUENTA };
+  assert.ok(!(await procesarAvisoMp(env, { tema: 'payment', id: '88001', userId: CUENTA })).ignorado);
+  const p = (await pedidosDeLaApp(env, app))[0];
+  assert.equal(p.estado, 'por_confirmar'); assert.equal(p.pago, 'mp'); assert.equal(p.pagoMp.centavos, 1450000);
+  assert.equal(env.DB.raw.prepare('SELECT COUNT(*) AS n FROM mp_avisos').get().n, 0, 'no queda como "cobro sin venta"');
+  await procesarAvisoMp(env, { tema: 'payment', id: '88001', userId: CUENTA });
+  assert.equal((await pedidosDeLaApp(env, app))[0].estado, 'por_confirmar');
+});
+
+await t('pedido por Mercado Pago sin Mercado Pago conectado: entra igual, para pagar al recibir', async () => {
+  const { env, app, robot } = await armar({ conectar: false });
+  const j = await (await post(bot.onRequestPedidoPost, env, '/api/bot/pedido', { ...PEDIDO_MP, id: 'wa-pedido-mp-0002' }, robot)).json();
+  assert.equal(j.pago, undefined); assert.equal(j.estado, 'por_confirmar'); assert.equal(j.formaPago, 'al_entregar');
+  const p = (await pedidosDeLaApp(env, app))[0];
+  assert.equal(p.estado, 'por_confirmar'); assert.equal(p.pago, 'al_entregar');
+});
+
+await t('la configuración que baja el bot de un local gastronómico dice si hay Mercado Pago; la de la app no', async () => {
+  const { env, app, robot } = await armar();
+  const config = { negocio: { nombre: 'Lo de Juan', rubro: 'rotiseria' }, numero_actual: '5492944111111', numero_duena: '5492944222222', pedidos: { retiro: true } };
+  assert.equal((await post(bot.onRequestConfigPost, env, '/api/bot/config', { config }, app)).status, 200);
+  const delBot = await (await bot.onRequestConfigGet({ request: req('/api/bot/config', { headers: robot }), env })).json();
+  assert.equal(delBot.config.pedidos.mp, true);
+  const deLaApp = await (await bot.onRequestConfigGet({ request: req('/api/bot/config', { headers: app }), env })).json();
+  assert.equal(deLaApp.config.pedidos.mp, undefined);
 });
 
 console.log(`${pass} pruebas de Mercado Pago para servicios OK`);

@@ -23,7 +23,18 @@ export const MAX_CATALOGO_ITEMS = 5000;
 export const MAX_ITEMS_PEDIDO = 50;
 export const MAX_PEDIDOS_LISTA = 200;
 export const VIDA_PEDIDO = 30 * 24 * 3600; // un pedido viejo (resuelto o no) se borra a los 30 días
-export const ESTADOS_PEDIDO = ['por_confirmar', 'aceptado', 'rechazado'];
+// `esperando_pago`: eligió pagar por Mercado Pago y el link todavía no se pagó; la app no lo ve hasta que se acredita
+// (`pedidoPagado`, `mp_servicios.js`), y ahí pasa a "por confirmar" con el pago hecho.
+export const ESTADOS_PEDIDO = ['esperando_pago', 'por_confirmar', 'aceptado', 'rechazado', 'listo', 'en_camino', 'entregado', 'cancelado'];
+// Locales gastronómicos (Nodo Gastro, Nodo-Sur-Pos `REGLAS-NEGOCIO.md` §22): después de aceptado, el pedido avanza y el bot le avisa
+// al cliente. A dónde puede pasar cada uno (lo terminado no cambia más).
+export const PASOS_PEDIDO = {
+  aceptado: ['listo', 'en_camino', 'entregado', 'cancelado'],
+  listo: ['en_camino', 'entregado', 'cancelado'],
+  en_camino: ['entregado'],
+};
+export const FORMAS_ENTREGA = ['RETIRO', 'CADETE', 'REPARTO'];
+export const PAGOS_PEDIDO = ['al_entregar', 'mp', 'alias'];
 export const MAX_GRAMOS_ITEM = 50000;
 // Un equipo que no pidió los pedidos en este tiempo ya no cuenta para saber si la sucursal entiende gramos.
 export const LECTOR_VIGENTE = 30 * 24 * 3600;
@@ -38,6 +49,10 @@ const DDL = [
   `CREATE TABLE IF NOT EXISTS bot_pedidos (id INTEGER PRIMARY KEY AUTOINCREMENT, org_id INTEGER NOT NULL, branch_id INTEGER NOT NULL,
      pedido_id TEXT NOT NULL, estado TEXT NOT NULL, datos_enc TEXT NOT NULL, creado INTEGER NOT NULL, actualizado INTEGER NOT NULL,
      resuelto_por TEXT, UNIQUE (org_id, branch_id, pedido_id))`,
+  // El catálogo de WhatsApp Business del local tal como lo leyó el bot, para que la app traiga a su carta lo que el local cargó
+  // allá (Nodo Gastro; el otro sentido, la carta copiada a WhatsApp, lo hace el bot solo).
+  `CREATE TABLE IF NOT EXISTS bot_catalogo_wa (org_id INTEGER NOT NULL, branch_id INTEGER NOT NULL, datos_enc TEXT NOT NULL,
+     items INTEGER NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY (org_id, branch_id))`,
   `CREATE INDEX IF NOT EXISTS idx_bot_pedidos_cambio ON bot_pedidos(org_id, branch_id, actualizado)`,
   // Qué equipos de la app leen los pedidos y si entienden gramos (`?gramos=1`, ver `pedidoConGramosPermitido`). `visto` en segundos.
   `CREATE TABLE IF NOT EXISTS bot_lectores (device_id TEXT PRIMARY KEY, org_id INTEGER NOT NULL, branch_id INTEGER NOT NULL,
@@ -130,6 +145,42 @@ export async function leerCatalogo(env, orgId, branchId) {
   return f ? { items: await descifrarJson(env, f.datos_enc), actualizado: f.updated_at } : { items: [], actualizado: null };
 }
 
+// --- Catálogo de WhatsApp Business (lo lee el bot, lo trae la app) -------------------------------------------------------------
+export const MAX_CATALOGO_WA = 1000;
+
+// `[{ waId, retailerId, nombre, descripcion, precioCentavos, oculto }]`: lo que hace falta para crear el plato en la app y saber
+// si ya es uno de la carta (`retailerId` = `ns-<global_id>` si lo puso el bot).
+export function itemsDeCatalogoWa(items) {
+  if (!Array.isArray(items) || items.length > MAX_CATALOGO_WA) return null;
+  const limpios = [];
+  for (const x of items) {
+    if (!x || typeof x !== 'object') return null;
+    const { waId, retailerId, nombre, descripcion, precioCentavos, oculto } = x;
+    if (typeof waId !== 'string' || !/^[\w-]{1,64}$/.test(waId)) return null;
+    if (retailerId != null && (typeof retailerId !== 'string' || retailerId.length > 100)) return null;
+    if (typeof nombre !== 'string' || !nombre.trim() || nombre.length > 200) return null;
+    if (descripcion != null && (typeof descripcion !== 'string' || descripcion.length > 1000)) return null;
+    if (!Number.isSafeInteger(precioCentavos) || precioCentavos < 0) return null;
+    limpios.push({ waId, retailerId: retailerId || null, nombre: nombre.trim().slice(0, 120), descripcion: (descripcion || '').trim().slice(0, 500),
+      precioCentavos, oculto: oculto === true });
+  }
+  return limpios;
+}
+
+export async function guardarCatalogoWa(env, orgId, branchId, items, t = now()) {
+  await ensureBotTables(env);
+  await env.DB.prepare(
+    `INSERT INTO bot_catalogo_wa (org_id, branch_id, datos_enc, items, updated_at) VALUES (?1, ?2, ?3, ?4, ?5)
+     ON CONFLICT(org_id, branch_id) DO UPDATE SET datos_enc = ?3, items = ?4, updated_at = ?5`
+  ).bind(orgId, branchId, await cifrarJson(env, items), items.length, t).run();
+}
+
+export async function leerCatalogoWa(env, orgId, branchId) {
+  await ensureBotTables(env);
+  const f = await env.DB.prepare('SELECT datos_enc, updated_at FROM bot_catalogo_wa WHERE org_id = ?1 AND branch_id = ?2').bind(orgId, branchId).first();
+  return f ? { items: await descifrarJson(env, f.datos_enc), actualizado: f.updated_at } : { items: [], actualizado: null };
+}
+
 // --- Pedidos -------------------------------------------------------------------------------------------------------------------
 export const pedidoIdValido = (s) => typeof s === 'string' && /^[A-Za-z0-9_-]{8,64}$/.test(s);
 
@@ -158,24 +209,65 @@ export function pedidoDesdeBot(b) {
       ...(x.precioCentavos !== undefined ? { precioCentavos: x.precioCentavos } : {}) });
   }
   if (b.nota !== undefined && (typeof b.nota !== 'string' || b.nota.length > 300)) return null;
-  return { pedidoId: b.id, datos: { cliente: { nombre: c.nombre.trim(), telefono: c.telefono }, items, ...(b.nota && b.nota.trim() ? { nota: b.nota.trim() } : {}) } };
+  // Lo de un local gastronómico (§22), todo opcional: el bot de un almacén no lo manda.
+  let entrega = null;
+  if (b.entrega !== undefined) {
+    const e = b.entrega;
+    if (!e || typeof e !== 'object' || !FORMAS_ENTREGA.includes(e.forma)) return null;
+    const envio = e.forma !== 'RETIRO';
+    if (envio && (typeof e.direccion !== 'string' || !e.direccion.trim() || e.direccion.length > 160)) return null;
+    if (envio && (typeof e.zona !== 'string' || !e.zona.trim() || e.zona.length > 60)) return null;
+    if (e.costoEnvioCentavos !== undefined && (!Number.isInteger(e.costoEnvioCentavos) || e.costoEnvioCentavos < 0 || e.costoEnvioCentavos > 1e9)) return null;
+    entrega = { forma: e.forma, ...(envio ? { direccion: e.direccion.trim(), zona: e.zona.trim(), costoEnvioCentavos: e.costoEnvioCentavos ?? 0 } : {}) };
+  }
+  if (b.pago !== undefined && !PAGOS_PEDIDO.includes(b.pago)) return null;
+  if (b.horaEstimada !== undefined && (!Number.isSafeInteger(b.horaEstimada) || b.horaEstimada < 0)) return null;
+  if (b.programado !== undefined && typeof b.programado !== 'boolean') return null;
+  return { pedidoId: b.id, datos: { cliente: { nombre: c.nombre.trim(), telefono: c.telefono }, items, ...(b.nota && b.nota.trim() ? { nota: b.nota.trim() } : {}),
+    ...(entrega ? { entrega } : {}), ...(b.pago ? { pago: b.pago } : {}),
+    ...(b.horaEstimada !== undefined ? { horaEstimada: b.horaEstimada } : {}), ...(b.programado ? { programado: true } : {}) } };
 }
 
-// Inserta el pedido "por confirmar". Si el bot reintenta con el mismo id, devuelve el que ya estaba (`repetido`).
+// Lo que paga el cliente: cada línea con su precio (lo pesable con el precio por kilo, redondeado como el bot) más el envío.
+export function totalPedidoCentavos(datos) {
+  let total = 0;
+  for (const x of datos.items) {
+    const p = x.precioCentavos ?? 0;
+    total += x.gramos !== undefined ? Math.floor((p * x.gramos + 500) / 1000) : p * x.cantidad;
+  }
+  return total + (datos.entrega?.costoEnvioCentavos ?? 0);
+}
+
+// Inserta el pedido "por confirmar" (o "esperando el pago", si paga por Mercado Pago). Si el bot reintenta con el mismo id, devuelve
+// el que ya estaba (`repetido`) con su estado.
 export async function crearPedido(env, orgId, branchId, { pedidoId, datos }, tMs = Date.now()) {
   await ensureBotTables(env);
+  const estado = datos.pago === 'mp' ? 'esperando_pago' : 'por_confirmar';
   const r = await env.DB.prepare(
-    `INSERT INTO bot_pedidos (org_id, branch_id, pedido_id, estado, datos_enc, creado, actualizado) VALUES (?1, ?2, ?3, 'por_confirmar', ?4, ?5, ?5)
+    `INSERT INTO bot_pedidos (org_id, branch_id, pedido_id, estado, datos_enc, creado, actualizado) VALUES (?1, ?2, ?3, ?6, ?4, ?5, ?5)
      ON CONFLICT(org_id, branch_id, pedido_id) DO NOTHING`
-  ).bind(orgId, branchId, pedidoId, await cifrarJson(env, datos), tMs).run();
+  ).bind(orgId, branchId, pedidoId, await cifrarJson(env, datos), tMs, estado).run();
   if (!r.meta.changes) {
-    const ya = await env.DB.prepare('SELECT id FROM bot_pedidos WHERE org_id = ?1 AND branch_id = ?2 AND pedido_id = ?3').bind(orgId, branchId, pedidoId).first();
-    return { id: ya.id, repetido: true };
+    const ya = await env.DB.prepare('SELECT id, estado FROM bot_pedidos WHERE org_id = ?1 AND branch_id = ?2 AND pedido_id = ?3').bind(orgId, branchId, pedidoId).first();
+    return { id: ya.id, estado: ya.estado, repetido: true };
   }
   // Limpieza oportunista: lo de más de 30 días ya no le sirve a nadie (y tiene datos de clientes).
   await env.DB.prepare('DELETE FROM bot_pedidos WHERE org_id = ?1 AND branch_id = ?2 AND creado < ?3').bind(orgId, branchId, tMs - VIDA_PEDIDO * 1000).run();
-  return { id: Number(r.meta.last_row_id), repetido: false };
+  return { id: Number(r.meta.last_row_id), estado, repetido: false };
 }
+
+// Sin link de Mercado Pago (el negocio no lo conectó, o Mercado Pago no contestó): el pedido entra igual, para pagar al recibir.
+export async function pedidoSinLink(env, orgId, branchId, id, tMs = Date.now()) {
+  const f = await env.DB.prepare("SELECT datos_enc FROM bot_pedidos WHERE id = ?1 AND org_id = ?2 AND branch_id = ?3 AND estado = 'esperando_pago'").bind(id, orgId, branchId).first();
+  if (!f) return false;
+  const datos = { ...(await descifrarJson(env, f.datos_enc)), pago: 'al_entregar' };
+  const r = await env.DB.prepare(
+    "UPDATE bot_pedidos SET estado = 'por_confirmar', datos_enc = ?4, actualizado = MAX(?5, actualizado + 1) WHERE id = ?1 AND org_id = ?2 AND branch_id = ?3 AND estado = 'esperando_pago'"
+  ).bind(id, orgId, branchId, await cifrarJson(env, datos), tMs).run();
+  return r.meta.changes > 0;
+}
+
+export { cifrarJson, descifrarJson };
 
 const pedidoPublico = async (env, f) => ({ id: f.id, pedidoId: f.pedido_id, estado: f.estado, ...(await descifrarJson(env, f.datos_enc)), creado: f.creado, actualizado: f.actualizado });
 
@@ -222,6 +314,20 @@ export async function resolverPedido(env, orgId, branchId, { id, estado, por }, 
   if (r.meta.changes) return { ok: true };
   const f = await env.DB.prepare('SELECT estado FROM bot_pedidos WHERE id = ?1 AND org_id = ?2 AND branch_id = ?3').bind(id, orgId, branchId).first();
   return f ? { error: 'ya_resuelto', estado: f.estado } : { error: 'no_existe' };
+}
+
+// Un pedido aceptado avanza (§22): listo, en camino, entregado o cancelado, solo por los pasos de [PASOS_PEDIDO]. Mismo cuidado que
+// resolver: dos equipos tocando a la vez no lo mueven dos veces (el UPDATE pide el estado de antes).
+export async function avanzarPedidoBot(env, orgId, branchId, { id, estado }, tMs = Date.now()) {
+  await ensureBotTables(env);
+  const f = await env.DB.prepare('SELECT estado FROM bot_pedidos WHERE id = ?1 AND org_id = ?2 AND branch_id = ?3').bind(id, orgId, branchId).first();
+  if (!f) return { error: 'no_existe' };
+  if (f.estado === estado) return { ok: true, repetido: true };
+  if (!(PASOS_PEDIDO[f.estado] || []).includes(estado)) return { error: 'paso_invalido', estado: f.estado };
+  const r = await env.DB.prepare(
+    'UPDATE bot_pedidos SET estado = ?4, actualizado = MAX(?5, actualizado + 1) WHERE id = ?1 AND org_id = ?2 AND branch_id = ?3 AND estado = ?6'
+  ).bind(id, orgId, branchId, estado, tMs, f.estado).run();
+  return r.meta.changes ? { ok: true } : { error: 'paso_invalido', estado: f.estado };
 }
 
 // --- Avisos en vivo ------------------------------------------------------------------------------------------------------------

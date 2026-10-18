@@ -13,18 +13,18 @@ export async function onRequestGet({ request, env }) {
   const site = siteUrl(env);
   const q = new URL(request.url).searchParams;
   const platform = q.get('platform');
-  if (!PLATFORMS.includes(platform)) return go(`${site}/descargar/`);
+  if (!PLATFORMS.includes(platform)) return go(`${site}/cuenta/`);
 
   const cu = await currentUser(request, env);
-  if (!cu.session || cu.gone) return go(`${site}/ingresar/`);
+  if (!cu.session || cu.gone) return go(`${site}/api/auth/google`); // directo a Google; vuelve a Mi cuenta, donde está la descarga
   const acc = await downloadAccess(env, cu);
-  if (!acc.ok) return go(`${site}/descargar/?e=${acc.reason}`);
+  if (!acc.ok) return go(`${site}/cuenta/?e=${acc.reason}`);
 
   const channel = q.get('channel') === 'beta' && acc.privileged ? 'beta' : 'stable';
-  if (!hasDB(env) || !hasR2(env)) return go(`${site}/descargar/?e=no_disponible`);
+  if (!hasDB(env) || !hasR2(env)) return go(`${site}/cuenta/?e=no_disponible`);
   const version = q.get('version');
   const rel = version && acc.privileged ? await exactForInstall(env, platform, channel, version) : await latestForInstall(env, platform, channel);
-  if (!rel) return go(`${site}/descargar/?e=no_disponible`);
+  if (!rel) return go(`${site}/cuenta/?e=no_disponible`);
 
   // Se registra solo el inicio de la descarga (no los pedidos parciales de continuación).
   if (cu.user && !request.headers.get('Range')) await logDownload(env, cu.user.id, rel.id, now()).catch(() => {});

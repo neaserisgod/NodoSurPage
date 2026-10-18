@@ -29,9 +29,10 @@
 <link rel="icon" type="image/png" href="/favicon-48.png" sizes="48x48">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="preload" href="/fonts/figtree-0.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/styles.css?v=5f9e0be703">
-<link rel="stylesheet" href="/theme.css?v=1f77ec543e">
+<link rel="preload" href="/fonts/bricolage-v2.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/geist-v2.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/img/pos/vender-v4.webp" as="image" fetchpriority="high" imagesrcset="/img/pos/vender-v4-800.webp 800w, /img/pos/vender-v4.webp 1600w" imagesizes="(max-width:760px) calc(100vw - 40px), (max-width:1200px) calc(100vw - 64px), 1136px">
+<link rel="stylesheet" href="/nodo.css?v=5ec96c364b">
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -132,7 +133,7 @@
      "name": "¿Emite factura electrónica?",
      "acceptedAnswer": {
       "@type": "Answer",
-      "text": "Todavía no: está en desarrollo. Si la necesitás, avisame y te escribo apenas esté lista. Consultá con tu contador qué necesita tu comercio."
+      "text": "Todavía no: está en desarrollo. Si la necesitás, avisanos y te escribimos apenas esté lista. Consultá con tu contador qué necesita tu comercio."
      }
     },
     {
@@ -148,26 +149,165 @@
  ]
 }
 </script>
+<script type="speculationrules">{"prerender":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/api/*","/app","/app/*","/demo","/demo/*","/admin/*","/cuenta/*","/negocio/*","/vincular/*","/unirse/*","/descargar/*","/ingresar/*","/pagar/*"]}},{"not":{"selector_matches":"[rel~=nofollow],[target=_blank]"}}]},"eagerness":"moderate"}],"prefetch":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/api/*","/app","/app/*","/demo","/demo/*","/admin/*"]}}]},"eagerness":"moderate"}]}</script>
 </head>
 <body>
-<a class="skip" href="#contenido">Ir al contenido</a>
-<div class="page">
-<header class="px"><nav class="nav" aria-label="Principal"><a href="/" class="logo" aria-label="Nodo Sur, inicio"><svg class="mark" width="42" height="42" viewBox="0 0 96 96" aria-hidden="true"><rect width="96" height="96" rx="22" fill="#121317"/><path fill="#fff" d="M28.5 62.0V40.0H33.9L34.2 42.9Q36.4 39.4 40.6 39.4Q44.6 39.4 46.7 41.8Q48.9 44.2 48.8 49.5V62.0H43.0V50.7Q43.0 47.4 41.9 46.2Q40.8 44.9 38.9 44.9Q36.7 44.8 35.5 46.3Q34.3 47.7 34.3 50.4V62.0Z M60.2 62.5Q57.0 62.5 54.5 61.1Q52.0 59.7 50.8 57.0L55.7 54.7Q56.4 55.8 57.5 56.6Q58.7 57.3 60.2 57.3Q63.2 57.3 63.2 55.7Q63.2 54.9 62.6 54.5Q61.9 54.2 60.8 53.9L58.8 53.4Q55.6 52.5 53.8 50.7Q52.0 48.9 52.0 46.5Q52.0 43.1 54.2 41.3Q56.4 39.4 60.4 39.4Q62.4 39.4 64.2 40.0Q66.0 40.7 67.3 41.8Q68.5 42.9 69.0 44.3L64.2 46.5Q63.9 45.6 62.7 45.1Q61.5 44.5 60.4 44.5Q59.2 44.5 58.5 45.0Q57.9 45.5 57.9 46.4Q57.9 47.5 60.3 48.0L63.1 48.7Q65.3 49.2 66.6 50.4Q67.9 51.6 68.5 53.0Q69.1 54.4 69.1 55.8Q69.1 57.8 67.9 59.3Q66.7 60.8 64.7 61.6Q62.7 62.5 60.2 62.5Z"/><circle cx="73" cy="30" r="5" fill="#fff"/></svg><span class="wm">nodo sur</span></a><ul class="links"><li><a class="l" href="/sistema-pos/">Sistema POS</a></li><li><a class="l" href="/bot-whatsapp/">Bot de WhatsApp</a></li><li><a class="l" href="/servicios/">Servicios</a></li><li><a class="l" href="/paginas-web/">Páginas web</a></li><li><a class="l" href="/#precios">Precios</a></li></ul><div class="nav-r"><a class="login" href="/ingresar/">Ingresar</a><a class="cta" href="/pagar/"><span>Probar gratis</span></a><details class="mnav"><summary aria-label="Abrir menú"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary><div class="mpanel"><a href="/sistema-pos/">Sistema POS</a><a href="/bot-whatsapp/">Bot de WhatsApp</a><a href="/servicios/">Servicios</a><a href="/paginas-web/">Páginas web</a><a href="/#precios">Precios</a><a class="mp-login" href="/ingresar/">Ingresar</a></div></details></div></nav></header>
-<main id="contenido">
-<nav class="crumbs px" aria-label="Migas de pan"><ol><li><a href="/">Inicio</a></li><li aria-current="page">Sistema de ventas para kioscos</li></ol></nav><section class="ph px"><h1>Sistema de ventas para kioscos: cobrá rápido y cerrá la caja sin errores</h1><p class="lead">Un sistema de ventas simple para kioscos, en tu compu: registrás cada venta en un toque, ves cuánto entró por efectivo y por Mercado Pago, y cerrás la caja sin calculadora.</p><div class="ctas"><a class="btn" href="/pagar/?plan=pos">Probar 7 días gratis</a><a class="btn btn-w" href="/#precios">Ver precios</a></div><ul class="chips trust-in" aria-label="Por qué Nodo Sur"><li>Hecho por un almacenero de Bariloche</li><li>Funciona sin internet</li><li>Te ayudo a instalarlo</li><li>7 días gratis</li><li>Soporte a distancia incluido</li></ul></section><section class="px body-sec"><div class="blks"><section class="blk"><div class="blk-h"><h2>Qué necesita un sistema de ventas para un kiosco</h2></div><div class="blk-r"><p>En un kiosco se venden muchas cosas baratas, una atrás de otra, y casi siempre atiende una sola persona. Por eso un <strong>sistema de ventas para kioscos</strong> tiene que ser rápido: buscar el producto, tocarlo y cobrar, sin menús escondidos ni pantallas de más.</p></div><div class="blk-r"><p>El <a href="/sistema-pos/">sistema POS de Nodo Sur</a> está hecho para eso. Los números son grandes, los colores significan siempre lo mismo y los botones se tocan fácil, incluso con el mostrador lleno.</p></div></section><section class="blk"><div class="blk-h"><h2>Así se ve</h2></div><div class="halos blk-w"><figure class="halo"><img alt="Pantalla Vender pensada para kioscos" decoding="async" height="900" loading="lazy" src="/img/pos/vender-v4.webp" width="1600"/><figcaption>Vender: buscás, tocás y cobrás.</figcaption></figure><figure class="halo"><img alt="Cierre de caja con la diferencia en vivo" decoding="async" height="900" loading="lazy" src="/img/pos/cierre-v4.webp" width="1600"/><figcaption>Cierre de caja: lo que tiene que haber contra lo que contaste.</figcaption></figure><p class="nota-img" role="note"><svg aria-hidden="true" fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="18"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg><span>Las imágenes son de orientación, con datos de ejemplo: el sistema evoluciona todos los días y puede verse distinto.</span></p></div></section><section class="blk"><div class="blk-h"><h2>Cómo se vende en un toque</h2></div><div class="blk-r"><p>Buscás el producto por nombre o código, lo tocás y cobrás. <strong>Efectivo</strong> y <strong>Mercado Pago</strong> tienen cada uno su color, así al final del día sabés cuánto entró por cada medio y el cierre no se mezcla. Ejemplo: una cerveza lata × 2, un pan francés de 0,5 kg y un alfajor triple suman $ 8.800.</p></div></section><section class="blk"><div class="blk-h"><h2>Cierre de caja sin errores</h2></div><div class="blk-r"><p>Contás la plata al cerrar, la escribís y el sistema compara contra lo que debería haber. Si esperaba $ 361.100 y contaste $ 360.600, te marca la diferencia de $ 500 en rojo. Queda guardado un <strong>historial de cierres</strong> para ver qué días no cuadraron.</p></div></section><section class="blk"><div class="blk-h"><h2>Stock, precios y ganancia</h2></div><div class="blk-r"><ul>
-<li><strong>Stock:</strong> contás y ves qué te falta antes de quedarte sin mercadería.</li>
-<li><strong>Precios:</strong> te avisa cuando un proveedor te subió un producto, antes de que se coma tu margen.</li>
-<li><strong>Ganancia:</strong> ves cuánto ganaste en el día y cuánta plata separar para cada proveedor.</li>
-<li><strong>Carga por Excel:</strong> pasás tu planilla de productos y queda listo, sin cargar uno por uno.</li>
-</ul></div><div class="blk-w"><p class="callout">Los montos y las imágenes de esta página son de ejemplo y sirven de orientación: el sistema evoluciona todos los días y puede verse distinto.</p></div></section><section class="blk"><div class="blk-h"><h2>Quién está detrás</h2></div><div class="blk-r"><p>Tengo un almacén en Bariloche y armé este sistema porque lo necesitaba: cobrar, controlar el stock y cerrar la caja sin planillas ni cuadernos. Lo uso todos los días en mi negocio y lo mejoro con lo que pasa en el mostrador. Si tenés una duda, me escribís y te contesto yo. <a href="/#quien">Conocé la historia →</a></p></div></section><section class="blk"><div class="blk-h"><h2>Precio</h2></div><div class="blk-r"><p><strong>$ 35.000 por mes</strong>, <strong>sin costo de alta</strong> (la instalación y la carga de tus productos están incluidas). Probás 7 días antes de pagar y, una vez que pagás, tenés 30 días para pedir la devolución. <a href="/#precios">Ver todos los precios</a>.</p></div></section><section class="blk"><div class="blk-h"><h2>Preguntas frecuentes</h2></div><div class="faq2 blk-r"><details class="q2"><summary><h3>¿Sirve para un kiosco chico donde atiende una sola persona?</h3></summary><p>Sí. Está pensado para comercios chicos: pocas pantallas, números grandes y botones fáciles de tocar, para cobrar rápido aunque haya gente esperando.</p></details><details class="q2"><summary><h3>¿Puedo registrar cobros con Mercado Pago?</h3></summary><p>Sí, cada venta queda registrada como efectivo o Mercado Pago, con su color, y el cierre de caja separa lo que entró por cada medio.</p></details><details class="q2"><summary><h3>¿Funciona si se corta internet?</h3></summary><p>Sí. Seguís vendiendo igual y todo se pone al día cuando vuelve la conexión. Tus datos están en tu compu.</p></details><details class="q2"><summary><h3>¿Emite factura electrónica?</h3></summary><p>Todavía no: está en desarrollo. Si la necesitás, avisame y te escribo apenas esté lista. Consultá con tu contador qué necesita tu comercio.</p></details><details class="q2"><summary><h3>¿Cuánto cuesta un sistema de ventas para kiosco?</h3></summary><p>$ 35.000 por mes, sin costo de alta: la instalación y la carga de tus productos están incluidas. Tenés 7 días de prueba.</p></details></div></section></div></section>
-<section class="px body-sec"><h2 style="margin-bottom:20px">Seguí leyendo</h2><div class="rel"><a href="/sistema-pos/"><strong>Sistema POS completo</strong><span>Todo lo que hace el sistema de caja.</span></a><a href="/sistema-para-almacen-control-de-stock/"><strong>Sistema para almacén y stock</strong><span>Control de stock, proveedores y precios.</span></a><a href="/como-elegir-sistema-pos-kiosco-almacen/"><strong>Cómo elegir un sistema POS</strong><span>Checklist de 10 puntos antes de contratar.</span></a><a href="/como-hacer-cierre-de-caja-kiosco/"><strong>Cómo hacer el cierre de caja</strong><span>Método paso a paso para no perder plata.</span></a></div></section>
-<section class="px" style="padding-bottom:clamp(40px,4.6vw,96px)"><div class="cta-b"><h2>Probá el sistema POS 7 días, sin compromiso.</h2><p>Hoy pagás $ 0 y lo usás con tus productos y tus ventas reales. Si querés, te ayudo a instalarlo.</p><div class="cta-r"><a class="btn" href="/pagar/?plan=pos">Probar 7 días gratis</a><a class="ig" href="https://wa.me/5492944796044?text=Hola%2C%20quiero%20probar%20el%20sistema" rel="noopener">¿Dudas? Escribime por WhatsApp</a></div></div></section>
-</main>
-<footer class="px foot"><div class="col" style="gap:10px"><a href="/" class="logo" aria-label="Nodo Sur, inicio"><svg class="mark" width="32" height="32" viewBox="0 0 96 96" aria-hidden="true"><rect width="96" height="96" rx="22" fill="#121317"/><path fill="#fff" d="M28.5 62.0V40.0H33.9L34.2 42.9Q36.4 39.4 40.6 39.4Q44.6 39.4 46.7 41.8Q48.9 44.2 48.8 49.5V62.0H43.0V50.7Q43.0 47.4 41.9 46.2Q40.8 44.9 38.9 44.9Q36.7 44.8 35.5 46.3Q34.3 47.7 34.3 50.4V62.0Z M60.2 62.5Q57.0 62.5 54.5 61.1Q52.0 59.7 50.8 57.0L55.7 54.7Q56.4 55.8 57.5 56.6Q58.7 57.3 60.2 57.3Q63.2 57.3 63.2 55.7Q63.2 54.9 62.6 54.5Q61.9 54.2 60.8 53.9L58.8 53.4Q55.6 52.5 53.8 50.7Q52.0 48.9 52.0 46.5Q52.0 43.1 54.2 41.3Q56.4 39.4 60.4 39.4Q62.4 39.4 64.2 40.0Q66.0 40.7 67.3 41.8Q68.5 42.9 69.0 44.3L64.2 46.5Q63.9 45.6 62.7 45.1Q61.5 44.5 60.4 44.5Q59.2 44.5 58.5 45.0Q57.9 45.5 57.9 46.4Q57.9 47.5 60.3 48.0L63.1 48.7Q65.3 49.2 66.6 50.4Q67.9 51.6 68.5 53.0Q69.1 54.4 69.1 55.8Q69.1 57.8 67.9 59.3Q66.7 60.8 64.7 61.6Q62.7 62.5 60.2 62.5Z"/><circle cx="73" cy="30" r="5" fill="#fff"/></svg><span class="wm">nodo sur</span></a><p>Bariloche, Río Negro · <a href="https://instagram.com/nodosur.brc" rel="me noopener">@nodosur.brc</a> · <a href="https://share.google/mzbvDvXmyokkR4JWK" rel="noopener">Nodo Sur en Google</a></p></div><nav aria-label="Secciones del sitio"><ul><li><a href="/sistema-pos/">Sistema POS</a></li><li><a href="/bot-whatsapp/">Bot de WhatsApp</a></li><li><a href="/servicios/">Servicios</a></li><li><a href="/diferencias-sistema-pos-y-bot-whatsapp/">Diferencias</a></li><li><a href="/como-elegir-sistema-pos-kiosco-almacen/">Guía para elegir</a></li><li><a href="/como-hacer-cierre-de-caja-kiosco/">Cierre de caja</a></li><li><a href="/como-calcular-margen-de-ganancia-almacen/">Margen de ganancia</a></li><li><a href="/como-controlar-el-stock-de-un-kiosco/">Control de stock</a></li><li><a href="/sistema-de-ventas-para-kioscos/">Ventas para kioscos</a></li><li><a href="/sistema-para-almacen-control-de-stock/">Sistema para almacén</a></li><li><a href="/sistema-pos-bariloche/">POS en Bariloche</a></li><li><a href="/paginas-web/">Páginas web</a></li><li><a href="/#precios">Precios</a></li><li><a href="/pagar/">Probar gratis</a></li><li><a href="/#contacto">Contacto</a></li></ul></nav></footer>
-<div class="wordmark" aria-hidden="true">Nodo Sur</div>
+<a class="saltar" href="#inicio">Ir al contenido</a>
+
+<header class="hd">
+<div class="wrap">
+<a href="/" class="logo" aria-label="Nodo Sur, inicio">
+<svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="12.5" r="9" fill="none" stroke="#1A1714" stroke-width="3"/><circle cx="15" cy="22" r="5" fill="#E4580B"/></svg>
+<span>nodo sur</span>
+</a>
+<nav class="nav" aria-label="Principal">
+<a href="/servicios/">Nodo Estudio</a>
+<a href="/gastro/">Nodo Gastro</a>
+<a href="/sistema-pos/" aria-current="page">Nodo Gestión</a>
+<a href="/paginas-web/">Páginas web</a>
+</nav>
+<div class="hd-der">
+<a class="ingresar" href="/ingresar/">Ingresar</a>
+<a class="btn btn-d btn-c" href="/pagar/?plan=pos">Probar gratis</a>
+<details class="menu">
+<summary aria-label="Menú"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6h14M3 14h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></summary>
+<nav class="menu-p" aria-label="Menú">
+<a href="/servicios/">Nodo Estudio</a>
+<a href="/gastro/">Nodo Gastro</a>
+<a href="/sistema-pos/" aria-current="page">Nodo Gestión</a>
+<a href="/paginas-web/">Páginas web</a>
+<a class="ingresar" href="/ingresar/">Ingresar</a>
+</nav>
+</details>
 </div>
-<script src="/main.js?v=afe7f82520" defer></script>
-<script src="/fx.js?v=7f1f9fdbe0" defer></script>
-<script src="/theme.js?v=238bf0affd" defer></script>
+</div>
+</header>
+
+<main id="inicio">
+<nav class="migas wrap" aria-label="Estás en"><ol><li><a href="/">Inicio</a></li><li><span aria-current="page">Sistema de ventas para kioscos</span></li></ol></nav>
+
+<section class="wrap hero-int hero-texto">
+<h1 class="tit t-h1">Sistema de ventas para kioscos: cobrá rápido y cerrá la caja sin errores</h1>
+<p class="bajada">Un sistema de ventas simple para kioscos, en tu compu: registrás cada venta en un toque, ves cuánto entró por efectivo y por Mercado Pago, y cerrás la caja sin calculadora.</p>
+<div class="acciones" style="margin-top:30px" data-sin-barra>
+<a class="btn btn-a btn-g" href="/pagar/?plan=pos">Probar 7 días gratis</a>
+<a class="link" href="/pagar/">Ver precios</a>
+</div>
+<ul class="hechos"><li>Hecho por un almacenero de Bariloche</li><li>Funciona sin internet</li><li>Te ayudamos a instalarlo</li></ul>
+<figure class="pantalla rev"><img src="/img/pos/vender-v4.webp" srcset="/img/pos/vender-v4-800.webp 800w, /img/pos/vender-v4.webp 1600w" sizes="(max-width:760px) calc(100vw - 40px), (max-width:1200px) calc(100vw - 64px), 1136px" width="1600" height="900" alt="Pantalla de venta: buscás el producto, lo tocás y cobrás" fetchpriority="high"></figure>
+</section>
+
+<section id="b-1" class="wrap sec sec-t" aria-labelledby="t-2">
+<div class="cols arriba">
+<div class="c-ch"><h2 id="t-2" class="tit t-m rev">Qué necesita un sistema de ventas para un kiosco</h2></div>
+<div class="c-gr prosa">
+<p>En un kiosco se venden muchas cosas baratas, una atrás de otra, y casi siempre atiende una sola persona. Por eso un <strong>sistema de ventas para kioscos</strong> tiene que ser rápido: buscar el producto, tocarlo y cobrar, sin menús escondidos ni pantallas de más.</p>
+<p>El <a href="/sistema-pos/">sistema POS de Nodo Sur</a> está hecho para eso. Los números son grandes, los colores significan siempre lo mismo y los botones se tocan fácil, incluso con el mostrador lleno.</p>
+</div>
+</div>
+</section>
+
+<section id="b-3" class="wrap sec" aria-labelledby="t-4">
+<h2 id="t-4" class="tit t-m rev">Así se ve</h2>
+
+<div class="capturas">
+<figure class="captura"><img alt="Cierre de caja con la diferencia en vivo" decoding="async" height="900" loading="lazy" src="/img/pos/cierre-v4.webp" srcset="/img/pos/cierre-v4-800.webp 800w, /img/pos/cierre-v4.webp 1600w" sizes="(max-width:760px) calc(100vw - 68px), 380px" width="1600"/><figcaption>Cierre de caja: lo que tiene que haber contra lo que contaste.</figcaption></figure>
+<p class="nota capturas-nota"><svg aria-hidden="true" fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewbox="0 0 24 24" width="18"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg><span>Las imágenes son de orientación, con datos de ejemplo: el sistema evoluciona todos los días y puede verse distinto.</span></p>
+</div>
+</section>
+
+<section id="b-5" class="wrap sec sec-t" aria-labelledby="t-6">
+<div class="cols arriba">
+<div class="c-ch"><h2 id="t-6" class="tit t-m rev">Cómo se vende en un toque</h2></div>
+<div class="c-gr prosa">
+<p>Buscás el producto por nombre o código, lo tocás y cobrás. <strong>Efectivo</strong> y <strong>Mercado Pago</strong> tienen cada uno su color, así al final del día sabés cuánto entró por cada medio y el cierre no se mezcla. Ejemplo: una cerveza lata × 2, un pan francés de 0,5 kg y un alfajor triple suman $ 8.800.</p>
+</div>
+</div>
+</section>
+
+<section id="b-7" class="wrap sec sec-t" aria-labelledby="t-8">
+<div class="cols arriba">
+<div class="c-ch"><h2 id="t-8" class="tit t-m rev">Cierre de caja sin errores</h2></div>
+<div class="c-gr prosa">
+<p>Contás la plata al cerrar, la escribís y el sistema compara contra lo que debería haber. Si esperaba $ 361.100 y contaste $ 360.600, te marca la diferencia de $ 500 en rojo. Queda guardado un <strong>historial de cierres</strong> para ver qué días no cuadraron.</p>
+</div>
+</div>
+</section>
+
+<section id="b-9" class="wrap sec" aria-labelledby="t-10">
+<h2 id="t-10" class="tit t-m rev">Stock, precios y ganancia</h2>
+<div class="prosa intro"><ul class="lista lista-c"><li><strong>Stock:</strong> contás y ves qué te falta antes de quedarte sin mercadería.</li><li><strong>Precios:</strong> te avisa cuando un proveedor te subió un producto, antes de que se coma tu margen.</li><li><strong>Ganancia:</strong> ves cuánto ganaste en el día y cuánta plata separar para cada proveedor.</li><li><strong>Carga por Excel:</strong> pasás tu planilla de productos y queda listo, sin cargar uno por uno.</li></ul></div>
+
+</section>
+
+<section id="b-11" class="wrap sec sec-t" aria-labelledby="t-12">
+<div class="cols arriba">
+<div class="c-ch"><h2 id="t-12" class="tit t-m rev">Precio</h2></div>
+<div class="c-gr prosa">
+<p><strong>$ 35.000 por mes</strong>, <strong>sin costo de alta</strong> (la instalación y la carga de tus productos están incluidas). Probás 7 días antes de pagar y, una vez que pagás, tenés 30 días para pedir la devolución. <a href="/pagar/">Ver todos los precios</a>.</p>
+</div>
+</div>
+</section>
+
+<section id="preguntas" class="wrap cols arriba sec" aria-labelledby="t-14">
+<div class="c-ch">
+<h2 id="t-14" class="tit t-m rev">Preguntas frecuentes</h2>
+<p class="gris" style="margin-top:14px">¿Otra duda? <a class="link" href="https://wa.me/5492944796044">Escribinos por WhatsApp</a>.</p>
+</div>
+<div class="c-gr faq">
+<details><summary>¿Sirve para un kiosco chico donde atiende una sola persona?<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="#1A1714" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></summary><p>Sí. Está pensado para comercios chicos: pocas pantallas, números grandes y botones fáciles de tocar, para cobrar rápido aunque haya gente esperando.</p></details>
+<details><summary>¿Puedo registrar cobros con Mercado Pago?<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="#1A1714" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></summary><p>Sí, cada venta queda registrada como efectivo o Mercado Pago, con su color, y el cierre de caja separa lo que entró por cada medio.</p></details>
+<details><summary>¿Funciona si se corta internet?<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="#1A1714" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></summary><p>Sí. Seguís vendiendo igual y todo se pone al día cuando vuelve la conexión. Tus datos están en tu compu.</p></details>
+<details><summary>¿Emite factura electrónica?<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="#1A1714" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></summary><p>Todavía no: está en desarrollo. Si la necesitás, avisanos y te escribimos apenas esté lista. Consultá con tu contador qué necesita tu comercio.</p></details>
+<details><summary>¿Cuánto cuesta un sistema de ventas para kiosco?<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="#1A1714" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></summary><p>$ 35.000 por mes, sin costo de alta: la instalación y la carga de tus productos están incluidas. Tenés 7 días de prueba.</p></details>
+</div>
+</section>
+
+<section class="wrap sec-c" aria-labelledby="t-seguir">
+<h2 id="t-seguir" class="tit t-s">Seguí leyendo</h2>
+<div class="rels">
+<a class="rel" href="/sistema-pos/"><b class="tit">Sistema POS completo</b><span>Todo lo que hace el sistema de caja.</span></a>
+<a class="rel" href="/sistema-para-almacen-control-de-stock/"><b class="tit">Sistema para almacén y stock</b><span>Control de stock, proveedores y precios.</span></a>
+<a class="rel" href="/como-elegir-sistema-pos-kiosco-almacen/"><b class="tit">Cómo elegir un sistema POS</b><span>Checklist de 10 puntos antes de contratar.</span></a>
+</div>
+</section>
+
+<section class="wrap cols cierre" aria-labelledby="t-fin">
+<div style="flex:1 1 560px">
+<h2 id="t-fin" class="tit t-l rev">Probá Nodo Gestión 7 días, sin compromiso.</h2>
+<p class="bajada" style="margin-top:22px">Hoy pagás $ 0 y lo usás con tus productos y tus ventas reales. Si querés, te ayudamos a instalarlo.</p>
+</div>
+<div class="acc" data-sin-barra>
+<a class="btn btn-d btn-g btn-f" href="/pagar/?plan=pos">Probar 7 días gratis</a>
+<a class="btn btn-f btn-sub" href="https://wa.me/5492944796044?text=Hola%2C%20quiero%20probar%20el%20sistema" rel="noopener">¿Dudas? Escribinos por WhatsApp</a>
+</div>
+</section>
+</main>
+
+<footer class="pie">
+<div class="wrap">
+<nav aria-label="Secciones del sitio">
+<a href="/servicios/">Nodo Estudio</a>
+<a href="/gastro/">Nodo Gastro</a>
+<a href="/sistema-pos/">Nodo Gestión</a>
+<a href="/bot-whatsapp/">Bot de WhatsApp</a>
+<a href="/paginas-web/">Páginas web</a>
+<a href="/como-elegir-sistema-pos-kiosco-almacen/">Guías</a>
+<a href="https://instagram.com/nodosur.brc" rel="me noopener">Instagram</a>
+<a href="/privacidad/">Privacidad</a>
+</nav>
+<span>Hecho en Bariloche</span>
+</div>
+</footer>
+
+<div class="barra">
+<nav aria-label="Acción rápida">
+<div class="txt"><b>7 días gratis</b><span>Hoy pagás $&nbsp;0</span></div>
+<a class="btn btn-a" href="/pagar/?plan=pos">Probar gratis</a>
+</nav>
+</div>
+
+<script src="/nodo.js?v=6af8546708" defer></script>
+<script src="/soporte.js?v=96654a9637" defer></script>
 </body>
 </html>

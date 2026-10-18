@@ -37,6 +37,8 @@ await t('la política de contenido no permite scripts en línea y ninguna págin
     for (const m of html.matchAll(/<script\b([^>]*)>/gi)) {
       const attrs = m[1];
       if (/\bsrc=/.test(attrs) || /type="application\/ld\+json"/.test(attrs)) continue;
+      // reglas de precarga del navegador: son datos (JSON), no se ejecutan; la política las permite con 'inline-speculation-rules'
+      if (/type="speculationrules"/.test(attrs) && /'inline-speculation-rules'/.test(scriptSrc)) continue;
       assert.fail(`${pagina}: <script> en línea que la política de contenido bloquearía: <script${attrs}>`);
     }
     assert.ok(!/\son(click|load|error|submit|change|input)\s*=/i.test(html), `${pagina}: manejador de evento en línea (onclick=...) bloqueado por la política de contenido`);

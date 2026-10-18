@@ -19,7 +19,7 @@
 <meta property="og:image" content="https://horsepos.com/og.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="Nodo Sur Servicios: app de turnos con bot de WhatsApp">
+<meta property="og:image:alt" content="Nodo Estudio: app de turnos con bot de WhatsApp">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="App de turnos para barbería, con bot de WhatsApp y cobro con QR | Nodo Sur">
 <meta name="twitter:description" content="Agenda de turnos para barberías: el bot de WhatsApp da los turnos solo, cobrás con QR o efectivo y anotás la propina. $ 18.000 por mes, sin alta. 7 días gratis.">
@@ -29,9 +29,12 @@
 <link rel="icon" type="image/png" href="/favicon-48.png" sizes="48x48">
 <link rel="apple-touch-icon" href="/apple-touch-icon.png">
 <link rel="manifest" href="/site.webmanifest">
-<link rel="preload" href="/fonts/figtree-0.woff2" as="font" type="font/woff2" crossorigin>
-<link rel="stylesheet" href="/styles.css?v=5f9e0be703">
-<link rel="stylesheet" href="/theme.css?v=1f77ec543e">
+<link rel="preload" href="/fonts/bricolage-v2.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/geist-v2.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/bricolage-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/fonts/geist-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="/img/servicios/agenda-v1.webp" as="image" fetchpriority="high">
+<link rel="stylesheet" href="/nodo.css?v=5ec96c364b">
 <script type="application/ld+json">
 {
  "@context": "https://schema.org",
@@ -86,7 +89,7 @@
   {
    "@type": "SoftwareApplication",
    "@id": "https://horsepos.com/servicios/#software",
-   "name": "Nodo Sur Servicios",
+   "name": "Nodo Estudio",
    "applicationCategory": "BusinessApplication",
    "operatingSystem": "Android, iOS, Windows, macOS (en iPhone y en la compu, desde el navegador)",
    "provider": {
@@ -100,7 +103,7 @@
      "@type": "Country",
      "name": "AR"
     },
-    "description": "Plan Emprendedor: abono mensual, sin costo de alta."
+    "description": "Nodo Estudio: abono mensual, sin costo de alta."
    }
   },
   {
@@ -135,7 +138,7 @@
      "name": "¿Cuánto cuesta?",
      "acceptedAnswer": {
       "@type": "Answer",
-      "text": "$ 18.000 por mes (plan Emprendedor), sin costo de alta, con 7 días de prueba. Se paga por Mercado Pago y la das de baja cuando quieras."
+      "text": "$ 18.000 por mes (Nodo Estudio), sin costo de alta, con 7 días de prueba. Se paga por Mercado Pago y la das de baja cuando quieras."
      }
     }
    ]
@@ -143,50 +146,190 @@
  ]
 }
 </script>
+<script type="speculationrules">{"prerender":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/api/*","/app","/app/*","/demo","/demo/*","/admin/*","/cuenta/*","/negocio/*","/vincular/*","/unirse/*","/descargar/*","/ingresar/*","/pagar/*"]}},{"not":{"selector_matches":"[rel~=nofollow],[target=_blank]"}}]},"eagerness":"moderate"}],"prefetch":[{"where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/api/*","/app","/app/*","/demo","/demo/*","/admin/*"]}}]},"eagerness":"moderate"}]}</script>
 </head>
 <body>
-<a class="skip" href="#contenido">Ir al contenido</a>
-<div class="page">
-<header class="px"><nav class="nav" aria-label="Principal"><a href="/" class="logo" aria-label="Nodo Sur, inicio"><svg class="mark" width="42" height="42" viewBox="0 0 96 96" aria-hidden="true"><rect width="96" height="96" rx="22" fill="#121317"/><path fill="#fff" d="M28.5 62.0V40.0H33.9L34.2 42.9Q36.4 39.4 40.6 39.4Q44.6 39.4 46.7 41.8Q48.9 44.2 48.8 49.5V62.0H43.0V50.7Q43.0 47.4 41.9 46.2Q40.8 44.9 38.9 44.9Q36.7 44.8 35.5 46.3Q34.3 47.7 34.3 50.4V62.0Z M60.2 62.5Q57.0 62.5 54.5 61.1Q52.0 59.7 50.8 57.0L55.7 54.7Q56.4 55.8 57.5 56.6Q58.7 57.3 60.2 57.3Q63.2 57.3 63.2 55.7Q63.2 54.9 62.6 54.5Q61.9 54.2 60.8 53.9L58.8 53.4Q55.6 52.5 53.8 50.7Q52.0 48.9 52.0 46.5Q52.0 43.1 54.2 41.3Q56.4 39.4 60.4 39.4Q62.4 39.4 64.2 40.0Q66.0 40.7 67.3 41.8Q68.5 42.9 69.0 44.3L64.2 46.5Q63.9 45.6 62.7 45.1Q61.5 44.5 60.4 44.5Q59.2 44.5 58.5 45.0Q57.9 45.5 57.9 46.4Q57.9 47.5 60.3 48.0L63.1 48.7Q65.3 49.2 66.6 50.4Q67.9 51.6 68.5 53.0Q69.1 54.4 69.1 55.8Q69.1 57.8 67.9 59.3Q66.7 60.8 64.7 61.6Q62.7 62.5 60.2 62.5Z"/><circle cx="73" cy="30" r="5" fill="#fff"/></svg><span class="wm">nodo sur</span></a><ul class="links"><li><a class="l" href="/sistema-pos/">Sistema POS</a></li><li><a class="l" href="/bot-whatsapp/">Bot de WhatsApp</a></li><li><a class="l" href="/servicios/">Servicios</a></li><li><a class="l" href="/paginas-web/">Páginas web</a></li><li><a class="l" href="/#precios">Precios</a></li></ul><div class="nav-r"><a class="login" href="/ingresar/">Ingresar</a><a class="cta" href="/pagar/"><span>Probar gratis</span></a><details class="mnav"><summary aria-label="Abrir menú"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h16"/></svg></summary><div class="mpanel"><a href="/sistema-pos/">Sistema POS</a><a href="/bot-whatsapp/">Bot de WhatsApp</a><a href="/servicios/">Servicios</a><a href="/paginas-web/">Páginas web</a><a href="/#precios">Precios</a><a class="mp-login" href="/ingresar/">Ingresar</a></div></details></div></nav></header>
-<main id="contenido">
-<nav class="crumbs px" aria-label="Migas de pan"><ol><li><a href="/">Inicio</a></li><li><a href="/servicios/">Servicios</a></li><li aria-current="page">Turnos para barbería</li></ol></nav>
-<section class="ph px"><h1>App de turnos para barbería: el bot da los turnos, vos seguís cortando</h1><p class="lead">En una barbería los turnos son cortos y el WhatsApp suena todo el día. <strong>Nodo Sur Servicios</strong> contesta por vos, reserva el horario y al terminar cobrás con QR o en efectivo, con la propina anotada. Anda en <strong>Android, iPhone y compu</strong>.</p>
-<div class="ctas"><a class="btn" href="/pagar/?plan=emprendedor">Probar 7 días gratis</a><a class="btn btn-w" href="/demo/">Ver la demo</a></div>
-<ul class="chips trust-in" aria-label="Por qué Nodo Sur Servicios"><li>Para barberías</li><li>Cobro con QR</li><li>Android, iPhone y compu</li><li>Tu WhatsApp de siempre</li><li>$ 18.000 por mes, sin alta</li></ul></section>
-<section class="px body-sec"><div class="blks">
-<section class="blk"><div class="blk-h"><h2>Lo que te resuelve</h2></div><div class="cards blk-w">
-<article class="card2"><h3>Atender el celular entre corte y corte</h3><p>El bot contesta, ofrece los próximos horarios libres y reserva el turno. Vos ves la agenda del día y los huecos libres de un vistazo.</p></article>
-<article class="card2"><h3>El que entra sin turno</h3><p>Lo sumás a mano en dos toques o le das un sobreturno; el bot no ofrece ese horario a nadie más.</p></article>
-<article class="card2"><h3>Los que no aparecen</h3><p>Marcás que no vino. Si querés, pedís seña en los servicios que más tiempo ocupan, como corte y barba.</p></article>
-<article class="card2"><h3>La caja al final del día</h3><p>Abrís y cerrás el día, anotás gastos y ves cuánto entró en efectivo y cuánto por Mercado Pago, con las propinas aparte.</p></article>
-</div></section>
-<section class="blk"><div class="blk-h"><h2>Así se ve</h2></div><div class="halos blk-w"><div class="halo halo-ph"><div class="phones"><figure class="phone"><img alt="Agenda del día en Nodo Sur Servicios: turnos por hora, huecos libres y cuántas esperan la seña" decoding="async" height="1126" loading="lazy" src="/img/servicios/agenda-v1.webp" width="520"></figure><figure class="phone"><img alt="Lista de servicios con su precio, lo que cuestan los insumos y cuánto ganás con cada uno" decoding="async" height="1126" loading="lazy" src="/img/servicios/servicios-v1.webp" width="520"></figure></div></div><p class="nota-img" role="note"><svg aria-hidden="true" fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" viewBox="0 0 24 24" width="18"><circle cx="12" cy="12" r="9"></circle><path d="M12 11v5M12 8h.01"></path></svg><span>Las imágenes son de orientación, con datos de ejemplo: la app evoluciona todos los días y puede verse distinta.</span></p></div></section>
-<section class="blk"><div class="blk-h"><h2>Un turno por WhatsApp</h2></div><div class="chat-box blk-w"><div aria-label="Ejemplo de conversación con el bot de Barbería El Puerto" class="chat" role="group" style="max-width:520px;margin:0 auto"><div class="chat-h"><b aria-hidden="true">B</b><div><strong>Barbería El Puerto</strong><small>Asistente de WhatsApp</small></div></div>
-<div class="m in">Buenas, hay lugar hoy para corte y barba?</div>
-<div class="m out">¡Buenas! Hoy tengo libre a las 18:00 y a las 19:30. ¿Te sirve alguno?</div>
-<div class="m in">18</div>
-<div class="m out">Listo, te guardo hoy a las 18:00 para corte y barba 💈 Cualquier cosa avisame por acá.</div>
-<div class="m out">¡Te esperamos!</div>
-<div class="alert"><small>Te avisa a vos</small><strong>Turno nuevo · hoy 18:00 · Corte y barba</strong></div><div class="cap">Conversación de ejemplo</div></div></div></section>
-<section class="blk"><div class="blk-h"><h2>Tus servicios, con su precio y su costo</h2></div><div class="blk-r"><p>Corte, corte y barba, perfilado de barba, fade, color, cejas: cada uno con su duración y su precio. En la <a href="/demo/">demo</a> ya hay un negocio de barbería cargado para que la pruebes sin cuenta.</p></div></section>
-<section class="blk"><div class="blk-h"><h2>Qué necesitás</h2></div><div class="blk-r"><ul>
-<li>Para la agenda, la caja y los servicios: <strong>cualquier celular, iPhone o compu</strong>. En Android se instala la app; en iPhone y en la compu se usa desde el navegador, en <a href="/app/">horsepos.com/app/</a>, con los mismos datos.</li>
-<li>Para el bot de WhatsApp: un <strong>celular Android</strong> prendido, que puede ser uno del negocio.</li>
-<li>El <strong>WhatsApp del negocio</strong>: el bot se vincula como un dispositivo más, igual que WhatsApp Web.</li>
-<li><strong>Mercado Pago</strong>, si querés cobrar señas por link y cobrar con QR. Sin Mercado Pago, la seña se pide por alias.</li>
-<li>Funciona en <strong>todo el país</strong>: la instalás vos desde el celular, sin visitas ni técnicos.</li>
-</ul></div></section>
-<section class="blk"><div class="blk-h"><h2>Precio</h2></div><div class="blk-r"><p><strong>Plan Emprendedor: $ 18.000 por mes</strong>, sin costo de alta. Incluye la app, la agenda, las señas, el cobro con QR y el bot de WhatsApp. Probás <strong>7 días gratis</strong> y la das de baja cuando quieras. <a href="/pagar/?plan=emprendedor">Empezar la prueba</a> · <a href="/servicios/">Todo sobre Nodo Sur Servicios</a></p></div></section>
-<section class="blk"><div class="blk-h"><h2>Preguntas frecuentes</h2></div><div class="faq2 blk-r"><details class="q2"><summary><h3>¿Tengo que pedir seña sí o sí?</h3></summary><p>No. La seña es opcional y la elegís por servicio: podés no pedirla nunca, o pedirla solo en los servicios largos.</p></details><details class="q2"><summary><h3>¿Cómo cobro con QR?</h3></summary><p>Al terminar, la app muestra un QR en la pantalla que el cliente paga con cualquier billetera o banco. Necesitás tu cuenta de Mercado Pago.</p></details><details class="q2"><summary><h3>¿Anda en iPhone y en la compu?</h3></summary><p>Sí. La agenda, la caja y los servicios se abren en el navegador de cualquier iPhone, compu o tablet, en horsepos.com/app/, con tu cuenta y los mismos datos que el celular. Lo único que necesita un Android es el bot de WhatsApp, porque corre en un celular prendido (puede ser uno del negocio).</p></details><details class="q2"><summary><h3>¿Cuánto cuesta?</h3></summary><p>$ 18.000 por mes (plan Emprendedor), sin costo de alta, con 7 días de prueba. Se paga por Mercado Pago y la das de baja cuando quieras.</p></details></div></section>
-</div></section>
-<section class="px body-sec"><h2 style="margin-bottom:20px">Seguí leyendo</h2><div class="rel"><a href="/servicios/"><strong>Nodo Sur Servicios</strong><span>Todo lo que hace la app.</span></a><a href="/app-de-turnos-para-unas/"><strong>Turnos para uñas</strong><span>Para manicuras y salones de uñas.</span></a><a href="/app-de-turnos-para-peluqueria/"><strong>Turnos para peluquería</strong><span>Para peluquerías.</span></a><a href="/app-de-turnos-para-estetica/"><strong>Turnos para estética</strong><span>Para estética, depilación y masajes.</span></a></div></section>
-<section class="px" style="padding-bottom:clamp(40px,4.6vw,96px)"><div class="cta-b"><h2>Probá Nodo Sur Servicios 7 días.</h2><p>Hoy pagás $ 0. Cargás tus servicios y tu horario, y dejás el bot andando en tu WhatsApp.</p><div class="cta-r"><a class="btn" href="/pagar/?plan=emprendedor">Probar 7 días gratis</a><a class="ig" href="https://wa.me/5492944796044?text=Hola%2C%20quiero%20probar%20Nodo%20Sur%20Servicios" rel="noopener">¿Dudas? Escribime por WhatsApp</a></div></div></section>
-</main>
-<footer class="px foot"><div class="col" style="gap:10px"><a href="/" class="logo" aria-label="Nodo Sur, inicio"><svg class="mark" width="32" height="32" viewBox="0 0 96 96" aria-hidden="true"><rect width="96" height="96" rx="22" fill="#121317"/><path fill="#fff" d="M28.5 62.0V40.0H33.9L34.2 42.9Q36.4 39.4 40.6 39.4Q44.6 39.4 46.7 41.8Q48.9 44.2 48.8 49.5V62.0H43.0V50.7Q43.0 47.4 41.9 46.2Q40.8 44.9 38.9 44.9Q36.7 44.8 35.5 46.3Q34.3 47.7 34.3 50.4V62.0Z M60.2 62.5Q57.0 62.5 54.5 61.1Q52.0 59.7 50.8 57.0L55.7 54.7Q56.4 55.8 57.5 56.6Q58.7 57.3 60.2 57.3Q63.2 57.3 63.2 55.7Q63.2 54.9 62.6 54.5Q61.9 54.2 60.8 53.9L58.8 53.4Q55.6 52.5 53.8 50.7Q52.0 48.9 52.0 46.5Q52.0 43.1 54.2 41.3Q56.4 39.4 60.4 39.4Q62.4 39.4 64.2 40.0Q66.0 40.7 67.3 41.8Q68.5 42.9 69.0 44.3L64.2 46.5Q63.9 45.6 62.7 45.1Q61.5 44.5 60.4 44.5Q59.2 44.5 58.5 45.0Q57.9 45.5 57.9 46.4Q57.9 47.5 60.3 48.0L63.1 48.7Q65.3 49.2 66.6 50.4Q67.9 51.6 68.5 53.0Q69.1 54.4 69.1 55.8Q69.1 57.8 67.9 59.3Q66.7 60.8 64.7 61.6Q62.7 62.5 60.2 62.5Z"/><circle cx="73" cy="30" r="5" fill="#fff"/></svg><span class="wm">nodo sur</span></a><p>Bariloche, Río Negro · <a href="https://instagram.com/nodosur.brc" rel="me noopener">@nodosur.brc</a> · <a href="https://share.google/mzbvDvXmyokkR4JWK" rel="noopener">Nodo Sur en Google</a></p></div><nav aria-label="Secciones del sitio"><ul><li><a href="/sistema-pos/">Sistema POS</a></li><li><a href="/bot-whatsapp/">Bot de WhatsApp</a></li><li><a href="/servicios/">Servicios</a></li><li><a href="/diferencias-sistema-pos-y-bot-whatsapp/">Diferencias</a></li><li><a href="/como-elegir-sistema-pos-kiosco-almacen/">Guía para elegir</a></li><li><a href="/como-hacer-cierre-de-caja-kiosco/">Cierre de caja</a></li><li><a href="/como-calcular-margen-de-ganancia-almacen/">Margen de ganancia</a></li><li><a href="/como-controlar-el-stock-de-un-kiosco/">Control de stock</a></li><li><a href="/sistema-de-ventas-para-kioscos/">Ventas para kioscos</a></li><li><a href="/sistema-para-almacen-control-de-stock/">Sistema para almacén</a></li><li><a href="/sistema-pos-bariloche/">POS en Bariloche</a></li><li><a href="/paginas-web/">Páginas web</a></li><li><a href="/#precios">Precios</a></li><li><a href="/pagar/">Probar gratis</a></li><li><a href="/#contacto">Contacto</a></li></ul></nav></footer>
-<div class="wordmark" aria-hidden="true">Nodo Sur</div>
+<a class="saltar" href="#inicio">Ir al contenido</a>
+
+<header class="hd">
+<div class="wrap">
+<a href="/" class="logo" aria-label="Nodo Sur, inicio">
+<svg width="30" height="30" viewBox="0 0 30 30" aria-hidden="true"><circle cx="15" cy="12.5" r="9" fill="none" stroke="#1A1714" stroke-width="3"/><circle cx="15" cy="22" r="5" fill="#E4580B"/></svg>
+<span>nodo sur</span>
+</a>
+<nav class="nav" aria-label="Principal">
+<a href="/servicios/" aria-current="page">Nodo Estudio</a>
+<a href="/gastro/">Nodo Gastro</a>
+<a href="/sistema-pos/">Nodo Gestión</a>
+<a href="/paginas-web/">Páginas web</a>
+</nav>
+<div class="hd-der">
+<a class="ingresar" href="/ingresar/">Ingresar</a>
+<a class="btn btn-d btn-c" href="/pagar/?plan=emprendedor">Probar gratis</a>
+<details class="menu">
+<summary aria-label="Menú"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M3 6h14M3 14h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></summary>
+<nav class="menu-p" aria-label="Menú">
+<a href="/servicios/" aria-current="page">Nodo Estudio</a>
+<a href="/gastro/">Nodo Gastro</a>
+<a href="/sistema-pos/">Nodo Gestión</a>
+<a href="/paginas-web/">Páginas web</a>
+<a class="ingresar" href="/ingresar/">Ingresar</a>
+</nav>
+</details>
 </div>
-<script src="/main.js?v=afe7f82520" defer></script>
-<script src="/fx.js?v=7f1f9fdbe0" defer></script>
-<script src="/theme.js?v=238bf0affd" defer></script>
+</div>
+</header>
+
+<main id="inicio">
+
+<nav class="migas wrap" aria-label="Estás en"><ol><li><a href="/">Inicio</a></li><li><a href="/servicios/">Servicios</a></li><li><span aria-current="page">Turnos para barbería</span></li></ol></nav>
+
+<section class="wrap cols hero-int">
+<div class="c1">
+<h1 class="tit t-l">App de turnos<br><span class="acento">para barbería.</span></h1>
+<p class="bajada" style="margin-top:24px;max-width:30ch">El bot da los turnos, vos seguís cortando.</p>
+<div class="acciones" style="margin-top:30px" data-sin-barra>
+<a class="btn btn-a btn-g" href="/pagar/?plan=emprendedor">Probar 7 días gratis</a>
+<a class="link" href="/demo/">Ver la demo</a>
+</div>
+<p class="garantia" style="margin-top:14px">$&nbsp;18.000 por mes, sin alta. Hoy pagás $&nbsp;0.</p>
+</div>
+<div class="c2 fones">
+<div class="fono fono-atras"><img src="/img/servicios/servicios-v1.webp" decoding="async" width="520" height="1126" alt="Pantalla de servicios con lo que cuesta y lo que te deja cada uno"></div>
+<div class="fono fono-frente"><div class="isla"></div><img src="/img/servicios/agenda-v1.webp" width="520" height="1126" alt="Agenda del día: turnos por hora, huecos libres y señas" fetchpriority="high"></div>
+</div>
+</section>
+
+<section class="wrap sec" aria-labelledby="t-resuelve">
+<h2 id="t-resuelve" class="tit t-m rev">Lo que te resuelve.</h2>
+<p class="gris intro">En una barbería los turnos son cortos y el WhatsApp suena todo el día. Nodo Estudio contesta por vos, reserva el horario y al terminar cobrás con QR o en efectivo, con la propina anotada. Anda en Android, iPhone y compu.</p>
+<div class="items items-2">
+<div class="item rev"><h3 class="tit">Atender el celular entre corte y corte</h3><p>El bot contesta, ofrece los próximos horarios libres y reserva el turno. Vos ves la agenda del día y los huecos libres de un vistazo.</p></div>
+<div class="item rev"><h3 class="tit">El que entra sin turno</h3><p>Lo sumás a mano en dos toques o le das un sobreturno; el bot no ofrece ese horario a nadie más.</p></div>
+<div class="item rev"><h3 class="tit">Los que no aparecen</h3><p>Marcás que no vino. Si querés, pedís seña en los servicios que más tiempo ocupan, como corte y barba.</p></div>
+<div class="item rev"><h3 class="tit">La caja al final del día</h3><p>Abrís y cerrás el día, anotás gastos y ves cuánto entró en efectivo y cuánto por Mercado Pago, con las propinas aparte.</p></div>
+</div>
+</section>
+
+<section class="wrap sec" aria-labelledby="t-chat">
+<div class="panel cols estirar" style="gap:48px">
+<div class="c-ch" style="display:flex;flex-direction:column;justify-content:space-between;gap:28px">
+<div>
+<h2 id="t-chat" class="tit t-m">Un turno por WhatsApp, de punta a punta.</h2>
+<p class="gris" style="margin-top:16px;max-width:40ch">El bot ofrece los horarios libres, pide la seña y te avisa. Vos seguís atendiendo.</p>
+</div>
+<div class="tarjeta">
+<p class="tit t-s" style="font-size:22px">Tus servicios, con su precio y su costo</p>
+<p class="gris" style="margin-top:8px;font-size:16px">Corte, corte y barba, perfilado de barba, fade, color, cejas: cada uno con su duración y su precio. En la <a class="link" href="/demo/">demo</a> ya hay un negocio de barbería cargado para que la pruebes sin cuenta.</p>
+</div>
+</div>
+<div class="c1">
+<div class="chat-hd"><span class="av" aria-hidden="true">B</span><div><b>Barbería El Puerto</b><span>Asistente de WhatsApp</span></div></div>
+<div class="chat chat-quieto">
+<div class="burbuja ella">Buenas, hay lugar hoy para corte y barba?</div>
+<div class="burbuja bot">¡Buenas! Hoy tengo libre a las 18:00 y a las 19:30. ¿Te sirve alguno?</div>
+<div class="burbuja ella">18</div>
+<div class="burbuja bot">Listo, te guardo hoy a las 18:00 para corte y barba. Cualquier cosa avisame por acá.</div>
+<div class="burbuja bot">¡Te esperamos!</div>
+<div class="noti"><b>Te avisa a vos</b><span>Turno nuevo · hoy 18:00 · Corte y barba</span></div>
+</div>
+<p class="nota" style="margin-top:10px">Conversación de ejemplo.</p>
+</div>
+</div>
+</section>
+
+<section class="wrap sec" aria-labelledby="t-necesitas">
+<div class="cols arriba">
+<h2 id="t-necesitas" class="tit t-m c-ch rev">Qué necesitás.</h2>
+<ul class="lista c-gr">
+<li><strong>Para la agenda, la caja y los servicios:</strong> cualquier celular, iPhone o compu. En Android se instala la app; en iPhone y en la compu se usa desde el navegador, en <a class="link" href="/app/">horsepos.com/app/</a>, con los mismos datos.</li>
+<li><strong>Para el bot de WhatsApp:</strong> un celular Android prendido, que puede ser uno del negocio.</li>
+<li><strong>El WhatsApp del negocio:</strong> el bot se vincula como un dispositivo más, igual que WhatsApp Web.</li>
+<li><strong>Mercado Pago:</strong> si querés cobrar señas por link y cobrar con QR. Sin Mercado Pago, la seña se pide por alias.</li>
+<li><strong>Funciona en todo el país:</strong> la instalás vos desde el celular, sin visitas ni técnicos.</li>
+</ul>
+</div>
+
+</section>
+
+<section id="precios" class="precio zoom" aria-labelledby="t-precio">
+<div class="wrap cols" style="align-items:flex-end">
+<div class="c1">
+<h2 id="t-precio" style="font-size:20px;font-weight:600">Nodo Estudio, todo incluido</h2>
+<p class="monto num">$18.000</p>
+<p style="margin-top:18px;font-size:20px;font-weight:500">por mes. Sin alta. Los primeros 7 días, $&nbsp;0.</p>
+</div>
+<div class="c2">
+<ul class="incluye">
+<li>La app y la agenda</li><li>Bot de WhatsApp</li><li>Señas por Mercado Pago</li><li>Cobro con QR</li><li>Ganancia por servicio</li><li>Ayuda por WhatsApp</li>
+</ul>
+<a class="btn btn-d btn-flecha btn-f" style="margin-top:28px" href="/pagar/?plan=emprendedor">Probar 7 días gratis<span class="fl"><svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M4 10h11M11 5l5 5-5 5" stroke="#1A1714" stroke-width="2.4" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg></span></a>
+<p style="margin-top:14px;font-size:15px">La das de baja cuando quieras desde Mercado Pago. 30 días para pedir la devolución.</p>
+</div>
+</div>
+<div class="wrap precio-pie"><p>¿Querés ver todo lo que hace? <a class="link" href="/servicios/">Todo sobre Nodo Estudio</a>.</p></div>
+</section>
+
+<section id="preguntas" class="wrap cols arriba sec" aria-labelledby="t-faq">
+<div class="c-ch">
+<h2 id="t-faq" class="tit t-m rev">Preguntas frecuentes</h2>
+<p class="gris" style="margin-top:14px">¿Otra duda? <a class="link" href="https://wa.me/5492944796044">Escribinos por WhatsApp</a>.</p>
+</div>
+<div class="c-gr faq">
+<details><summary>¿Tengo que pedir seña sí o sí?<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="#1A1714" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></summary><p>No. La seña es opcional y la elegís por servicio: podés no pedirla nunca, o pedirla solo en los servicios largos.</p></details>
+<details><summary>¿Cómo cobro con QR?<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="#1A1714" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></summary><p>Al terminar, la app muestra un QR en la pantalla que el cliente paga con cualquier billetera o banco. Necesitás tu cuenta de Mercado Pago.</p></details>
+<details><summary>¿Anda en iPhone y en la compu?<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="#1A1714" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></summary><p>Sí. La agenda, la caja y los servicios se abren en el navegador de cualquier iPhone, compu o tablet, en horsepos.com/app/, con tu cuenta y los mismos datos que el celular. Lo único que necesita un Android es el bot de WhatsApp, porque corre en un celular prendido (puede ser uno del negocio).</p></details>
+<details><summary>¿Cuánto cuesta?<svg width="20" height="20" viewBox="0 0 20 20" aria-hidden="true"><path d="M10 4v12M4 10h12" stroke="#1A1714" stroke-width="2.2" stroke-linecap="round" fill="none"/></svg></summary><p>$ 18.000 por mes (Nodo Estudio), sin costo de alta, con 7 días de prueba. Se paga por Mercado Pago y la das de baja cuando quieras.</p></details>
+</div>
+</section>
+
+<section class="wrap sec-c" aria-labelledby="t-seguir">
+<h2 id="t-seguir" class="tit t-s">Seguí leyendo</h2>
+<div class="rels">
+<a class="rel" href="/servicios/"><b class="tit">Nodo Estudio</b><span>Todo lo que hace la app.</span></a>
+<a class="rel" href="/app-de-turnos-para-unas/"><b class="tit">Turnos para uñas</b><span>Para manicuras y salones de uñas.</span></a>
+<a class="rel" href="/app-de-turnos-para-peluqueria/"><b class="tit">Turnos para peluquería</b><span>Para peluquerías.</span></a>
+<a class="rel" href="/app-de-turnos-para-estetica/"><b class="tit">Turnos para estética</b><span>Para estética, depilación y masajes.</span></a>
+</div>
+</section>
+
+<section class="wrap cols cierre" aria-labelledby="t-fin">
+<div style="flex:1 1 560px">
+<h2 id="t-fin" class="tit t-xl rev" style="font-size:clamp(52px,6.6vw,104px)">Probá Nodo Estudio<br><span class="acento">7 días gratis.</span></h2>
+<p class="bajada" style="margin-top:24px">Hoy pagás $&nbsp;0. Cargás tus servicios y tu horario, y dejás el bot andando en tu WhatsApp.</p>
+</div>
+<div class="acc" data-sin-barra>
+<a class="btn btn-d btn-g btn-f" href="/pagar/?plan=emprendedor">Probar 7 días gratis</a>
+<a class="btn btn-f btn-sub" href="https://wa.me/5492944796044">¿Dudas? Escribinos por WhatsApp</a>
+</div>
+</section>
+
+</main>
+
+<footer class="pie">
+<div class="wrap">
+<nav aria-label="Secciones del sitio">
+<a href="/servicios/">Nodo Estudio</a>
+<a href="/gastro/">Nodo Gastro</a>
+<a href="/sistema-pos/">Nodo Gestión</a>
+<a href="/bot-whatsapp/">Bot de WhatsApp</a>
+<a href="/paginas-web/">Páginas web</a>
+<a href="/como-elegir-sistema-pos-kiosco-almacen/">Guías</a>
+<a href="https://instagram.com/nodosur.brc" rel="me noopener">Instagram</a>
+<a href="/privacidad/">Privacidad</a>
+</nav>
+<span>Hecho en Bariloche</span>
+</div>
+</footer>
+
+<div class="barra">
+<nav aria-label="Acción rápida">
+<div class="txt"><b>7 días gratis</b><span>Hoy pagás $&nbsp;0</span></div>
+<a class="btn btn-a" href="/pagar/?plan=emprendedor">Probar gratis</a>
+</nav>
+</div>
+
+<script src="/nodo.js?v=6af8546708" defer></script>
+<script src="/soporte.js?v=96654a9637" defer></script>
 </body>
 </html>
