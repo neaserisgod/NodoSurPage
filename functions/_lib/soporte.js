@@ -14,7 +14,7 @@ import { CONOCIMIENTO, PREGUNTAS } from './soporte_datos.js';
 
 const GEMINI = 'https://generativelanguage.googleapis.com/v1beta';
 export const MODELO_SOPORTE = 'gemini-2.5-flash-lite';
-export const PLANES_SOPORTE = ['emprendedor', 'pos', 'bot', 'pos-bot', 'ninguno'];
+export const PLANES_SOPORTE = ['emprendedor', 'gastro', 'pos', 'bot', 'pos-bot', 'ninguno'];
 export const MAX_MENSAJES = 12;
 export const MAX_LARGO = 600;
 export const TOPE_POR_IP = 40;
@@ -71,8 +71,9 @@ Reglas:
   (marcá "persona": true). Nunca inventes precios, funciones, plazos ni promesas.
 - Si preguntan cómo se usa algo, explicalo paso a paso con lo que dice la información; si no alcanza, "persona": true.
 - Si la persona muestra interés (pregunta precio, si le sirve para su negocio, cómo empezar), recomendá UN plan y decí que
-  se prueba 7 días gratis; poné ese plan en "plan": "emprendedor" (servicios con turnos: uñas, peluquería, barbería,
-  estética), "pos" (kiosco, almacén, comercio: el sistema de caja), "bot" (solo el bot de WhatsApp), "pos-bot" (sistema + bot).
+  se prueba 7 días gratis; poné ese plan en "plan": "emprendedor" (Nodo Estudio: servicios con turnos, uñas, peluquería,
+  barbería, estética), "gastro" (Nodo Gastro: rotisería y comida para llevar), "pos" (Nodo Gestión: kiosco, almacén, comercio,
+  el sistema de caja), "bot" (solo el bot de WhatsApp), "pos-bot" (Nodo Gestión + bot).
   Si no corresponde ninguno, "ninguno".
 - Si pide hablar con alguien, tiene un problema que no se resuelve con la información o algo de su cuenta o un pago,
   "persona": true.
