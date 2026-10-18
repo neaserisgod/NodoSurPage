@@ -1,0 +1,3 @@
+# Las listas reales de prospectos no se suben: el repo es público.
+*.csv
+!ejemplo.csv

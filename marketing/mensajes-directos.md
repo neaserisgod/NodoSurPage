@@ -1,53 +1,90 @@
-# Mensajes directos — plan Emprendedor (Nodo Sur Servicios)
+# Mensajes en frío — Nodo Estudio (plan Emprendedor)
 
-Meta: **10 clientes que paguen** en 2 semanas. 20 mensajes por día, a mano, desde `@nodosur.brc`.
-No se publica (está en `.assetsignore`).
+Meta: **10 clientes que paguen** en 2 semanas. 20 a 30 mensajes por día desde `@nodosur.brc` y el WhatsApp de Nodo Sur.
+No se publica (está en `.assetsignore`). Cómo armar la lista y mandarlos rápido: [`prospectar/LEEME.md`](./prospectar/LEEME.md).
+Cómo mostrar la app cuando dicen que sí: [`demo.md`](./demo.md).
+
+## Qué vendemos (en una línea)
+
+**"Contesta tu WhatsApp y da los turnos mientras atendés, y cobra la seña sola, así nadie te planta."**
+
+No prometemos "llenar la agenda": la app no trae clientas nuevas, hace que no se pierda ninguna de las que ya escriben.
+Los dolores que vendemos son tres escenas que la emprendedora vive todos los días:
+
+1. **Le escriben mientras atiende** y cuando contesta, la clienta ya sacó turno con otra.
+2. **Le plantan un turno** y pierde la hora (un plantón por semana a $ 15.000 son $ 60.000 por mes).
+3. **Contesta lo mismo 30 veces**: precio, horarios, dónde queda.
 
 ## A quién escribirle
 
-- Instagram: buscar `uñas` / `nails` / `barbería` / `peluquería` / `estética` + ciudad (ej. "nails rosario").
-- **Sí**: cuentas de 300 a 5.000 seguidores, que publicaron en la última semana y dicen "turnos por WhatsApp" o
-  "turnos por DM". Son las que hoy agendan a mano.
-- **No**: cadenas, cuentas con link a otra app de turnos (ya resolvieron), cuentas sin actividad.
-- Rotar rubros y ciudades; anotar todo en la planilla de abajo.
+- **Sí**: uñas, pestañas y cejas, peluquería, barbería, estética. Cuentas de **300 a 10.000 seguidores**, que publicaron
+  en la última semana y dicen "turnos por WhatsApp", "turnos por DM" o "solo con turno previo". "Home studio" es ideal.
+  Si piden seña por transferencia en la bio o en historias, mejor todavía.
+- **No**: cadenas, escuelas de cursos, las que venden insumos, cuentas sin actividad, las que ya tienen link a
+  AgendaPro / Booksy / Turnito / Weibook en la bio (ya resolvieron; quedan para después).
+- Rotar rubros y ciudades. Primero Patagonia y Alto Valle (se puede ir en persona).
 
-## Reglas
+## Reglas (no se negocian)
 
-1. **El primer mensaje no lleva link.** Instagram marca como spam y nadie abre links de desconocidos.
-2. Una línea personalizada (algo real de su cuenta). Sin eso, no se manda.
-3. Terminar con una pregunta de sí/no.
-4. Escribirle a la cuenta del negocio, nunca a clientes.
-5. Si dicen que no, se agradece y no se insiste.
+1. **El primer mensaje no lleva link.** Instagram lo marca como spam y nadie abre links de desconocidos.
+2. **Una línea personalizada, algo real de su cuenta.** Sin eso no se manda. La cola de envío no deja mandar sin cambiarla.
+3. Terminar con una **pregunta de sí o no**.
+4. Escribirle a la cuenta del negocio, nunca a sus clientas.
+5. Si dice que no, se agradece y no se insiste. Si no contesta, **un solo** seguimiento.
+6. **Nada de envío masivo automático** (ver "Por qué uno por uno" en `prospectar/LEEME.md`): se pierde la cuenta.
 
-## Mensaje 1 — primer contacto
+## Mensaje 1 — Instagram (DM)
 
-**Uñas / estética**
+Hay dos ganchos. Se alternan (la cola de envío lo hace sola) y el viernes se mira cuál tiene más respuestas.
 
-> Hola! Vi tus [esculpidas / diseños / trabajos de cejas], re prolijos 👏
-> Te hago una pregunta corta: ¿los turnos los manejás vos por WhatsApp?
-> Hice una app que contesta tu WhatsApp, da los turnos y cobra la seña sola mientras estás atendiendo. Si te interesa te paso un video de 1 minuto.
+**Gancho A · "no llegás a contestar"**
 
-**Barbería**
+> Hola! Vi tus {detalle}, re prolijos 👏
+> Una pregunta corta: ¿te pasa que te escriben para turno mientras estás atendiendo y cuando contestás ya se fueron con otra?
+> Hice una app que contesta tu WhatsApp y da los turnos sola mientras trabajás. ¿Te muestro cómo anda en un video de 1 minuto?
 
-> Buenas! Muy buenos los [fades / cortes] que suben 💈
-> Pregunta: ¿los turnos los dan ustedes por WhatsApp?
-> Armé una app que contesta el WhatsApp y da los turnos sola mientras cortás, y al terminar cobrás con QR. ¿Te paso un video corto?
+**Gancho B · "te plantan"**
 
-**Peluquería**
+> Hola! Vi tus {detalle}, qué lindo trabajo 👏
+> Una consulta: ¿te pasa que te reservan un turno y no vienen?
+> Hice una app que da los turnos por WhatsApp y cobra la seña sola, así el que reserva viene. ¿Te muestro cómo anda en un video de 1 minuto?
 
-> Hola! Qué lindos los [balayage / colores] que vienen subiendo.
-> Una consulta: ¿te pasa que te reservan un color y no vienen?
-> Hice una app que da los turnos por WhatsApp y pide seña solo en los trabajos largos. ¿Te muestro cómo funciona en un video de 1 minuto?
+Variantes por rubro (cambia solo el saludo y el detalle):
+
+| Rubro | Saludo | Ejemplos de {detalle} |
+|---|---|---|
+| Uñas | Hola! | esculpidas, diseños, kapping, nail art |
+| Pestañas / cejas | Hola! | lifting, trabajos de cejas, extensiones |
+| Peluquería | Hola! | balayage, colores, cortes |
+| Barbería | Buenas! | fades, cortes, degradés (y "mientras cortás" en vez de "mientras trabajás") |
+| Estética | Hola! | tratamientos, resultados de antes y después |
+
+## Mensaje 1 — WhatsApp (al número del negocio)
+
+Por WhatsApp hay que decir **quién sos y de dónde sacaste el número** en la primera línea, o lo bloquean.
+
+> Hola! ¿Hablo con {nombre}? Soy {vendedor}, de Nodo Sur (Bariloche). Vi tu número en {fuente} y te quería hacer una pregunta corta.
+> ¿Los turnos los das vos por acá? Armé una app que contesta este mismo WhatsApp, da los turnos y cobra la seña sola mientras atendés.
+> Si te interesa te mando un video de 1 minuto. Y si no, no te escribo más 🙌
+
+`{fuente}` es "tu Instagram", "Google Maps" o lo que corresponda. El "no te escribo más" baja mucho los bloqueos.
 
 ## Mensaje 2 — si contesta que sí
 
-> Genial, acá va: [video corto]
-> Si querés tocarla vos, esta demo se abre sin cuenta y ya tiene un negocio como el tuyo cargado: horsepos.com/demo/
-> Cuesta $ 18.000 por mes, sin alta, y la probás 7 días gratis. Si te sirve, te ayudo a cargar tus servicios y a dejar el bot andando.
+> Genial! Acá va el video: {video}
+> Y si querés probarlo vos como si fueras una clienta, escribile "hola" a este número: {numero_demo}. Te va a contestar el bot de un estudio de ejemplo y te da un turno.
+> La app la podés tocar acá, sin crear cuenta: horsepos.com/demo/
+> Sale $ 18.000 por mes, sin costo de alta, y la probás 7 días gratis. Si te gusta, te ayudo a cargar tus servicios y te dejo el bot andando. ¿Te parece si lo vemos 15 minutos por videollamada (o en persona si estás cerca)?
+
+Mientras no esté el número de demo (ver `demo.md`), se saca la segunda línea.
 
 ## Mensaje 3 — seguimiento (48 hs sin respuesta, una sola vez)
 
-> Hola! Te escribo una última vez por lo de la app de turnos. Si ahora no es momento, cero drama 🙌 Si querés verla, la demo está acá: horsepos.com/demo/
+> Hola! Te escribo una última vez por lo de la app de turnos. Si ahora no es momento, cero drama 🙌 Si querés verla, la demo se abre sin cuenta: horsepos.com/demo/
+
+## Si contesta "¿cuánto sale?" de entrada
+
+> $ 18.000 por mes, sin alta, y 7 días gratis para probarla. Si te salva un turno que no viene, ya se pagó. ¿Te mando el video de 1 minuto?
 
 ## Respuestas a objeciones
 
@@ -55,23 +92,28 @@ No se publica (está en `.assetsignore`).
 |---|---|
 | "Es caro" | "Si te salva un turno que no viene en el mes, ya se pagó. Y la probás 7 días sin pagar." |
 | "Ya uso una agenda / otra app" | "¿Te contesta el WhatsApp y cobra la seña sola? Si ya lo tenés resuelto, genial; si no, probala una semana en paralelo." |
-| "Tengo iPhone" | "La agenda y la caja andan en el navegador del iPhone. El bot sí necesita un Android prendido, puede ser uno del negocio." |
+| "Mis clientas no van a querer hablar con un bot" | "Escribile vos ahora a {numero_demo} y fijate: contesta en tu mismo WhatsApp, sin bajar nada ni entrar a ningún link. Y vos ves todos los chats y contestás cuando quieras." |
+| "Tengo iPhone" | "La agenda y la caja andan en el navegador del iPhone. El bot necesita un Android prendido, puede ser uno viejo del negocio." |
 | "Me da miedo que conteste mal" | "Vos seguís viendo todos los chats en tu WhatsApp y podés contestar cuando quieras. El bot nunca da dos veces el mismo horario." |
 | "No tengo Mercado Pago" | "La seña se puede pedir por alias; Mercado Pago es opcional." |
-| "Ahora no tengo tiempo" | "Si querés, te la dejo configurada yo. ¿Te escribo la semana que viene?" |
+| "Ahora no tengo tiempo" | "Por eso mismo: te la dejo configurada yo. ¿Te escribo la semana que viene?" |
+| "Lo tengo que pensar" | "Dale. ¿Qué es lo que te hace dudar? Así te paso justo eso." |
 
-## Planilla diaria
+## Números que hay que mirar cada viernes
 
-| Fecha | Cuenta | Rubro | Ciudad | Msj 1 | Respondió | Msj 2 | Probó | Pagó | Nota |
-|---|---|---|---|---|---|---|---|---|---|
+La cola de envío exporta la planilla (`Exportar planilla`). De ahí:
 
-Mirar cada viernes: **% que responde** (bueno: >15 %) y **% que prueba** de los que responden (bueno: >30 %).
-Si la respuesta da menos de 10 %, cambiar el mensaje 1, no la cantidad.
+- **% que responde** de los mensajes 1. Bueno: más de 15 %. Si da menos de 10 %, se cambia el mensaje 1, no la cantidad.
+- **Qué gancho responde más** (A o B). El que gana queda; el otro se reemplaza por una idea nueva.
+- **% que ve la demo** de los que responden. Bueno: más de 30 %.
+- **% que paga** de los que prueban.
 
 ## Lo que falta para arrancar
 
-- Video de 1 minuto: grabar la pantalla del celular con un turno de punta a punta (cliente escribe → bot ofrece horario →
-  seña → aviso). Sin voz, con subtítulos.
-- Perfil de `@nodosur.brc`: en la bio, "App de turnos con bot de WhatsApp para uñas, peluquería y barbería · 7 días
-  gratis" y el link a `horsepos.com/servicios/`. El que entra desde un mensaje
-  tiene que ver lo mismo que le ofrecieron.
+- [ ] **Número de demo** andando (ver `demo.md`, "El número de demo"). Es lo que más vende: la emprendedora le escribe
+  desde su propio celular y recibe un turno.
+- [ ] **Video de 1 minuto**: grabar la pantalla del celular con un turno de punta a punta (la clienta escribe, el bot ofrece
+  horario, seña, aviso a la dueña). Sin voz, con subtítulos. Subirlo como historia destacada de `@nodosur.brc` y tenerlo a mano
+  para mandarlo por WhatsApp.
+- [ ] Perfil de `@nodosur.brc`: bio "App de turnos con bot de WhatsApp para uñas, peluquería y barbería · 7 días gratis" y
+  link a `horsepos.com/servicios/`. El que entra desde un mensaje tiene que ver lo mismo que le ofrecieron.
