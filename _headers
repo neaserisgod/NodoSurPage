@@ -4,7 +4,7 @@
   X-Frame-Options: DENY
   Permissions-Policy: camera=(), microphone=(), geolocation=()
   Strict-Transport-Security: max-age=31536000; includeSubDomains
-  Content-Security-Policy: default-src 'self'; script-src 'self' 'inline-speculation-rules' https://static.cloudflareinsights.com; connect-src 'self' https://cloudflareinsights.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
+  Content-Security-Policy: default-src 'self'; script-src 'self' 'inline-speculation-rules' https://static.cloudflareinsights.com https://connect.facebook.net; connect-src 'self' https://cloudflareinsights.com https://www.facebook.com; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: https://www.facebook.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'
 
 /og-v2.png
   Cache-Control: public, max-age=604800
