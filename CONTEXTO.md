@@ -39,6 +39,14 @@ cubre lo propio del sitio. Los detalles de cada función del servidor están en 
 
 ## Diseño
 
+**Marca (2026-10-17): una app, tres ediciones** con el bot de WhatsApp adentro. **Nodo Estudio** (servicios con turnos:
+uñas, peluquería, barbería, estética; página `/servicios/`, plan `emprendedor`, $ 18.000), **Nodo Gastro** (rotisería y
+comida para llevar; `/gastro/`, plan `gastro`, $ 18.000 con bot, sin alta) y **Nodo Gestión** (kioscos y almacenes; `/sistema-pos/`,
+planes `pos` / `pos-bot`). La home es la puerta por rubro. Los nombres internos de los planes en Mercado Pago (`mp.js`:
+«Emprendedor», «Sistema POS»…) no cambiaron: de ellos depende qué cuentas tienen el bot. **Nodo Gastro todavía no tiene plan en
+Mercado Pago**: su «probar» va a WhatsApp; cuando el dueño pase el link, va en `functions/_lib/plans.js` (`gastro.href`), el id
+en `PLANS` y `PLANES_CON_BOT` de `mp.js`, y los botones de `/gastro/` y de la home pasan a `/pagar/?plan=gastro`.
+
 **Rediseño 2026-10 (terminado, PR #76 a #80):** estilo claro tipo Apple, Bricolage Grotesque (títulos) + Geist (texto),
 alojadas en `/fonts/`; blanco, piedra `#F5F4F2`, tinta `#1A1714`, gris `#57534E`, naranja `#E4580B` con texto negro
 encima. Protagonista de la home: Nodo Sur Servicios (plan Emprendedor). El sitio habla como Nodo Sur, de "vos" y sin

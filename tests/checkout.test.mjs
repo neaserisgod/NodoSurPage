@@ -169,6 +169,16 @@ await t('admin: muestra el plan elegido y cuántos se registraron sin pagar', as
 });
 
 // ---------- los links de pago ya no están en el sitio público
+await t('Nodo Gastro sin plan en Mercado Pago todavía: con sesión, «probar» lleva al WhatsApp con el pedido escrito', async () => {
+  const env = mkEnv(); addUser(env, 'gastro@x.com', 'sg'); const c = await sess(env, 'gastro@x.com', 'sg');
+  if (PLAN_CATALOG.gastro.href) return; // ya tiene su link: lo cubren las pruebas de arriba
+  const r = await go(env, 'plan=gastro', c);
+  assert.equal(r.status, 302);
+  assert.ok(r.headers.get('Location').startsWith('https://wa.me/5492944796044?text='), r.headers.get('Location'));
+  assert.match(decodeURIComponent(r.headers.get('Location')), /Nodo Gastro/);
+  assert.equal(row(env, 'gastro@x.com').plan_interest, 'gastro', 'el plan elegido queda guardado igual');
+  assert.equal((await go(env, 'plan=gastro')).headers.get('Location'), 'https://horsepos.com/ingresar/?plan=gastro', 'sin sesión: primero ingresa');
+});
 await t('ningún archivo público expone los links de pago de Mercado Pago', async () => {
   const root = fileURLToPath(new URL('..', import.meta.url));
   const skip = new Set(['node_modules', '.git', 'functions', 'tests', 'migrations', 'img', 'fonts']);

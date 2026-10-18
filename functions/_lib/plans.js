@@ -13,9 +13,14 @@ export const PLAN_CATALOG = {
   // Nodo Sur Servicios (turnos) con el bot de WhatsApp adentro de la app: sin alta, se instala sola (El dueño, 2026-10-10).
   emprendedor: { nombre: 'Emprendedor', precio: 18000, alta: false,
     href: 'https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=d28fa6d60f614b8c9a16bfc78ac31f0c' },
+  // Nodo Gastro (rotisería y comida para llevar), con el bot adentro y sin alta (El dueño, 2026-10-17). Todavía no tiene plan
+  // en Mercado Pago: cuando el dueño lo cree, su link va en `href` (y el id del plan en `PLANS` y `PLANES_CON_BOT` de mp.js).
+  // Mientras tanto, quien elige probarlo cae en el WhatsApp de Nodo Sur con el pedido ya escrito.
+  gastro: { nombre: 'Nodo Gastro', precio: 18000, alta: false, href: null },
 };
 
 export const isPlan = (k) => typeof k === 'string' && Object.hasOwn(PLAN_CATALOG, k);
 
 // A dónde se manda a alguien ya identificado para pagar `plan`.
-export const checkoutTarget = (plan) => PLAN_CATALOG[plan].href;
+export const checkoutTarget = (plan) => PLAN_CATALOG[plan].href
+  || WA + encodeURIComponent(`Hola, quiero probar ${PLAN_CATALOG[plan].nombre} 7 días gratis.`);
