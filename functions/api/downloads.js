@@ -15,16 +15,22 @@ export async function onRequestGet({ request, env }) {
   const beta = [];
   const historial = [];
   if (hasDB(env) && hasR2(env)) {
-    for (const platform of PLATFORMS) {
-      const r = await latestForInstall(env, platform, 'stable');
-      if (r) releases.push(pub(platform, r));
-      // Las versiones de prueba se ofrecen solo a administradores y cuentas eximidas (el mismo criterio que /api/download).
-      if (acc.privileged) {
-        const b = await latestForInstall(env, platform, 'beta');
-        if (b) beta.push(pub(platform, b));
+    // Todas las plataformas a la vez (antes, una consulta tras otra); el orden de la lista se mantiene.
+    const porPlataforma = await Promise.all(PLATFORMS.map(async (platform) => {
+      const [r, b, hs, hb] = await Promise.all([
+        latestForInstall(env, platform, 'stable'),
+        // Las versiones de prueba se ofrecen solo a administradores y cuentas eximidas (el mismo criterio que /api/download).
+        acc.privileged ? latestForInstall(env, platform, 'beta') : null,
         // Para volver atrás: las versiones anteriores de los dos canales (la más nueva de cada uno ya está arriba).
-        for (const channel of ['stable', 'beta']) for (const h of await historyForInstall(env, platform, channel)) historial.push({ ...pub(platform, h), channel });
-      }
+        acc.privileged ? historyForInstall(env, platform, 'stable') : [],
+        acc.privileged ? historyForInstall(env, platform, 'beta') : [],
+      ]);
+      return { platform, r, b, hist: [...hs.map((h) => ['stable', h]), ...hb.map((h) => ['beta', h])] };
+    }));
+    for (const { platform, r, b, hist } of porPlataforma) {
+      if (r) releases.push(pub(platform, r));
+      if (b) beta.push(pub(platform, b));
+      for (const [channel, h] of hist) historial.push({ ...pub(platform, h), channel });
     }
   }
   return json({ canDownload: true, privileged: Boolean(acc.privileged), releases, ...(acc.privileged ? { beta, historial } : {}) });

@@ -9,6 +9,9 @@
   var ROL = { owner: 'Dueño', manager: 'Encargado', employee: 'Empleado' };
   var WA = 'https://wa.me/5492944796044?text=';
   var pending = null;
+  // La descarga se pide ya, a la par de /api/me (antes esperaba a que terminara). Si no le corresponde, no se usa.
+  var descargas = window.NS_DESCARGAS ? window.NS_DESCARGAS.pedir() : null;
+  if (descargas) descargas.catch(function () { /* lo muestra descargar.js si se usa */ });
 
   function load() {
     return fetch('/api/me', { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } }).then(function (r) {
@@ -50,7 +53,10 @@
 
     if (puede) {
       var dl = el('div', 'acc-dl'); root.appendChild(dl);
-      if (window.NS_DESCARGAS) window.NS_DESCARGAS(dl, { app: appDelPlan(d) });
+      var sk = el('div', 'sk sk-hero'); sk.setAttribute('aria-hidden', 'true'); dl.appendChild(sk);
+      // La primera vez usa el pedido que ya está en camino; si se vuelve a pintar (tras cancelar), pide de nuevo.
+      if (window.NS_DESCARGAS) window.NS_DESCARGAS(dl, { app: appDelPlan(d), pedido: descargas });
+      descargas = null;
     } else if (ofrecer) {
       root.appendChild(offerCard(d));
     }

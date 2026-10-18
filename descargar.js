@@ -3,7 +3,8 @@
    anteriores) queda plegado abajo.
    Qué app le toca lo dice su plan (Nodo Estudio = servicios, Nodo Gastro = gastronomía, Nodo Gestión = almacén). Si el plan no
    lo dice (administración, cuentas eximidas, encargados, "Solo el bot"), aparece un selector de pastillas y se recuerda la elección.
-   Uso: window.NS_DESCARGAS(contenedor, { app: 'almacen' | 'servicios' | 'gastro' | null }). */
+   Uso: window.NS_DESCARGAS(contenedor, { app: 'almacen' | 'servicios' | 'gastro' | null, pedido }). `pedido` es el fetch de
+   /api/downloads ya en curso (Mi cuenta lo larga junto con /api/me, así no espera una consulta para empezar la otra). */
 (function () {
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
   var NAMES = { windows: 'Nodo Gestión para Windows', android: 'Nodo Gestión para Android', macos: 'Nodo Gestión para Mac', linux: 'Nodo Gestión para Linux',
@@ -39,11 +40,12 @@
 
   function montar(root, opts) {
     opts = opts || {};
-    return fetch('/api/downloads', { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } }).then(function (r) {
+    return (opts.pedido || pedir()).then(function (r) {
       if (r.status === 401) { location.replace('/api/auth/google'); return null; }
       return r.json();
     }).then(function (d) {
       if (!d) return;
+      root.textContent = ''; // saca el esqueleto que puso Mi cuenta mientras esperaba
       if (!d.canDownload) { aviso(root, d.reason); return; }
       if (!d.releases.length && !(d.beta || []).length) { aviso(root, 'no_disponible'); return; }
       var dev = window.NS_DEVICE || { id: 'other', name: '' };
@@ -113,8 +115,10 @@
       }
 
       pintar();
-    }).catch(function () { var c = el('section', 'acc acc-dl'); c.appendChild(el('h2', null, 'No pudimos cargar la descarga')); c.appendChild(el('p', 'acc-note', 'Recargá la página.')); root.appendChild(c); });
+    }).catch(function () { root.textContent = ''; var c = el('section', 'acc acc-dl'); c.appendChild(el('h2', null, 'No pudimos cargar la descarga')); c.appendChild(el('p', 'acc-note', 'Recargá la página.')); root.appendChild(c); });
   }
 
+  function pedir() { return fetch('/api/downloads', { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } }); }
   window.NS_DESCARGAS = montar;
+  window.NS_DESCARGAS.pedir = pedir;
 })();
