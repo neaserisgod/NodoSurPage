@@ -101,3 +101,13 @@ el alta). Pendiente en Mercado Pago (lo hace el dueño, no se puede desde una se
 - Pendiente que toca este repo (ver la lista completa en `Nodo-Sur-Pos/CONTEXTO.md`): webhooks de Mercado Pago (avisos de
   pagos en vivo), devoluciones desde el POS y saldo real del negocio en el cierre. El MCP de Mercado Pago sirve para
   configurar webhooks de la app y leer documentación, no para ver la cuenta real.
+
+## Píxel de Meta (2026-10-18)
+
+`pixel.js` está en las páginas públicas, `/pagar/` e `/ingresar/` (no en las de cuenta). Mientras `PIXEL_ID` esté vacío no
+hace nada. La política de contenido (`_headers`) ya permite `connect.facebook.net` y `www.facebook.com`. Eventos: `PageView`,
+`Lead` (toque en un link de WhatsApp) e `InitiateCheckout` (ir a `/pagar/` o `/api/checkout`); respeta "No rastrear".
+Para prenderlo:
+1. Poner el ID en `PIXEL_ID` (`pixel.js`) y correr `node scripts/versionar-estaticos.mjs --escribir`.
+2. En `/privacidad/`, cambiar "No usamos cookies de publicidad" por el aviso del píxel de Meta (mide visitas y clics de
+   los anuncios con cookies de Meta) y sumar a Meta en la lista de proveedores.
