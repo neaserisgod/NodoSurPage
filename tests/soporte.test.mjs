@@ -43,7 +43,7 @@ await t('contesta con la IA: manda lo que dice el sitio, la página y la charla;
   assert.equal(r.status, 200);
   assert.deepEqual(await r.json(), respuesta);
   const { url, init } = llamadas[0];
-  assert.match(url, /gemini-2\.5-flash-lite:generateContent$/);
+  assert.match(url, /gemini-3\.5-flash-lite:generateContent$/);
   assert.ok(!url.includes(CLAVE));
   assert.equal(init.headers['x-goog-api-key'], CLAVE);
   const b = JSON.parse(init.body);
