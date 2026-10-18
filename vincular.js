@@ -8,7 +8,7 @@
   var port = parseInt(q.get('port'), 10), state = q.get('state') || '', challenge = q.get('challenge') || '', device = q.get('device') || '';
   // `tipo=celular`: lo abre la app del celular. Ahí no se vincula "la PC del dueño": cada persona (dueño, encargado o empleado)
   // entra con SU cuenta y el celular queda con su perfil, sin selector.
-  // `web=1`: lo abre Nodo Sur Servicios en el navegador (horsepos.com/app/). Es como un celular más (cada persona con SU cuenta),
+  // `web=1`: lo abre Nodo Estudio en el navegador (horsepos.com/app/). Es como un celular más (cada persona con SU cuenta),
   // pero al terminar vuelve a /app/ en vez de a la app instalada (no hay servidor local en 127.0.0.1).
   var web = q.get('web') === '1';
   var celular = web || q.get('tipo') === 'celular';
@@ -21,7 +21,8 @@
   if (!valido) { error('El enlace no es válido. Volvé a abrir la vinculación desde la app.'); return; }
 
   fetch('/api/device/whoami' + (bot ? '?tipo=bot' : celular ? '?tipo=celular' : ''), { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } }).then(function (r) {
-    if (r.status === 401) { location.replace('/ingresar/?next=' + encodeURIComponent(location.pathname + location.search)); return null; }
+    // Sin sesión, directo a Google (sin la pantalla de /ingresar/, un clic menos) y de vuelta acá.
+    if (r.status === 401) { location.replace('/api/auth/google?next=' + encodeURIComponent(location.pathname + location.search)); return null; }
     return r.ok ? r.json() : Promise.reject();
   }).then(function (u) {
     if (!u) return;
@@ -36,11 +37,17 @@
       var na = el('a', 'btn btn-w', 'Ir a mi cuenta'); na.href = '/cuenta/'; nc.appendChild(na); root.appendChild(nc); return;
     }
     var orgs = u.orgs || [];
-    var c = card(bot ? '¿Vincular el bot de WhatsApp a tu negocio?' : web ? '¿Entrar a Nodo Sur Servicios con tu cuenta?' : celular ? '¿Entrar en este celular con tu cuenta?' : '¿Vincular este dispositivo a tu cuenta?');
+    // Sin nada que elegir (un negocio y una sucursal), entra solo, sin el botón (El dueño, 2026-10-16: "que se haga todo directo
+    // con Google"): la app abre el navegador, Google pide la cuenta y vuelve a la app. Es seguro saltear la confirmación porque el
+    // código va al servidor local de la app que abrió esto (127.0.0.1) o a /app/ de este mismo sitio, y sin el verificador que
+    // guarda esa app no sirve. El bot sí pregunta: vincularlo pone a contestar el WhatsApp del negocio.
+    var elegir = orgs.length > 1 || (orgs.length === 1 && orgs[0].branches.length > 1);
+    var auto = !bot && !elegir;
+    var c = card(bot ? '¿Vincular el bot de WhatsApp a tu negocio?' : web ? '¿Entrar a Nodo Estudio con tu cuenta?' : celular ? '¿Entrar en este celular con tu cuenta?' : '¿Vincular este dispositivo a tu cuenta?');
     c.appendChild(el('p', 'acc-note', bot
       ? 'Vas a vincular «' + name + '» como el bot de WhatsApp de tu negocio, con la cuenta ' + u.email + '. Va a atender con la configuración que cargues en la app de Nodo Sur.'
       : web
-      ? 'Vas a entrar en Nodo Sur Servicios en este navegador como ' + (u.name || u.email) + ' (' + u.email + '). Lo que hagas acá queda a tu nombre.'
+      ? 'Vas a entrar en Nodo Estudio en este navegador como ' + (u.name || u.email) + ' (' + u.email + '). Lo que hagas acá queda a tu nombre.'
       : celular
       ? 'Vas a entrar en «' + name + '» como ' + (u.name || u.email) + ' (' + u.email + '). Lo que hagas desde este celular queda a tu nombre, y no se puede cambiar de perfil desde acá.'
       : 'Vas a vincular «' + name + '» con la cuenta ' + u.email + '. Desde ahí la app puede guardar copias de tu base y, si reinstalás, recuperarlas entrando con esta cuenta.'));
@@ -63,12 +70,13 @@
           : 'Para que la PC y el celular se sincronicen entre sí, vinculá los dos a la misma sucursal.'));
       }
     }
-    if (!web) c.appendChild(el('p', 'acc-note', 'Si no abriste esto desde la app de Nodo Sur POS (en tu PC o en tu celular), cerrá esta página.'));
+    if (!web) c.appendChild(el('p', 'acc-note', 'Si no abriste esto desde la app de Nodo Sur (en tu PC o en tu celular), cerrá esta página.'));
     var msg = el('p', 'login-err'); msg.setAttribute('role', 'alert');
     var acts = el('div', 'acc-actions');
     var ok = el('button', 'btn', celular ? 'Entrar' : 'Vincular'); ok.type = 'button';
     var no = el('a', 'btn btn-w', 'Cancelar'); no.href = '/cuenta/';
     acts.appendChild(ok); acts.appendChild(no); c.appendChild(acts); c.appendChild(msg); root.appendChild(c);
+    if (auto) { c.firstChild.textContent = celular ? 'Entrando con tu cuenta…' : 'Conectando con tu cuenta…'; acts.hidden = true; }
     ok.addEventListener('click', function () {
       ok.disabled = true; ok.textContent = celular ? 'Entrando…' : 'Vinculando…'; msg.textContent = '';
       fetch('/api/device/authorize', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' },
@@ -79,7 +87,8 @@
           var destino = web ? '/app/?' : 'http://127.0.0.1:' + port + '/';
           if (!x.ok || typeof x.j.redirect !== 'string' || x.j.redirect.indexOf(destino) !== 0) throw new Error();
           location.href = x.j.redirect;
-        }).catch(function () { ok.disabled = false; ok.textContent = celular ? 'Entrar' : 'Vincular'; msg.textContent = 'No se pudo vincular. Probá de nuevo.'; });
+        }).catch(function () { acts.hidden = false; ok.disabled = false; ok.textContent = celular ? 'Entrar' : 'Vincular'; msg.textContent = 'No se pudo vincular. Probá de nuevo.'; });
     });
+    if (auto) ok.click();
   }).catch(function () { error('No pudimos comprobar tu sesión. Recargá la página.'); });
 })();

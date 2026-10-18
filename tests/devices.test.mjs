@@ -172,7 +172,7 @@ await t('login: solo se vuelve a /vincular/ (lista blanca), nunca a una URL de a
   };
   const buena = `/vincular/?port=53682&state=${STATE}&challenge=${'a'.repeat(43)}&device=${DID}&name=La%20PC`;
   assert.equal(await ir(buena), `https://horsepos.com${buena}`);
-  for (const mala of ['https://evil.com', '//evil.com', '/cuenta/', '/vincular/?x=<script>', '/vincular/', '/vincular/?a=b\\c', '/vincular/?' + 'a'.repeat(700)]) assert.equal(await ir(mala), 'https://horsepos.com/cuenta/', mala);
+  for (const mala of ['https://evil.com', '//evil.com', '/cuenta/', '/descargar/', '/vincular/?x=<script>', '/vincular/', '/vincular/?a=b\\c', '/vincular/?' + 'a'.repeat(700)]) assert.equal(await ir(mala), 'https://horsepos.com/cuenta/', mala);
   assert.equal(await ir(), 'https://horsepos.com/cuenta/');
 });
 

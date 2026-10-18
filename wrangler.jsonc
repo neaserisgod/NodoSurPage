@@ -6,8 +6,8 @@
   "assets": {
     "directory": "./",
     "binding": "ASSETS",
-    // /api/*, /app/* (Nodo Sur Servicios en el navegador, desde R2) y /demo/* (la misma app, de demo) pasan por el código; todo lo demás sale directo de los archivos estáticos.
-    "run_worker_first": ["/api/*", "/app", "/app/*", "/demo", "/demo/*"],
+    // /api/*, /app/* (Nodo Estudio en el navegador, desde R2), /demo/* (la misma app, de demo) y /descargar (atajo viejo a Mi cuenta) pasan por el código; todo lo demás sale directo de los archivos estáticos.
+    "run_worker_first": ["/api/*", "/app", "/app/*", "/demo", "/demo/*", "/descargar", "/descargar/"],
     "not_found_handling": "404-page"
   },
   // Conserva las variables y secretos cargados desde el panel de Cloudflare.

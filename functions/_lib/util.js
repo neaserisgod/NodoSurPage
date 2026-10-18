@@ -76,10 +76,8 @@ export function cookie(name, value, { maxAge, httpOnly = true, path = '/' } = {}
   return `${name}=${value}; Path=${path}; Max-Age=${maxAge}; Secure; SameSite=Lax${httpOnly ? '; HttpOnly' : ''}`;
 }
 
-// A dónde se puede volver después de ingresar con Google: SOLO la página de vinculación de la app, con su
-// consulta. Nada de URLs libres (sería un redireccionamiento abierto).
-// A dónde se puede volver después de ingresar con Google: la vinculación de la app, o aceptar una invitación
-// (el token de 64 hex y nada más: ni otros parámetros ni otras rutas).
+// A dónde se puede volver después de ingresar con Google: la vinculación de la app, o aceptar una invitación (el token de
+// 64 hex y nada más: ni otros parámetros ni otras rutas). Nada de URLs libres (sería un redireccionamiento abierto).
 export const safeNext = (n) =>
   typeof n === 'string' && n.length <= 600 && (/^\/vincular\/\?[A-Za-z0-9_%=&.~+-]*$/.test(n) || /^\/unirse\/\?t=[0-9a-f]{64}$/.test(n)) ? n : null;
 

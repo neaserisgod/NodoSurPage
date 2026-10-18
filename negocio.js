@@ -192,7 +192,7 @@
     if (o.can.copias) copias(o);
     if (o.can.descargar) {
       var d = card('Descargá el sistema'); d.appendChild(note('Instalador para la PC del local y app del celular.'));
-      var dl = el('a', 'btn', 'Ir a las descargas'); dl.href = '/descargar/'; dl.style.alignSelf = 'flex-start'; d.appendChild(dl); root.appendChild(d);
+      var dl = el('a', 'btn', 'Ir a las descargas'); dl.href = '/cuenta/'; dl.style.alignSelf = 'flex-start'; d.appendChild(dl); root.appendChild(d);
     }
   }
 
@@ -463,7 +463,7 @@
           : 'El negocio se cobra con la suscripción de ' + d.billingEmail + '. Está a nombre de otra persona: solo ella puede cancelarla, y si lo hace el negocio se queda sin cobertura.'));
         if (d.subscriptions && d.subscriptions.length) {
           var ul = el('ul', 'pays');
-          d.subscriptions.forEach(function (x) { var li = el('li'); li.appendChild(el('span', null, x.plan)); li.appendChild(el('span', null, { authorized: 'Activa', paused: 'Pausada', cancelled: 'Cancelada', canceled: 'Cancelada', pending: 'Pendiente' }[x.status] || x.status)); li.appendChild(el('strong', null, x.amount != null ? '$ ' + Math.round(x.amount).toLocaleString('es-AR') : '')); ul.appendChild(li); });
+          d.subscriptions.forEach(function (x) { var li = el('li'); li.appendChild(el('span', null, ({ 'Emprendedor': 'Nodo Estudio', 'Sistema POS': 'Nodo Gestión', 'Sistema + Bot': 'Nodo Gestión + Bot' })[x.plan] || x.plan)); li.appendChild(el('span', null, { authorized: 'Activa', paused: 'Pausada', cancelled: 'Cancelada', canceled: 'Cancelada', pending: 'Pendiente' }[x.status] || x.status)); li.appendChild(el('strong', null, x.amount != null ? '$ ' + Math.round(x.amount).toLocaleString('es-AR') : '')); ul.appendChild(li); });
           c.appendChild(ul);
         }
         if (d.mine) { var l = el('a', 'btn btn-w', 'Ir a Mi cuenta'); l.href = '/cuenta/'; l.style.alignSelf = 'flex-start'; c.appendChild(l); return; }

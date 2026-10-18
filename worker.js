@@ -169,6 +169,8 @@ export default {
     if (url.pathname === '/app' || url.pathname.startsWith('/app/')) return servirApp(request, env);
     // La demo: la misma app, sin cuenta y con datos de ejemplo.
     if (url.pathname === '/demo' || url.pathname.startsWith('/demo/')) return servirDemo(request, env);
+    // Las descargas viven en Mi cuenta (2026-10-16): /descargar/ queda como atajo para los enlaces viejos (la app, mails, favoritos).
+    if (url.pathname === '/descargar' || url.pathname === '/descargar/') return Response.redirect(`${url.origin}/cuenta/${url.search}`, 302);
     if (!url.pathname.startsWith('/api/')) return env.ASSETS.fetch(request);
 
     // El feed de actualizaciones apunta a /api/update/file/<nombre>.exe?id=N: WinSparkle guarda el instalador con el
