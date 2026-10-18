@@ -48,9 +48,12 @@ export async function listSubscriptions(env, email) {
   if (!res.ok) await failWith(res);
   const data = await res.json();
   const want = email.trim().toLowerCase();
-  return (data.results || [])
+  const subs = (data.results || [])
     .filter((r) => PLANS[r.preapproval_plan_id] && String(r.payer_email || '').trim().toLowerCase() === want)
     .map(mapSub);
+  // Lo que se consulta en vivo también deja al día la memoria breve: Mi cuenta pide en vivo y la descarga, que llega enseguida, ya no repite la consulta.
+  if (env.MP_CACHE_MS === undefined || Number(env.MP_CACHE_MS) > 0) SUBS.set(want, { at: Date.now(), data: subs });
+  return subs;
 }
 
 export async function listPayments(env, subId) {

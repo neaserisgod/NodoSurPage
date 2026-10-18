@@ -5,7 +5,7 @@
 // permisos.js. Quien no pertenece a ningún negocio (cuentas anteriores a este modelo) sigue entrando por la
 // suscripción de su propio mail, como siempre.
 import { isAdminEmail, now } from './util.js';
-import { listSubscriptions, listSubscriptionsCached } from './mp.js';
+import { listSubscriptionsCached } from './mp.js';
 import { isPrivilegedSub } from './devices.js';
 import { orgsWith, getOrg, getMembership } from './orgs.js';
 import { puede } from './permisos.js';
@@ -27,12 +27,10 @@ export async function downloadAccess(env, cu) {
     if (await isPrivilegedSub(env, org.owner_sub, org.billing_email)) return { ok: true, privileged: false }; // negocio de prueba (eximido / admin)
     mails.add(org.billing_email);
   }
-  let fallo = false;
-  for (const mail of mails) {
-    try { if ((await listSubscriptions(env, mail)).some((s) => s.status === 'authorized')) return { ok: true, privileged: false }; }
-    catch { fallo = true; }
-  }
-  return { ok: false, reason: fallo ? 'mp_error' : 'no_subscription' };
+  // Todos los mails a la vez y con la memoria breve de mp.js (2 minutos): Mi cuenta acaba de consultarlos en vivo.
+  const r = await Promise.all([...mails].map((mail) => listSubscriptionsCached(env, mail).then((subs) => subs.some((s) => s.status === 'authorized'), () => null)));
+  if (r.includes(true)) return { ok: true, privileged: false };
+  return { ok: false, reason: r.includes(null) ? 'mp_error' : 'no_subscription' };
 }
 
 // Sobre qué copias actúa quien llama. Devuelve el alcance que entienden listBackups / getBackup / saveBackup,
