@@ -9,6 +9,12 @@ await t('rutas que no son /api/ salen de los archivos estáticos', async () => {
   assert.equal(await (await call('/')).text(), 'ESTATICO /');
   assert.equal(await (await call('/sistema-pos/')).text(), 'ESTATICO /sistema-pos/');
 });
+await t('/descargar/ (enlaces viejos y la app) lleva a Mi cuenta, donde está la descarga, con su aviso', async () => {
+  for (const [de, a] of [['/descargar/', '/cuenta/'], ['/descargar', '/cuenta/'], ['/descargar/?e=no_subscription', '/cuenta/?e=no_subscription']]) {
+    const r = await call(de); assert.equal(r.status, 302, de); assert.equal(r.headers.get('Location'), 'https://horsepos.com' + a, de);
+  }
+  assert.equal(await (await call('/descargar/otra')).text(), 'ESTATICO /descargar/otra');
+});
 await t('/api/auth/google redirige a Google', async () => {
   const r = await call('/api/auth/google'); assert.equal(r.status, 302); assert.match(r.headers.get('Location'), /^https:\/\/accounts\.google\.com\//);
 });

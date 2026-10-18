@@ -98,9 +98,9 @@ await t('si la IA falla o contesta algo raro, no se inventa nada (503) y un plan
   assert.deepEqual(await (await preguntar(env, CHARLA)).json(), { texto: 'Te paso con una persona.', plan: null, persona: true });
 });
 
-await t('la burbuja va en todas las páginas públicas, después de nodo.js', async () => {
+await t('la burbuja va en todas las páginas públicas, después de nodo.js (no en las de cuenta: <body class="app">)', async () => {
   const { paginas } = await import('../scripts/versionar-estaticos.mjs');
-  const publicas = paginas().filter((p) => readFileSync(p, 'utf8').includes('/nodo.js'));
+  const publicas = paginas().filter((p) => { const h = readFileSync(p, 'utf8'); return h.includes('/nodo.js') && !h.includes('<body class="app">'); });
   assert.ok(publicas.length >= 15);
   for (const p of publicas) assert.match(readFileSync(p, 'utf8'), /\/nodo\.js[^"]*" defer><\/script>\n<script src="\/soporte\.js\?v=/, p);
 });

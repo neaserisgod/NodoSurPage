@@ -25,7 +25,10 @@
     var ac=$('pg-acct');
     if(ac)ac.textContent=logged
       ?'Ingresaste como '+nombre+'. En Mercado Pago usá el mismo mail de tu cuenta de Google para ver tu suscripción en Mi cuenta.'
-      :'Antes de pagar ingresás con Google, así tu suscripción queda asociada a tu cuenta. Tu plan queda elegido.';
+      :p.wa?'Ingresás con Google y se abre WhatsApp con el pedido escrito: la prueba se activa desde ahí.'
+      :(p.alta?'Antes de pagar ingresás con Google, así tu suscripción queda asociada a tu cuenta. Tu plan queda elegido.'
+        /* Sin alta, después de Google se sigue derecho a Mercado Pago: el aviso del mail tiene que verse antes. */
+        :'Ingresás con Google y seguís directo a Mercado Pago. Usá el mismo mail en los dos, así ves tu suscripción y la descarga en Mi cuenta.');
     [].forEach.call(d.querySelectorAll('.pg-opt'),function(l){l.classList.toggle('sel',l.querySelector('input').checked)});
   }
 
