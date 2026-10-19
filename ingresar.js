@@ -6,4 +6,5 @@ if(k&&P[k]&&pl&&g){
 pl.textContent=P[k].wa?"Elegiste "+P[k].nombre+". Ingresá con Google: la descarga se habilita cuando activemos tu prueba.":"Elegiste "+P[k].nombre+" ($ "+P[k].precio.toLocaleString("es-AR")+" por mes). Ingresá con Google para continuar al pago: tu elección queda guardada.";pl.hidden=false;
 g.href="/api/auth/google?plan="+k}
 var nx=q.get("next");if(nx&&g&&(/^\/vincular\/\?[A-Za-z0-9_%=&.~+-]*$/.test(nx)||/^\/vincular\/qr\/\?p=[0-9a-f]{32}$/.test(nx))){g.href="/api/auth/google?next="+encodeURIComponent(nx)}
+else if(nx&&g&&/^\/invitado\/\?t=[0-9a-f]{64}$/.test(nx)){g.href="/api/auth/google?next="+encodeURIComponent(nx);if(pl){pl.textContent="Ingresá con Google para activar tu prueba de Nodo Gastro.";pl.hidden=false}}
 else if(nx&&g&&/^\/unirse\/\?t=[0-9a-f]{64}$/.test(nx)){g.href="/api/auth/google?next="+encodeURIComponent(nx);if(pl){pl.textContent="Ingresá con el mismo mail al que te llegó la invitación para sumarte al negocio.";pl.hidden=false}}})();
