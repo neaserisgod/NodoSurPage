@@ -12,14 +12,13 @@
 
   /* qué plan le sirve según la página donde está */
   var ruta=location.pathname;
-  /* la home es la puerta de las tres ediciones: ahí no se asume ninguna */
+  /* la home es la puerta de las tres ediciones: ahí no se asume ninguna. Tampoco en /bot-whatsapp/: el bot viene en Estudio y Gastro (2026-10-19) */
   var PLAN=/^\/(servicios|app-de-turnos-para-[a-z]+)\/?/.test(ruta)?'emprendedor'
     :/^\/gastro/.test(ruta)?'gastro'
-    :/^\/bot-whatsapp/.test(ruta)?'bot'
     :/^\/(sistema-|como-|diferencias-)/.test(ruta)?'pos':null;
   var PLANES={ /* respaldo si /planes.js no cargó: los mismos datos */
     emprendedor:{nombre:'Nodo Estudio',precio:18000,alta:false},gastro:{nombre:'Nodo Gastro',precio:18000,alta:false},pos:{nombre:'Nodo Gestión',precio:35000,alta:false},
-    bot:{nombre:'Solo el bot',precio:35000,alta:true},'pos-bot':{nombre:'Nodo Gestión + Bot',precio:60000,alta:true}
+    'pos-bot':{nombre:'Nodo Gestión + Bot',precio:60000,alta:true}
   };
   var plan=function(k){return (window.NS_PLANES&&window.NS_PLANES[k])||PLANES[k]};
   var cargarPlanes=function(){if(window.NS_PLANES||d.querySelector('script[src^="/planes.js"]'))return;var s=el('script');s.src='/planes.js';s.async=true;d.head.appendChild(s)};
@@ -111,7 +110,7 @@
   };
   var $$ch=function(){return [].slice.call(log.querySelectorAll('.sop-ch'))};
   var bienvenida=function(){
-    var t={emprendedor:'¡Hola! ¿Tenés un salón, una barbería o un espacio de estética? Preguntame lo que quieras de Nodo Estudio.',gastro:'¡Hola! ¿Tenés una rotisería o un local de comida para llevar? Preguntame lo que quieras de Nodo Gastro.',pos:'¡Hola! ¿Tenés un kiosco, almacén o comercio? Preguntame lo que quieras de Nodo Gestión.',bot:'¡Hola! Preguntame lo que quieras del bot de WhatsApp.'}[PLAN]||'¡Hola! Preguntame lo que quieras de Nodo Sur: precios, cómo se usa, cómo probarlo.';
+    var t={emprendedor:'¡Hola! ¿Tenés un salón, una barbería o un espacio de estética? Preguntame lo que quieras de Nodo Estudio.',gastro:'¡Hola! ¿Tenés una rotisería o un local de comida para llevar? Preguntame lo que quieras de Nodo Gastro.',pos:'¡Hola! ¿Tenés un kiosco, almacén o comercio? Preguntame lo que quieras de Nodo Gestión.'}[PLAN]||'¡Hola! Preguntame lo que quieras de Nodo Sur: precios, cómo se usa, cómo probarlo.';
     sumar({rol:'nos',texto:t,ch:['¿Cuánto sale?','¿Cómo lo pruebo?',PLAN==='pos'?'¿Anda en mi PC?':'¿Anda en iPhone?']});
   };
 
