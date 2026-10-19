@@ -81,11 +81,15 @@ await t('checkout: si no se puede guardar el plan, igual deja pagar', async () =
 
 // ---------- registro con plan elegido
 const idt = (nonce, email, sub) => 'h.' + Buffer.from(JSON.stringify({ iss: 'https://accounts.google.com', aud: 'cid', exp: nowS() + 99, nonce, email_verified: true, email, sub, name: 'Ana Pérez', given_name: 'Ana' })).toString('base64url') + '.s';
+const mails = [];
 async function login(env, qs, email = 'ana@gmail.com', sub = 's1') {
   const r0 = await google.onRequestGet({ request: new Request('https://horsepos.com/api/auth/google' + qs), env });
   const u = new URL(r0.headers.get('Location'));
   const flow = ck(r0).ns_oauth;
-  globalThis.fetch = async () => new Response(JSON.stringify({ id_token: idt(u.searchParams.get('nonce'), email, sub) }), { status: 200 });
+  globalThis.fetch = async (url, init = {}) => {
+    if (String(url).includes('api.resend.com')) { mails.push(JSON.parse(init.body)); return new Response('{}', { status: 200 }); }
+    return new Response(JSON.stringify({ id_token: idt(u.searchParams.get('nonce'), email, sub) }), { status: 200 });
+  };
   const res = await callback.onRequestGet({ request: new Request(`https://horsepos.com/api/auth/callback?code=c&state=${u.searchParams.get('state')}`, { headers: { Cookie: `ns_oauth=${flow}` } }), env });
   return { res, flow: await verify(flow, env.SESSION_SECRET) };
 }
@@ -203,4 +207,22 @@ await t('ningún archivo público expone los links de pago de Mercado Pago', asy
   assert.deepEqual(bad, []);
 });
 
+await t('primer ingreso: le llega un mail al dueño con el nombre, el mail y el plan; los ingresos siguientes, no', async () => {
+  const env = mkEnv({ RESEND_API_KEY: 'k', MAIL_FROM: 'Nodo Sur <hola@avisos.horsepos.com>', ADMIN_EMAILS: 'dueno@gmail.com' });
+  mails.length = 0;
+  await login(env, '?plan=gastro', 'gladys@gmail.com', 'sg');
+  assert.equal(mails.length, 1);
+  assert.deepEqual(mails[0].to, ['dueno@gmail.com']);
+  assert.match(mails[0].subject, /Ana Pérez \(Nodo Gastro\)/);
+  assert.ok(mails[0].text.includes('gladys@gmail.com'));
+  await login(env, '', 'gladys@gmail.com', 'sg');
+  assert.equal(mails.length, 1, 'el segundo ingreso no avisa');
+  await login(env, '', 'dueno@gmail.com', 'sd');
+  assert.equal(mails.length, 1, 'el dueño entrando no se avisa a sí mismo');
+});
+await t('primer ingreso sin mails configurados: entra igual y no avisa', async () => {
+  const env = mkEnv(); mails.length = 0;
+  const { res } = await login(env, '', 'nuevo@gmail.com', 'sn');
+  assert.equal(res.headers.get('Location'), 'https://horsepos.com/cuenta/'); assert.equal(mails.length, 0);
+});
 console.log(`\n${pass} pruebas OK (checkout y plan elegido)`);
