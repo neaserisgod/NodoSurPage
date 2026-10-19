@@ -115,11 +115,12 @@
   }
 
   // Qué app le toca por su plan: Emprendedor = Nodo Estudio; Nodo Gastro = la de gastronomía; Sistema POS o Sistema + Bot = Nodo
-  // Gestión. Con más de una, o sin plan propio (administración, eximidas, encargados, "Solo el bot"), null: elige con el selector.
+  // Gestión. Con más de una, o sin plan propio (administración, encargados, "Solo el bot"), null: elige con el selector. Una
+  // eximida que eligió plan al ingresar (el dueño la exime para un piloto, 2026-10-19) va directo a esa app.
   var APP_DE = { 'Emprendedor': 'servicios', 'Nodo Gastro': 'gastro', 'Sistema POS': 'almacen', 'Sistema + Bot': 'almacen' };
   function appDelPlan(d) {
-    if (d.isAdmin || d.exempt || d.billing === false) return null;
-    var planes = (d.subscriptions || []).filter(function (x) { return x.status === 'authorized'; }).map(function (x) { return x.plan; });
+    if (d.isAdmin || d.billing === false) return null;
+    var planes = d.exempt ? [] : (d.subscriptions || []).filter(function (x) { return x.status === 'authorized'; }).map(function (x) { return x.plan; });
     if (!planes.length && d.intent) planes = [{ emprendedor: 'Emprendedor', gastro: 'Nodo Gastro', pos: 'Sistema POS', 'pos-bot': 'Sistema + Bot' }[d.intent.plan]];
     var apps = planes.map(function (p) { return APP_DE[p]; }).filter(function (a, i, l) { return a && l.indexOf(a) === i; });
     return apps.length === 1 ? apps[0] : null;
