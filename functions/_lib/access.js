@@ -10,14 +10,15 @@ import { isPrivilegedSub } from './devices.js';
 import { orgsWith, getOrg, getMembership } from './orgs.js';
 import { puede } from './permisos.js';
 import { VENTANA_RESTAURAR_DIAS } from './backups.js';
-import { planDelNegocio } from './plan_por_negocio.js';
+import { planDelNegocio, planCubreProducto } from './plan_por_negocio.js';
 
 const DAY = 86400;
 
 // ¿Puede esta persona descargar el instalador? Administradores y cuentas eximidas siempre; el resto necesita una
 // suscripción vigente (autorizada) en Mercado Pago: la propia, o la de un negocio donde su rol permite descargar.
-// Ante la duda (Mercado Pago caído) no habilita.
-export async function downloadAccess(env, cu) {
+// Ante la duda (Mercado Pago caído) no habilita. Con [producto] (el de la app que se baja, `productos.js`), la suscripción tiene
+// que cubrir ese producto: pagando Nodo Estudio no se baja la caja de Nodo Gestión.
+export async function downloadAccess(env, cu, producto = null) {
   if (!cu.session || cu.gone) return { ok: false, reason: 'no_session' };
   const privileged = isAdminEmail(env, cu.session.email) || Boolean(cu.user && cu.user.exempt);
   if (privileged) return { ok: true, privileged: true };
@@ -28,7 +29,7 @@ export async function downloadAccess(env, cu) {
     mails.add(org.billing_email);
   }
   // Todos los mails a la vez y con la memoria breve de mp.js (2 minutos): Mi cuenta acaba de consultarlos en vivo.
-  const r = await Promise.all([...mails].map((mail) => listSubscriptionsCached(env, mail).then((subs) => subs.some((s) => s.status === 'authorized'), () => null)));
+  const r = await Promise.all([...mails].map((mail) => listSubscriptionsCached(env, mail).then((subs) => subs.some((s) => s.status === 'authorized' && planCubreProducto(s.plan, producto)), () => null)));
   if (r.includes(true)) return { ok: true, privileged: false };
   return { ok: false, reason: r.includes(null) ? 'mp_error' : 'no_subscription' };
 }

@@ -6,9 +6,9 @@
 //  * Y solo si ese mail tiene una suscripción vigente: así no se suelta por accidente la que hoy cubre al negocio.
 //  * Nadie cancela la suscripción de otra persona (puede cubrir otros negocios suyos): cancela quien paga (cancel.js).
 //  * Cada negocio paga su plan (2026-10-13, `plan_por_negocio.js`): un mail con N planes cubre a sus N negocios más viejos.
-//    Pasar un negocio a "mi suscripción" exige un plan libre (más planes que negocios ya cobrados a ese mail).
+//    Pasar un negocio a "mi suscripción" exige un plan libre que sirva para su producto (`plan_por_negocio.js`).
 import { listSubscriptions } from './mp.js';
-import { planDelNegocio, negociosDelMail } from './plan_por_negocio.js';
+import { planDelNegocio, cubririaA } from './plan_por_negocio.js';
 import { enmascarar } from './miembros.js';
 import { isPrivilegedSub } from './devices.js';
 
@@ -37,8 +37,8 @@ export async function usarMiSuscripcion(env, org, email) {
   if (!env.MP_ACCESS_TOKEN) return { status: 503, error: 'not_configured' };
   let subs; try { subs = await listSubscriptions(env, email); } catch { return { status: 502, error: 'mp_error' }; }
   if (!vigente(subs)) return { status: 409, error: 'no_subscription' };
-  // Un plan cubre un negocio: hace falta uno que no esté cubriendo ya a otro negocio de este mail.
-  if (subs.filter((x) => x.status === 'authorized').length <= (await negociosDelMail(env, email)).length) return { status: 409, error: 'sin_plan_libre' };
+  // Hace falta un plan libre de este producto: uno que no esté cubriendo ya a otro negocio de este mail.
+  if (!(await cubririaA(env, org, email, subs))) return { status: 409, error: 'sin_plan_libre' };
   await env.DB.prepare('UPDATE orgs SET billing_email = ?2 WHERE id = ?1').bind(org.id, email).run();
   return { ok: true };
 }

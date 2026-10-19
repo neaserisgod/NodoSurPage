@@ -14,6 +14,9 @@ export const PRODUCTOS = { gestion: 'Nodo Gestión', estudio: 'Nodo Estudio', ga
 const DE_EDICION = { almacen: 'gestion', servicios: 'estudio', gastronomia: 'gastro' };
 export const productoDeEdicion = (e) => (typeof e === 'string' && Object.hasOwn(DE_EDICION, e) ? DE_EDICION[e] : null);
 
+// De qué producto es cada instalador (`releases.js`, PLATFORMS): los de siempre son del almacén.
+export const productoDePlataforma = (p) => (typeof p !== 'string' ? null : p.endsWith('-servicios') ? 'estudio' : p.endsWith('-gastronomia') ? 'gastro' : 'gestion');
+
 // Solo la app del almacén vincula PC (las de Estudio y Gastro en Windows entran como celular): un negocio con una PC vinculada
 // es de Gestión. Así La Plazoleta no puede quedar marcada por error como de otro producto al probar ahí otra app.
 export const ensureProducto = (env) => once(env, 'orgs_producto', async () => {
