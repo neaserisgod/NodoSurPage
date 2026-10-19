@@ -1,0 +1,556 @@
+<title>Cola de prospectos</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Geist:wght@400;500;600&display=swap">
+<style>
+/* Una columna de tarjetas, de a una por prospecto; arriba el conteo del día y las pestañas. Colores del sitio horsepos.com. */
+:root{
+  --fondo:#F5F4F2;--hoja:#FFFFFF;--linea:#E6E3DF;--tinta:#1A1714;--gris:#5E5852;--gris2:#8A847D;
+  --naranja:#E4580B;--naranja-suave:#FCEBDD;--naranja-txt:#9A3A07;--sobre-naranja:#1A1714;
+  --ok:#1F7A4A;--ok-suave:#E3F3EA;--alerta:#9A6200;--alerta-suave:#FFF1D6;--mal:#B3261E;--mal-suave:#FBE6E4;
+  --wa:#1F8F4E;--ig:#B2367A;
+  --tit:'Bricolage Grotesque',system-ui,sans-serif;--txt:'Geist',system-ui,-apple-system,'Segoe UI',sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --fondo:#141210;--hoja:#1E1B18;--linea:#332E29;--tinta:#F2EFEB;--gris:#B5ADA5;--gris2:#857D75;
+  --naranja:#F2732B;--naranja-suave:#3A2213;--naranja-txt:#FFB689;--sobre-naranja:#1A1714;
+  --ok:#5BC98B;--ok-suave:#15301F;--alerta:#F0B54A;--alerta-suave:#33280F;--mal:#FF8A80;--mal-suave:#3A1714;
+  --wa:#4CC27F;--ig:#E278B4;color-scheme:dark}}
+:root[data-theme="dark"]{
+  --fondo:#141210;--hoja:#1E1B18;--linea:#332E29;--tinta:#F2EFEB;--gris:#B5ADA5;--gris2:#857D75;
+  --naranja:#F2732B;--naranja-suave:#3A2213;--naranja-txt:#FFB689;--sobre-naranja:#1A1714;
+  --ok:#5BC98B;--ok-suave:#15301F;--alerta:#F0B54A;--alerta-suave:#33280F;--mal:#FF8A80;--mal-suave:#3A1714;
+  --wa:#4CC27F;--ig:#E278B4;color-scheme:dark}
+*,*::before,*::after{box-sizing:border-box}
+body{background:var(--fondo);color:var(--tinta);font:400 15px/1.45 var(--txt);-webkit-font-smoothing:antialiased}
+.envoltura{max-width:720px;margin:0 auto;padding-block:20px 64px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:18px}
+h1,h2,h3,p{margin:0}
+h1{font:700 30px/1.05 var(--tit);letter-spacing:-.02em;text-wrap:balance}
+h2{font:600 19px/1.2 var(--tit);text-wrap:balance}
+.gris{color:var(--gris)}
+.chico{font-size:13px}
+.num{font-variant-numeric:tabular-nums}
+button,input,select,textarea{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--naranja);outline-offset:2px;border-radius:8px}
+a{color:inherit}
+
+.cabeza{display:flex;flex-direction:column;gap:6px}
+.cifras{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.cifra{background:var(--hoja);border:1px solid var(--linea);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.cifra b{font:600 22px/1 var(--tit);font-variant-numeric:tabular-nums}
+.cifra span{font-size:12px;color:var(--gris);letter-spacing:.02em}
+.cifra.meta b{color:var(--naranja-txt)}
+.barra{height:6px;border-radius:6px;background:var(--linea);overflow:hidden}
+.barra i{display:block;height:100%;background:var(--naranja);width:0;transition:width .3s}
+@media (max-width:460px){.cifras{grid-template-columns:repeat(2,minmax(0,1fr))}}
+
+.pestanas{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.pestanas button{flex:none;border:1px solid var(--linea);background:var(--hoja);border-radius:999px;padding:8px 14px;cursor:pointer;font-weight:500}
+.pestanas button[aria-pressed="true"]{background:var(--tinta);color:var(--fondo);border-color:var(--tinta)}
+.pestanas .n{margin-left:6px;font-variant-numeric:tabular-nums;opacity:.7}
+
+.lista{display:flex;flex-direction:column;gap:12px}
+.tarjeta{background:var(--hoja);border:1px solid var(--linea);border-radius:20px;padding:16px;display:flex;flex-direction:column;gap:12px}
+.fila{display:flex;flex-wrap:wrap;align-items:center;gap:6px 8px}
+.quien{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}
+.quien>div{min-width:0}
+.quien h3{font:600 17px/1.2 var(--tit);overflow-wrap:anywhere}
+.quien a{color:var(--gris);text-decoration:none;font-size:13px;overflow-wrap:anywhere}
+.quien a:hover{text-decoration:underline}
+.chip{max-width:100%;overflow:hidden;text-overflow:ellipsis;font-size:12px;padding:3px 9px;border-radius:999px;background:var(--fondo);border:1px solid var(--linea);color:var(--gris);white-space:nowrap}
+.chip.bueno{background:var(--ok-suave);border-color:transparent;color:var(--ok)}
+.chip.ojo{background:var(--alerta-suave);border-color:transparent;color:var(--alerta)}
+.chip.gancho{background:var(--naranja-suave);border-color:transparent;color:var(--naranja-txt);font-weight:600}
+.estado{font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;white-space:nowrap}
+.e-pendiente{background:var(--fondo);color:var(--gris)}
+.e-enviado{background:var(--alerta-suave);color:var(--alerta)}
+.e-respondio,.e-demo{background:var(--naranja-suave);color:var(--naranja-txt)}
+.e-pago{background:var(--ok-suave);color:var(--ok)}
+.e-no,.e-descartado{background:var(--mal-suave);color:var(--mal)}
+
+textarea{width:100%;min-height:118px;resize:vertical;border:1px solid var(--linea);border-radius:14px;padding:12px;background:var(--fondo);line-height:1.45}
+textarea.falta{border-color:var(--alerta);box-shadow:0 0 0 3px var(--alerta-suave)}
+.aviso-falta{font-size:13px;color:var(--alerta)}
+.canal{display:inline-flex;border:1px solid var(--linea);border-radius:999px;overflow:hidden}
+.canal button{border:0;background:transparent;padding:6px 12px;cursor:pointer;font-size:13px;font-weight:500}
+.canal button[aria-pressed="true"]{background:var(--tinta);color:var(--fondo)}
+
+.acciones{display:flex;flex-wrap:wrap;gap:8px}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1px solid var(--linea);background:var(--hoja);border-radius:12px;padding:10px 14px;cursor:pointer;font-weight:500;text-decoration:none;color:var(--tinta);min-height:44px}
+.btn:hover{border-color:var(--gris2)}
+.btn.primario{background:var(--naranja);border-color:var(--naranja);color:var(--sobre-naranja);font-weight:600}
+.btn.wa{background:var(--wa);border-color:var(--wa);color:#fff;font-weight:600}
+.btn.ig{background:var(--ig);border-color:var(--ig);color:#fff;font-weight:600}
+.btn[aria-disabled="true"]{opacity:.45;pointer-events:none}
+.btn.chico{min-height:36px;padding:7px 11px;font-size:13px}
+.estados{display:flex;flex-wrap:wrap;gap:6px;padding-top:10px;border-top:1px dashed var(--linea)}
+
+details.panel{background:var(--hoja);border:1px solid var(--linea);border-radius:20px}
+details.panel>summary{cursor:pointer;padding:14px 16px;font-weight:600;list-style:none;display:flex;justify-content:space-between;gap:8px}
+details.panel>summary::-webkit-details-marker{display:none}
+details.panel>summary::after{content:"+";color:var(--gris)}
+details.panel[open]>summary::after{content:"–"}
+.cuerpo{padding:0 16px 16px;display:flex;flex-direction:column;gap:12px}
+label{display:flex;flex-direction:column;gap:4px;font-size:13px;color:var(--gris)}
+input[type=text],input[type=tel],input[type=url],input[type=number],select{border:1px solid var(--linea);border-radius:12px;padding:10px 12px;background:var(--fondo);color:var(--tinta);width:100%}
+.dos{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:460px){.dos{grid-template-columns:1fr}}
+.vacio{background:var(--hoja);border:1px dashed var(--linea);border-radius:20px;padding:28px 18px;text-align:center;display:flex;flex-direction:column;gap:6px;align-items:center}
+.toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--tinta);color:var(--fondo);padding:10px 16px;border-radius:12px;font-size:14px;opacity:0;transition:opacity .2s;pointer-events:none;max-width:calc(100% - 32px)}
+.toast.ver{opacity:1}
+.nota-alm{font-size:12px;color:var(--gris2)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<div class="envoltura">
+  <header class="cabeza">
+    <p class="chico gris">Nodo Estudio · mensajes en frío</p>
+    <h1>Cola de prospectos</h1>
+    <p class="gris">Abrís el perfil, cambiás la línea personal, tocás el botón y mandás. Después marcás qué pasó.</p>
+  </header>
+
+  <section class="cifras" aria-label="Hoy">
+    <div class="cifra meta"><b class="num" id="c-hoy">0</b><span id="c-hoy-l">mandados hoy de 25</span></div>
+    <div class="cifra"><b class="num" id="c-resp">–</b><span>responden</span></div>
+    <div class="cifra"><b class="num" id="c-ab">–</b><span>gancho A / B</span></div>
+    <div class="cifra"><b class="num" id="c-pago">0</b><span>pagaron</span></div>
+  </section>
+  <div class="barra" aria-hidden="true"><i id="barra"></i></div>
+
+  <nav class="pestanas" aria-label="Qué ver">
+    <button type="button" data-vista="mandar" aria-pressed="true">Para mandar<span class="n" id="n-mandar">0</span></button>
+    <button type="button" data-vista="seguir" aria-pressed="false">Seguimiento<span class="n" id="n-seguir">0</span></button>
+    <button type="button" data-vista="charla" aria-pressed="false">En charla<span class="n" id="n-charla">0</span></button>
+    <button type="button" data-vista="esperando" aria-pressed="false">Esperando<span class="n" id="n-esperando">0</span></button>
+    <button type="button" data-vista="todos" aria-pressed="false">Todos<span class="n" id="n-todos">0</span></button>
+  </nav>
+
+  <div class="lista" id="lista"></div>
+
+  <details class="panel" id="p-agregar">
+    <summary>Agregar prospectos</summary>
+    <div class="cuerpo">
+      <p class="chico gris">Subí un CSV (tu planilla, o lo que exporta Apify de Google Maps o de perfiles de Instagram) o pegalo acá. Se saltean los repetidos, las cuentas de más de 10.000 o menos de 300 seguidores y las que ya usan otra app de turnos.</p>
+      <label>Archivo CSV<input type="file" id="archivo" accept=".csv,text/csv"></label>
+      <label>O pegá las filas (con la primera de títulos: instagram, nombre, telefono, rubro, ciudad, detalle)
+        <textarea id="pegado" placeholder="instagram,nombre,rubro,ciudad,detalle&#10;nails.esculpidas.nqn,Nails Esculpidas,unas,Neuquén,esculpidas"></textarea></label>
+      <div class="acciones"><button class="btn primario" type="button" id="b-importar">Agregar a la cola</button></div>
+      <p class="chico" id="r-importar" role="status"></p>
+      <hr style="border:0;border-top:1px dashed var(--linea);margin:4px 0">
+      <p class="chico gris">Uno a mano:</p>
+      <div class="dos">
+        <label>Instagram<input type="text" id="m-ig" placeholder="@cuenta"></label>
+        <label>WhatsApp<input type="tel" id="m-tel" placeholder="299 444 5555"></label>
+        <label>Nombre<input type="text" id="m-nombre" placeholder="Nails Club"></label>
+        <label>Ciudad<input type="text" id="m-ciudad" placeholder="Cipolletti"></label>
+        <label>Rubro<select id="m-rubro"><option value="unas">Uñas</option><option value="pestanas">Pestañas y cejas</option><option value="peluqueria">Peluquería</option><option value="barberia">Barbería</option><option value="estetica">Estética</option></select></label>
+        <label>Qué viste en su cuenta<input type="text" id="m-detalle" placeholder="esculpidas"></label>
+      </div>
+      <div class="acciones"><button class="btn" type="button" id="b-uno">Agregar</button></div>
+    </div>
+  </details>
+
+  <details class="panel" id="p-ajustes">
+    <summary>Tus datos para los mensajes</summary>
+    <div class="cuerpo">
+      <div class="dos">
+        <label>Tu nombre<input type="text" id="a-vendedor" placeholder="Nico"></label>
+        <label>Meta por día<input type="number" id="a-meta" min="1" max="100" value="25"></label>
+        <label>Número de demo (WhatsApp)<input type="tel" id="a-demo" placeholder="2944 123456"></label>
+        <label>Link del video de 1 minuto<input type="url" id="a-video" placeholder="https://…"></label>
+      </div>
+      <div class="acciones">
+        <button class="btn" type="button" id="b-guardar">Guardar</button>
+        <button class="btn" type="button" id="b-exportar">Exportar planilla</button>
+      </div>
+      <p class="nota-alm" id="donde"></p>
+    </div>
+  </details>
+</div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+(() => {
+  'use strict';
+  const $ = (s, r = document) => r.querySelector(s);
+  const HORA = 3600e3;
+  const ESTADOS = { pendiente: 'Sin mandar', enviado: 'Mandado', respondio: 'Respondió', demo: 'Vio la demo', pago: 'Pagó', no: 'No le interesa', descartado: 'Descartado' };
+  const RUBROS = { unas: 'Uñas', pestanas: 'Pestañas y cejas', peluqueria: 'Peluquería', barberia: 'Barbería', estetica: 'Estética' };
+  const FALTA = '[algo de su cuenta]';
+  const COMPETENCIA = /agendapro|booksy|turnito|weibook|reservo|calendly|fresha|setmore|simplybook|turnos\.app|miturno/i;
+
+  // ---------- Guardado: la base del artifact si está, si no el navegador ----------
+  let prospectos = new Map();
+  let ajustes = { vendedor: '', meta: 25, demo: '', video: '' };
+  const almacen = {
+    db: null,
+    async iniciar(alCambiar) {
+      try { this.local = JSON.parse(localStorage.getItem('cola.prospectos') || '{}'); } catch { this.local = {}; }
+      try { Object.assign(ajustes, JSON.parse(localStorage.getItem('cola.ajustes') || '{}')); } catch {}
+      prospectos = new Map(Object.entries(this.local));
+      alCambiar();
+      const db = window.claude?.use ? await window.claude.use('db').catch(() => null) : null;
+      if (!db) { $('#donde').textContent = 'Se guarda en este navegador. Exportá la planilla seguido para no perder nada.'; return; }
+      this.db = db;
+      $('#donde').textContent = 'Se guarda en la base de esta página: lo ves igual desde el celular y la compu.';
+      db.collection('prospectos').onSnapshot((snap) => {
+        prospectos = new Map(snap.docs.map((d) => [d.id, d.data()]));
+        alCambiar();
+      }, () => toast('No pude leer la base. Probá recargar.'));
+      db.doc('ajustes/general').onSnapshot((d) => { if (d.exists) { Object.assign(ajustes, d.data()); pintarAjustes(); alCambiar(); } });
+    },
+    guardarLocal() { try { localStorage.setItem('cola.prospectos', JSON.stringify(Object.fromEntries(prospectos))); } catch {} },
+    async poner(id, p) {
+      prospectos.set(id, p);
+      if (this.db) await this.db.collection('prospectos').doc(id).set(p); else this.guardarLocal();
+    },
+    async cambiar(id, cambios) {
+      const p = { ...prospectos.get(id), ...cambios };
+      prospectos.set(id, p);
+      if (this.db) await this.db.collection('prospectos').doc(id).update(cambios); else this.guardarLocal();
+    },
+    async guardarAjustes() {
+      if (this.db) await this.db.doc('ajustes/general').set(ajustes);
+      else { try { localStorage.setItem('cola.ajustes', JSON.stringify(ajustes)); } catch {} }
+    },
+  };
+
+  // ---------- Datos: normalizar lo que venga ----------
+  const sinAcentos = (s) => String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+
+  // "@cuenta", "instagram.com/cuenta/", "https://www.instagram.com/cuenta?hl=es" → "cuenta"
+  function handle(txt) {
+    const s = String(txt || '').trim();
+    const m = /instagram\.com\/([A-Za-z0-9_.]+)/i.exec(s);
+    const h = (m ? m[1] : s.replace(/^@/, '')).replace(/\/+$/, '');
+    return /^[A-Za-z0-9_.]{2,30}$/.test(h) && !/^(p|reel|explore|stories)$/i.test(h) ? h.toLowerCase() : '';
+  }
+
+  // Celular argentino como venga ("0299 15 444-5555", "+54 9 299 4445555") → 549 + área + número, sin el 0 ni el 15.
+  function telefono(txt) {
+    let d = String(txt || '').replace(/\D/g, '');
+    if (!d) return '';
+    if (d.startsWith('549')) d = d.slice(3); else if (d.startsWith('54')) d = d.slice(2);
+    if (d.startsWith('0')) d = d.slice(1);
+    if (d.length === 12) {
+      for (const a of [2, 3, 4]) if (d.slice(a, a + 2) === '15') { d = d.slice(0, a) + d.slice(a + 2); break; }
+    }
+    return d.length === 10 ? '549' + d : '';
+  }
+
+  function rubroDe(...textos) {
+    const t = sinAcentos(textos.join(' '));
+    if (/barber/.test(t)) return 'barberia';
+    if (/pestan|ceja|lash|brow|lifting/.test(t)) return 'pestanas';
+    if (/pelu|hair|color|balayage|estilista/.test(t)) return 'peluqueria';
+    if (/estetic|spa|depil|facial|cosmet|masaj/.test(t)) return 'estetica';
+    if (/una|nail|manicur|esculpid|kapping|semi/.test(t)) return 'unas';
+    return '';
+  }
+
+  function senales(p) {
+    const t = sinAcentos(`${p.bio || ''} ${p.nota || ''}`);
+    const s = [];
+    if (/turno|dm|whatsapp|wpp|reserv/.test(t)) s.push(['bueno', 'da turnos a mano']);
+    if (/sena|transferencia|alias/.test(t)) s.push(['bueno', 'pide seña']);
+    if (/home ?studio|en casa|domicilio/.test(t)) s.push(['bueno', 'trabaja sola']);
+    if (p.seguidores) s.push(['', `${Number(p.seguidores).toLocaleString('es-AR')} seg.`]);
+    return s;
+  }
+
+  // Una fila de CSV de cualquier origen → prospecto (o un motivo para dejarlo afuera).
+  function desdeFila(f) {
+    const k = {};
+    for (const [c, v] of Object.entries(f)) k[sinAcentos(c).replace(/[^a-z0-9]/g, '')] = String(v ?? '').trim();
+    const uno = (...ns) => { for (const n of ns) if (k[n]) return k[n]; return ''; };
+    const url = uno('website', 'url', 'link', 'sitio', 'web');
+    const ig = handle(uno('instagram', 'cuenta', 'usuario', 'username', 'ig', 'instagramurl', 'instagrams0') || (/instagram/i.test(url) ? url : ''));
+    const tel = telefono(uno('telefono', 'whatsapp', 'celular', 'phone', 'phoneunformatted', 'tel'));
+    if (!ig && !tel) return { fuera: 'sin Instagram ni teléfono' };
+    const bio = uno('bio', 'biography', 'descripcion', 'description');
+    const seguidores = Number(uno('seguidores', 'followerscount', 'followers').replace(/\D/g, '')) || 0;
+    if (seguidores && (seguidores < 300 || seguidores > 10000)) return { fuera: 'fuera de 300 a 10.000 seguidores' };
+    if (COMPETENCIA.test(`${bio} ${url} ${uno('externalurl', 'biolinks')}`)) return { fuera: 'ya usa otra app de turnos' };
+    const nombre = uno('nombre', 'title', 'fullname', 'name', 'negocio') || ig;
+    const categoria = uno('rubro', 'categoryname', 'category', 'businesscategoryname', 'categoria');
+    const deMaps = !!(k.title && (k.phone || k.phoneunformatted));
+    return {
+      p: {
+        ig, tel, nombre, bio, seguidores,
+        rubro: RUBROS[sinAcentos(categoria)] ? sinAcentos(categoria) : (rubroDe(categoria, nombre, ig, bio) || 'unas'),
+        ciudad: uno('ciudad', 'city', 'localidad', 'zona'),
+        detalle: uno('detalle', 'personal', 'linea'),
+        nota: uno('nota', 'notas', 'quesesabe'),
+        fuente: uno('fuente') || (deMaps ? 'Google Maps' : 'tu Instagram'),
+      },
+    };
+  }
+
+  function leerCsv(texto) {
+    const filas = []; let fila = [], campo = '', comillas = false;
+    const sep = (texto.split('\n')[0].match(/;/g) || []).length > (texto.split('\n')[0].match(/,/g) || []).length ? ';' : ',';
+    for (let i = 0; i < texto.length; i++) {
+      const c = texto[i];
+      if (comillas) { if (c === '"' && texto[i + 1] === '"') { campo += '"'; i++; } else if (c === '"') comillas = false; else campo += c; }
+      else if (c === '"') comillas = true;
+      else if (c === sep) { fila.push(campo); campo = ''; }
+      else if (c === '\n' || c === '\r') { if (c === '\r' && texto[i + 1] === '\n') i++; fila.push(campo); filas.push(fila); fila = []; campo = ''; }
+      else campo += c;
+    }
+    if (campo || fila.length) { fila.push(campo); filas.push(fila); }
+    const [cab, ...resto] = filas.filter((f) => f.some((x) => x.trim()));
+    if (!cab) return [];
+    return resto.map((f) => Object.fromEntries(cab.map((c, i) => [c, f[i] ?? ''])));
+  }
+
+  const idDe = (p) => (p.ig ? 'ig_' + p.ig : 'wa_' + p.tel).replace(/[^a-z0-9_]/gi, '_');
+  const ganchoDe = (id) => ([...id].reduce((a, c) => a + c.charCodeAt(0), 0) % 2 ? 'B' : 'A');
+
+  async function agregar(filas) {
+    const r = { nuevos: 0, repetidos: 0, fuera: {} };
+    const tels = new Set([...prospectos.values()].map((p) => p.tel).filter(Boolean));
+    for (const f of filas) {
+      const { p, fuera } = desdeFila(f);
+      if (fuera) { r.fuera[fuera] = (r.fuera[fuera] || 0) + 1; continue; }
+      const id = idDe(p);
+      if (prospectos.has(id) || (p.tel && tels.has(p.tel))) { r.repetidos++; continue; }
+      if (p.tel) tels.add(p.tel);
+      await almacen.poner(id, { ...p, gancho: ganchoDe(id), canal: p.ig ? 'ig' : 'wa', estado: 'pendiente', creado: Date.now(), historia: [] });
+      r.nuevos++;
+    }
+    return r;
+  }
+
+  // ---------- Mensajes (los mismos de mensajes-directos.md) ----------
+  const saludo = (p) => (p.rubro === 'barberia' ? 'Buenas!' : 'Hola!');
+  const trabajando = (p) => (p.rubro === 'barberia' ? 'mientras cortás' : 'mientras trabajás');
+
+  function mensaje1(p) {
+    const d = p.detalle || FALTA;
+    if (p.canal === 'wa') {
+      const v = ajustes.vendedor || '[tu nombre]';
+      return `Hola! ¿Hablo con ${p.nombre}? Soy ${v}, de Nodo Sur (Bariloche). Vi tu número en ${p.fuente || 'Google Maps'} y te quería hacer una pregunta corta.\n¿Los turnos los das vos por acá? Armé una app que contesta este mismo WhatsApp, da los turnos y cobra la seña sola ${p.rubro === 'barberia' ? 'mientras cortás' : 'mientras atendés'}.\nSi te interesa te mando un video de 1 minuto. Y si no, no te escribo más 🙌`;
+    }
+    if (p.gancho === 'B') {
+      return `${saludo(p)} Vi tus ${d}, qué lindo trabajo 👏\nUna consulta: ¿te pasa que te reservan un turno y no vienen?\nHice una app que da los turnos por WhatsApp y cobra la seña sola, así el que reserva viene. ¿Te muestro cómo anda en un video de 1 minuto?`;
+    }
+    return `${saludo(p)} Vi tus ${d}, re prolijos 👏\nUna pregunta corta: ¿te pasa que te escriben para turno mientras estás atendiendo y cuando contestás ya se fueron con otra?\nHice una app que contesta tu WhatsApp y da los turnos sola ${trabajando(p)}. ¿Te muestro cómo anda en un video de 1 minuto?`;
+  }
+
+  function mensaje2() {
+    const lineas = [`Genial! Acá va el video: ${ajustes.video || '[link del video]'}`];
+    if (ajustes.demo) lineas.push(`Y si querés probarlo vos como si fueras una clienta, escribile "hola" a este número: ${ajustes.demo}. Te va a contestar el bot de un estudio de ejemplo y te da un turno.`);
+    lineas.push('La app la podés tocar acá, sin crear cuenta: horsepos.com/demo/');
+    lineas.push('Sale $ 18.000 por mes, sin costo de alta, y la probás 7 días gratis. Si te gusta, te ayudo a cargar tus servicios y te dejo el bot andando. ¿Te parece si lo vemos 15 minutos por videollamada (o en persona si estás cerca)?');
+    return lineas.join('\n');
+  }
+
+  const mensaje3 = () => 'Hola! Te escribo una última vez por lo de la app de turnos. Si ahora no es momento, cero drama 🙌 Si querés verla, la demo se abre sin cuenta: horsepos.com/demo/';
+
+  const linkWa = (p, texto) => `https://wa.me/${p.tel}?text=${encodeURIComponent(texto)}`;
+  const linkIg = (p) => `https://ig.me/m/${p.ig}`;
+
+  // ---------- Pantalla ----------
+  let vista = 'mandar';
+  const borradores = new Map(); // id → texto que se está editando (no se pisa con lo que llega de la base)
+
+  const hoyIni = () => { const d = new Date(); d.setHours(0, 0, 0, 0); return d.getTime(); };
+  const esperaVencida = (p) => p.estado === 'enviado' && !p.seguido && Date.now() - (p.enviado || 0) > 48 * HORA;
+  const enVista = {
+    mandar: (p) => p.estado === 'pendiente',
+    seguir: esperaVencida,
+    charla: (p) => p.estado === 'respondio' || p.estado === 'demo',
+    esperando: (p) => p.estado === 'enviado' && !esperaVencida(p),
+    todos: () => true,
+  };
+
+  function pintar() {
+    const todos = [...prospectos.entries()];
+    for (const v of Object.keys(enVista)) $('#n-' + v).textContent = todos.filter(([, p]) => enVista[v](p)).length;
+    const enviados = todos.filter(([, p]) => p.enviado);
+    const hoy = enviados.filter(([, p]) => p.enviado >= hoyIni()).length;
+    const meta = Number(ajustes.meta) || 25;
+    $('#c-hoy').textContent = hoy;
+    $('#c-hoy-l').textContent = `mandados hoy de ${meta}`;
+    $('#barra').style.width = Math.min(100, (hoy / meta) * 100) + '%';
+    const respondieron = (lista) => lista.filter(([, p]) => ['respondio', 'demo', 'pago', 'no'].includes(p.estado)).length;
+    $('#c-resp').textContent = enviados.length ? Math.round((respondieron(enviados) / enviados.length) * 100) + ' %' : '–';
+    const pct = (g) => { const l = enviados.filter(([, p]) => p.canal === 'ig' && p.gancho === g); return l.length ? Math.round((respondieron(l) / l.length) * 100) + '%' : '–'; };
+    $('#c-ab').textContent = enviados.length ? `${pct('A')} / ${pct('B')}` : '–';
+    $('#c-pago').textContent = todos.filter(([, p]) => p.estado === 'pago').length;
+
+    const lista = $('#lista');
+    const activo = document.activeElement?.closest?.('.tarjeta')?.dataset.id;
+    const visibles = todos.filter(([, p]) => enVista[vista](p)).sort(([, a], [, b]) => (vista === 'mandar' ? puntaje(b) - puntaje(a) || a.creado - b.creado : (b.cambiado || 0) - (a.cambiado || 0)));
+    if (activo && visibles.some(([id]) => id === activo)) return; // no le borramos la tarjeta a quien está escribiendo
+    lista.replaceChildren(...(visibles.length ? visibles.slice(0, 60).map(([id, p]) => tarjeta(id, p)) : [vacio()]));
+  }
+  const puntaje = (p) => senales(p).filter(([c]) => c === 'bueno').length + (p.detalle ? 1 : 0);
+
+  function vacio() {
+    const d = document.createElement('div');
+    d.className = 'vacio';
+    const textos = {
+      mandar: ['No hay nadie para mandar.', 'Agregá prospectos abajo: un CSV, filas pegadas o uno a mano.'],
+      seguir: ['Nadie espera seguimiento.', 'Acá aparecen los que no contestaron en 48 horas.'],
+      charla: ['Todavía nadie respondió.', 'Cuando alguien conteste, marcalo "Respondió" y aparece acá con el mensaje 2 listo.'],
+      esperando: ['No hay mensajes esperando respuesta.', ''],
+      todos: ['La cola está vacía.', 'Agregá prospectos abajo.'],
+    }[vista];
+    d.innerHTML = `<h2></h2><p class="gris chico"></p>`;
+    d.querySelector('h2').textContent = textos[0];
+    d.querySelector('p').textContent = textos[1];
+    return d;
+  }
+
+  function el(tag, attrs = {}, ...hijos) {
+    const e = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs)) {
+      if (k === 'class') e.className = v; else if (k.startsWith('on')) e.addEventListener(k.slice(2), v); else if (v !== false && v != null) e.setAttribute(k, v === true ? '' : v);
+    }
+    for (const h of hijos.flat()) if (h != null) e.append(h);
+    return e;
+  }
+
+  function tarjeta(id, p) {
+    const t = el('article', { class: 'tarjeta', 'data-id': id });
+    const perfil = p.ig ? el('a', { href: `https://www.instagram.com/${p.ig}/`, target: '_blank', rel: 'noopener' }, `@${p.ig} ↗`) : el('span', { class: 'chico gris num' }, '+' + p.tel);
+    t.append(el('div', { class: 'quien' },
+      el('div', {}, el('h3', {}, p.nombre || p.ig), perfil),
+      el('span', { class: 'estado e-' + p.estado }, ESTADOS[p.estado])));
+
+    const fila = el('div', { class: 'fila' }, el('span', { class: 'chip' }, RUBROS[p.rubro] || p.rubro), p.ciudad ? el('span', { class: 'chip' }, p.ciudad) : null);
+    for (const [c, txt] of senales(p)) fila.append(el('span', { class: 'chip ' + c }, txt));
+    if (p.canal === 'ig' && p.estado === 'pendiente') fila.append(el('span', { class: 'chip gancho', title: p.gancho === 'A' ? 'Gancho A: no llegás a contestar' : 'Gancho B: te plantan' }, 'Gancho ' + p.gancho));
+    t.append(fila);
+    if (p.nota) t.append(el('p', { class: 'chico gris' }, p.nota));
+
+    // Qué mensaje toca según en qué está.
+    const etapa = esperaVencida(p) ? 3 : (p.estado === 'respondio' || p.estado === 'demo') ? 2 : p.estado === 'pendiente' ? 1 : 0;
+    if (etapa) {
+      if (p.ig && p.tel && etapa === 1) {
+        t.append(el('div', { class: 'fila' }, el('span', { class: 'chico gris' }, 'Mandar por'),
+          el('div', { class: 'canal', role: 'group' },
+            el('button', { type: 'button', 'aria-pressed': String(p.canal === 'ig'), onclick: () => almacen.cambiar(id, { canal: 'ig' }).then(pintar) }, 'Instagram'),
+            el('button', { type: 'button', 'aria-pressed': String(p.canal === 'wa'), onclick: () => almacen.cambiar(id, { canal: 'wa' }).then(pintar) }, 'WhatsApp'))));
+      }
+      const base = etapa === 1 ? (p.mensaje || mensaje1(p)) : etapa === 2 ? mensaje2() : mensaje3();
+      const area = el('textarea', { id: 'msj-' + id, 'aria-label': 'Mensaje para ' + (p.nombre || p.ig) });
+      area.value = borradores.get(id) ?? base;
+      const aviso = el('p', { class: 'aviso-falta' }, `Cambiá "${FALTA}" por algo real que viste en su cuenta.`);
+      const canal = etapa === 1 ? p.canal : (p.canal === 'wa' || !p.ig ? 'wa' : 'ig');
+      const boton = canal === 'wa'
+        ? el('a', { class: 'btn wa', target: '_blank', rel: 'noopener' }, 'Abrir WhatsApp con el mensaje')
+        : el('a', { class: 'btn ig', target: '_blank', rel: 'noopener', href: linkIg(p) }, 'Copiar y abrir Instagram');
+      const actualizar = () => {
+        const falta = area.value.includes('[');
+        area.classList.toggle('falta', falta);
+        aviso.hidden = !falta;
+        boton.setAttribute('aria-disabled', String(falta));
+        if (canal === 'wa') boton.href = linkWa(p, area.value);
+      };
+      area.addEventListener('input', () => { borradores.set(id, area.value); actualizar(); });
+      area.addEventListener('blur', () => { if (etapa === 1 && area.value !== base) almacen.cambiar(id, { mensaje: area.value }); });
+      boton.addEventListener('click', () => {
+        copiar(area.value, canal === 'ig' ? 'Mensaje copiado: pegalo en el chat.' : 'Abriendo WhatsApp…');
+        setTimeout(() => toast('¿Lo mandaste? Tocá "Lo mandé" para que cuente.'), 2500);
+      });
+      actualizar();
+      const marcar = etapa === 1
+        ? el('button', { class: 'btn primario', type: 'button', onclick: () => cambiarEstado(id, 'enviado') }, 'Lo mandé')
+        : etapa === 3 ? el('button', { class: 'btn primario', type: 'button', onclick: () => { borradores.delete(id); almacen.cambiar(id, { seguido: Date.now(), cambiado: Date.now() }).then(() => { toast('Seguimiento anotado.'); pintar(); }); } }, 'Mandé el seguimiento') : null;
+      t.append(area, aviso, el('div', { class: 'acciones' }, boton, marcar,
+        el('button', { class: 'btn chico', type: 'button', onclick: () => copiar(area.value, 'Mensaje copiado.') }, 'Solo copiar')));
+    }
+
+    const estados = el('div', { class: 'estados' });
+    for (const e of ['respondio', 'demo', 'pago', 'no', 'descartado', 'pendiente']) {
+      if (e === p.estado || (p.estado === 'pendiente' && e !== 'descartado')) continue;
+      estados.append(el('button', { class: 'btn chico', type: 'button', onclick: () => cambiarEstado(id, e) }, e === 'pendiente' ? 'Volver a sin mandar' : ESTADOS[e]));
+    }
+    if (estados.children.length) t.append(estados);
+    return t;
+  }
+
+  async function cambiarEstado(id, estado) {
+    const p = prospectos.get(id);
+    const ahora = Date.now();
+    const cambios = { estado, cambiado: ahora, historia: [...(p.historia || []), { estado, en: ahora }] };
+    if (estado === 'enviado' && !p.enviado) cambios.enviado = ahora;
+    if (estado === 'pendiente') cambios.enviado = null;
+    borradores.delete(id);
+    await almacen.cambiar(id, cambios).catch(() => toast('No se pudo guardar. Probá de nuevo.'));
+    toast(`${p.nombre || p.ig}: ${ESTADOS[estado]}.`);
+    pintar();
+  }
+
+  function copiar(texto, ok) {
+    const hecho = () => toast(ok);
+    try { navigator.clipboard.writeText(texto).then(hecho, () => toast('No pude copiar: seleccioná el texto y copialo a mano.')); }
+    catch { toast('No pude copiar: seleccioná el texto y copialo a mano.'); }
+  }
+
+  let tt;
+  function toast(txt) { const t = $('#toast'); t.textContent = txt; t.classList.add('ver'); clearTimeout(tt); tt = setTimeout(() => t.classList.remove('ver'), 2600); }
+
+  function pintarAjustes() {
+    $('#a-vendedor').value = ajustes.vendedor || '';
+    $('#a-meta').value = ajustes.meta || 25;
+    $('#a-demo').value = ajustes.demo || '';
+    $('#a-video').value = ajustes.video || '';
+  }
+
+  // ---------- Botones ----------
+  document.querySelectorAll('.pestanas button').forEach((b) => b.addEventListener('click', () => {
+    vista = b.dataset.vista;
+    document.querySelectorAll('.pestanas button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    document.activeElement?.blur?.();
+    pintar();
+  }));
+
+  function informe(r) {
+    const fuera = Object.entries(r.fuera).map(([m, n]) => `${n} ${m}`).join(', ');
+    return `Agregados: ${r.nuevos}. Repetidos: ${r.repetidos}.${fuera ? ' Afuera: ' + fuera + '.' : ''}`;
+  }
+  $('#b-importar').addEventListener('click', async () => {
+    const f = $('#archivo').files[0];
+    const texto = f ? await f.text() : $('#pegado').value;
+    if (!texto.trim()) { $('#r-importar').textContent = 'Elegí un archivo o pegá filas primero.'; return; }
+    const filas = leerCsv(texto.replace(/^﻿/, ''));
+    if (!filas.length) { $('#r-importar').textContent = 'No encontré filas. La primera línea tiene que ser la de títulos.'; return; }
+    const r = await agregar(filas);
+    $('#r-importar').textContent = informe(r);
+    $('#archivo').value = ''; $('#pegado').value = '';
+    pintar();
+  });
+  $('#b-uno').addEventListener('click', async () => {
+    const fila = { instagram: $('#m-ig').value, telefono: $('#m-tel').value, nombre: $('#m-nombre').value, ciudad: $('#m-ciudad').value, rubro: $('#m-rubro').value, detalle: $('#m-detalle').value };
+    const r = await agregar([fila]);
+    toast(r.nuevos ? 'Agregado a la cola.' : informe(r));
+    if (r.nuevos) for (const i of ['#m-ig', '#m-tel', '#m-nombre', '#m-ciudad', '#m-detalle']) $(i).value = '';
+    pintar();
+  });
+  $('#b-guardar').addEventListener('click', async () => {
+    Object.assign(ajustes, { vendedor: $('#a-vendedor').value.trim(), meta: Number($('#a-meta').value) || 25, demo: $('#a-demo').value.trim(), video: $('#a-video').value.trim() });
+    await almacen.guardarAjustes().catch(() => {});
+    toast('Guardado.');
+    pintar();
+  });
+
+  $('#b-exportar').addEventListener('click', async () => {
+    const cols = ['nombre', 'ig', 'tel', 'rubro', 'ciudad', 'canal', 'gancho', 'estado', 'enviado', 'seguido', 'detalle', 'fuente'];
+    const fecha = (n) => (n ? new Date(n).toLocaleDateString('es-AR') : '');
+    const esc = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
+    const filas = [...prospectos.values()].map((p) => cols.map((c) => esc(['enviado', 'seguido'].includes(c) ? fecha(p[c]) : p[c])).join(','));
+    const csv = '﻿' + [cols.join(','), ...filas].join('\n');
+    const nombre = `prospectos-${new Date().toISOString().slice(0, 10)}.csv`;
+    const descargas = window.claude?.use ? await window.claude.use('downloads').catch(() => null) : null;
+    if (descargas) { try { await descargas.save({ filename: nombre, data: csv }); } catch { toast('No se guardó el archivo.'); } return; }
+    const a = el('a', { href: URL.createObjectURL(new Blob([csv], { type: 'text/csv' })), download: nombre });
+    document.body.append(a); a.click(); a.remove();
+  });
+
+  pintarAjustes();
+  almacen.iniciar(pintar);
+})();
+</script>

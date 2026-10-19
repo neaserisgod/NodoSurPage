@@ -42,6 +42,7 @@ const TIPOS = {
   html: 'text/html; charset=utf-8', js: 'text/javascript; charset=utf-8', mjs: 'text/javascript; charset=utf-8', json: 'application/json',
   wasm: 'application/wasm', css: 'text/css', png: 'image/png', jpg: 'image/jpeg', webp: 'image/webp', svg: 'image/svg+xml', ico: 'image/x-icon',
   ttf: 'font/ttf', otf: 'font/otf', woff: 'font/woff', woff2: 'font/woff2', bin: 'application/octet-stream', frag: 'application/octet-stream',
+  wav: 'audio/wav', // los sonidos de pago y de aviso (`Nodo-Sur-Pos/lib/servicios/sonidos.dart`)
 };
 export const tipoDe = (ruta) => TIPOS[(ruta.split('.').pop() || '').toLowerCase()] || 'application/octet-stream';
 
