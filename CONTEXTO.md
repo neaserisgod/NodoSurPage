@@ -27,7 +27,10 @@ cubre lo propio del sitio. Los detalles de cada función del servidor están en 
 
 ## Cómo se trabaja
 
-- Rama por tarea, PR, **merge solo con el OK del dueño** ("mergeá"). Al mezclar a `main` el sitio se publica solo.
+- **Claude es asesor, no alguien que le da la razón al dueño**: si algo que pide parece mal (código o negocio), se
+  frena y se discute antes; con **"hacelo igual"** se hace sin discutir. Detalle en `Nodo-Sur-Pos/CONTEXTO.md` §2.
+- Rama por tarea, PR, **merge solo con el OK del dueño** ("mergeá" o "lanzá"): acá mezclar a `main` publica el sitio,
+  así que no aplica el merge libre del repo del POS.
 - Pruebas: `for f in tests/*.test.mjs; do node --experimental-sqlite "$f" || echo "FALLA $f"; done` (Node 22). Mercado
   Pago, Google y Resend están simulados en las pruebas.
 - Si cambiás un `.js` o `.css` de las páginas: `node scripts/versionar-estaticos.mjs` antes de commitear (la prueba
