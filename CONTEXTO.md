@@ -50,6 +50,12 @@ planes `pos` / `pos-bot`). La home es la puerta por rubro. Los nombres internos 
 Mercado Pago**: su «probar» va a WhatsApp; cuando el dueño pase el link, va en `functions/_lib/plans.js` (`gastro.href`), el id
 en `PLANS` y `PLANES_CON_BOT` de `mp.js`, y los botones de `/gastro/` y de la home pasan a `/pagar/?plan=gastro`.
 
+**Cada negocio es de un producto (2026-10-19, `functions/_lib/productos.js`; plan entero en `Nodo-Sur-Pos/docs/PLAN-CUENTAS.md`).**
+`orgs.producto` = `gestion` | `estudio` | `gastro`. Cada app manda su edición al vincularse y solo entra a negocios de su
+producto; uno sin producto toma el de la primera app (los que tienen una PC quedaron de Gestión). La dueña de un almacén que
+abre Nodo Gastro recibe un negocio nuevo de Gastro, aparte. Lo que falta (etapas 2 a 5): que el cobro mire el producto (el plan
+de Gestión trae incluido un negocio de Estudio o Gastro, con bot) y mostrarlo en `/negocio/`, `/cuenta/` y `/admin/`.
+
 **Rediseño 2026-10 (terminado, PR #76 a #80):** estilo claro tipo Apple, Bricolage Grotesque (títulos) + Geist (texto),
 alojadas en `/fonts/`; blanco, piedra `#F5F4F2`, tinta `#1A1714`, gris `#57534E`, naranja `#E4580B` con texto negro
 encima. Protagonista de la home: Nodo Sur Servicios (plan Emprendedor). El sitio habla como Nodo Sur, de "vos" y sin

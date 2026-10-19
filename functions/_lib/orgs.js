@@ -9,6 +9,7 @@
 // Todo negocio nace con una "Sucursal principal", así el código nunca tiene el caso especial "sin sucursal".
 // Las tablas se crean solas (como el resto del sitio); migrations/0005_orgs.sql es la misma definición, opcional.
 import { now, once } from './util.js';
+import { ensureProducto } from './productos.js';
 import { puedeEnAlguna, permisosDe } from './permisos.js';
 import { ensureDeviceTables, isPrivilegedSub } from './devices.js';
 import { ensureBackupTables } from './backups.js';
@@ -48,6 +49,7 @@ const DDL = [
 export const ensureOrgTables = (env) => once(env, 'orgs', async () => {
   await ensureDeviceTables(env); await ensureBackupTables(env);
   for (const sql of DDL) await env.DB.prepare(sql).run();
+  await ensureProducto(env);
 });
 
 const minus = (e) => String(e || '').trim().toLowerCase();
@@ -169,13 +171,15 @@ const sinTabla = async (fn, vacio) => { try { return await fn(); } catch (e) { i
 // Membresías activas de la persona, con su negocio y sus sucursales asignadas: [{...membresía, branches, org}].
 export const membershipsOf = (env, sub) => sinTabla(async () => {
   if (!env.DB) return []; // sin base el sitio sigue andando, solo que sin negocios
+  await ensureProducto(env); // la columna puede no existir todavía en este arranque
   const filas = (await env.DB.prepare(
-    `SELECT m.*, o.name AS org_name, o.owner_sub AS org_owner_sub, o.billing_email AS org_billing_email, o.created_at AS org_created_at
+    `SELECT m.*, o.name AS org_name, o.owner_sub AS org_owner_sub, o.billing_email AS org_billing_email, o.created_at AS org_created_at,
+            o.producto AS org_producto
      FROM memberships m JOIN orgs o ON o.id = m.org_id WHERE m.user_sub = ?1 AND m.status = 'active' ORDER BY o.id`).bind(sub).all()).results;
   const out = [];
   for (const f of filas) {
     const branches = (await env.DB.prepare('SELECT branch_id FROM membership_branches WHERE membership_id = ?1').bind(f.id).all()).results.map((r) => Number(r.branch_id));
-    out.push({ ...f, branches, org: { id: f.org_id, name: f.org_name, owner_sub: f.org_owner_sub, billing_email: f.org_billing_email, created_at: f.org_created_at } });
+    out.push({ ...f, branches, org: { id: f.org_id, name: f.org_name, owner_sub: f.org_owner_sub, billing_email: f.org_billing_email, created_at: f.org_created_at, producto: f.org_producto ?? null } });
   }
   return out;
 }, []);
@@ -220,7 +224,7 @@ export async function describirOrgs(env, membresias) {
     const todas = (await listBranches(env, m.org.id)).filter((b) => b.active);
     const ve = m.role === 'owner' || m.all_branches ? todas : todas.filter((b) => m.branches.includes(b.id));
     out.push({ id: m.org.id, name: m.org.name, role: m.role, allBranches: Boolean(m.role === 'owner' || m.all_branches),
-      branches: ve.map((b) => ({ id: b.id, name: b.name })), can: permisosDe(m) });
+      branches: ve.map((b) => ({ id: b.id, name: b.name })), can: permisosDe(m), producto: m.org.producto ?? null });
   }
   return out;
 }

@@ -2,6 +2,7 @@ import { json } from '../../_lib/util.js';
 import { currentUser } from '../../_lib/auth.js';
 import { hasDB } from '../../_lib/db.js';
 import { membershipsOf, orgsWith, describirOrgs } from '../../_lib/orgs.js';
+import { productoDeEdicion, sirveParaProducto } from '../../_lib/productos.js';
 
 // La página /vincular/ pregunta con quién entró la persona antes de pedir confirmación, y a qué negocio y sucursal
 // puede vincular la PC (solo el dueño vincula). Quien todavía no tiene ningún negocio puede vincular: se le crea el suyo.
@@ -10,13 +11,19 @@ import { membershipsOf, orgsWith, describirOrgs } from '../../_lib/orgs.js';
 export async function onRequestGet({ request, env }) {
   const cu = await currentUser(request, env);
   if (!cu.session || cu.gone) return json({ error: 'no_session' }, 401);
-  const tipo = new URL(request.url).searchParams.get('tipo');
+  const q = new URL(request.url).searchParams;
+  const tipo = q.get('tipo');
   const celular = tipo === 'celular', bot = tipo === 'bot';
+  // Solo los negocios que puede usar la app que abrió la página (`productos.js`); una PC es siempre de Gestión.
+  const producto = bot ? null : celular ? productoDeEdicion(q.get('edicion')) : 'gestion';
   let orgs = [], canLink = true;
   if (hasDB(env)) {
-    orgs = await describirOrgs(env, (await orgsWith(env, cu.session.sub, bot ? 'configurar_bot' : celular ? 'vincular_celular' : 'vincular_pc')).map((x) => x.membership));
+    orgs = (await describirOrgs(env, (await orgsWith(env, cu.session.sub, bot ? 'configurar_bot' : celular ? 'vincular_celular' : 'vincular_pc')).map((x) => x.membership)))
+      .filter((o) => sirveParaProducto(o, producto));
     // El bot de WhatsApp se vincula a un negocio que ya existe (dueño o encargado): no crea uno.
-    canLink = orgs.length > 0 || (!bot && (await membershipsOf(env, cu.session.sub)).length === 0);
+    // Quien es dueña solo de negocios de otro producto también puede: se le arma uno de este (`vincular.js`).
+    const todas = bot || orgs.length ? [] : await membershipsOf(env, cu.session.sub);
+    canLink = orgs.length > 0 || (!bot && (todas.length === 0 || todas.some((m) => m.role === 'owner')));
   }
   return json({ email: cu.session.email, name: cu.session.name, canLink, orgs: orgs.map((o) => ({ id: o.id, name: o.name, branches: o.branches })) });
 }

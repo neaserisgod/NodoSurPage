@@ -14,13 +14,15 @@
   var celular = web || q.get('tipo') === 'celular';
   // `tipo=bot`: lo abre el instalador del bot de WhatsApp (un celular con Termux). Lo vincula el dueño o un encargado.
   var bot = q.get('tipo') === 'bot';
+  // `edicion`: qué app abrió esto (almacen, servicios, gastronomia). El sitio ofrece solo los negocios de ese producto.
+  var edicion = /^[a-z]{1,20}$/.test(q.get('edicion') || '') ? q.get('edicion') : '';
   var name = (q.get('name') || (bot ? 'Bot de WhatsApp' : web ? 'Navegador' : celular ? 'Mi celular' : 'Mi PC')).slice(0, 60);
   var valido = (web ? !bot : port >= 1024 && port <= 65535) && /^[A-Za-z0-9_-]{16,128}$/.test(state) && /^[A-Za-z0-9_-]{43}$/.test(challenge) && /^[A-Za-z0-9_-]{16,64}$/.test(device);
 
   function error(msg) { done(); var c = card('No se pudo vincular'); c.appendChild(el('p', 'acc-note', msg)); root.appendChild(c); }
   if (!valido) { error('El enlace no es válido. Volvé a abrir la vinculación desde la app.'); return; }
 
-  fetch('/api/device/whoami' + (bot ? '?tipo=bot' : celular ? '?tipo=celular' : ''), { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } }).then(function (r) {
+  fetch('/api/device/whoami' + (bot ? '?tipo=bot' : celular ? '?tipo=celular' + (edicion ? '&edicion=' + edicion : '') : ''), { credentials: 'same-origin', headers: { 'X-Requested-With': 'fetch' } }).then(function (r) {
     // Sin sesión, directo a Google (sin la pantalla de /ingresar/, un clic menos) y de vuelta acá.
     if (r.status === 401) { location.replace('/api/auth/google?next=' + encodeURIComponent(location.pathname + location.search)); return null; }
     return r.ok ? r.json() : Promise.reject();
@@ -80,10 +82,11 @@
     ok.addEventListener('click', function () {
       ok.disabled = true; ok.textContent = celular ? 'Entrando…' : 'Vinculando…'; msg.textContent = '';
       fetch('/api/device/authorize', { method: 'POST', credentials: 'same-origin', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' },
-        body: JSON.stringify(Object.assign(web ? { web: true } : { port: port }, { state: state, challenge: challenge, deviceId: device, name: name }, bot ? { tipo: 'bot' } : celular ? { tipo: 'celular' } : {},
+        body: JSON.stringify(Object.assign(web ? { web: true } : { port: port }, { state: state, challenge: challenge, deviceId: device, name: name }, bot ? { tipo: 'bot' } : celular ? { tipo: 'celular', edicion: edicion || undefined } : {},
           orgs.length ? { orgId: parseInt(selOrg ? selOrg.value : orgs[0].id, 10), branchId: parseInt(selBr.value, 10) } : {})) })
         .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
         .then(function (x) {
+          if (x.j && x.j.error === 'otro_producto') { error('Ese negocio es de ' + x.j.nombre + '. Para entrar ahí, bajá ' + x.j.nombre + ' desde horsepos.com/descargar/.'); return; }
           var destino = web ? '/app/?' : 'http://127.0.0.1:' + port + '/';
           if (!x.ok || typeof x.j.redirect !== 'string' || x.j.redirect.indexOf(destino) !== 0) throw new Error();
           location.href = x.j.redirect;
