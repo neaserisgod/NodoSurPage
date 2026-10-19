@@ -1,6 +1,7 @@
-import { verify, sign, parseCookies, cookie, now, siteUrl, unb64u, safeNext, randomHex, fetchConPlazo } from '../../_lib/util.js';
+import { verify, sign, parseCookies, cookie, now, siteUrl, unb64u, safeNext, randomHex, fetchConPlazo, adminEmails, isAdminEmail } from '../../_lib/util.js';
 import { hasDB, upsertLogin, setIntent } from '../../_lib/db.js';
 import { isPlan, PLAN_CATALOG } from '../../_lib/plans.js';
+import { sendSignupNotice } from '../../_lib/notify.js';
 
 const back = (site, err) => {
   const h = new Headers({ Location: `${site}/ingresar/?error=${err}`, 'Cache-Control': 'no-store' });
@@ -8,7 +9,7 @@ const back = (site, err) => {
   return new Response(null, { status: 302, headers: h });
 };
 
-export async function onRequestGet({ request, env }) {
+export async function onRequestGet({ request, env, waitUntil }) {
   const site = siteUrl(env);
   const url = new URL(request.url);
   if (url.searchParams.get('error')) return back(site, 'cancelado');
@@ -51,6 +52,11 @@ export async function onRequestGet({ request, env }) {
     try {
       const u = await upsertLogin(env, { sub: claims.sub, email: String(claims.email).toLowerCase(), name: claims.name || claims.email }, iat);
       if (plan && u) await setIntent(env, u.id, plan, iat).catch(() => {});
+      // Primer ingreso: se le avisa al dueño. El mail sale aparte para no demorar el ingreso, y si falla no lo impide.
+      if (u && u.login_count === 1 && !isAdminEmail(env, u.email)) {
+        const aviso = sendSignupNotice(env, adminEmails(env), { name: u.name, email: u.email, plan: plan ? PLAN_CATALOG[plan].nombre : null, site }).catch(() => false);
+        if (waitUntil) waitUntil(aviso); else await aviso;
+      }
     } catch { return back(site, 'servidor'); }
   }
   const session = await sign({

@@ -79,3 +79,29 @@ export async function sendTransferNotice(env, { to, orgName, fromName, site }) {
     return res.ok;
   } catch { return false; }
 }
+
+// Aviso al dueño de Nodo Sur de que alguien se registró (El dueño, 2026-10-19: "que me avise cuando se registre"). Con
+// los pilotos, la persona ingresa y el dueño la exime para que descargue: este mail es lo que le dice que ya puede hacerlo.
+export async function sendSignupNotice(env, to, { name, email, plan, site }) {
+  if (!notifierReady(env) || !to.length) return false;
+  const quien = String(name || '').trim() || email;
+  const filas = [['Nombre', quien], ['Mail', email]];
+  if (plan) filas.push(['Eligió', plan]);
+  const { html, text } = plantillaMail({
+    preheader: `${quien} acaba de crear su cuenta${plan ? ` (${plan})` : ''}.`,
+    titulo: 'Se registró alguien nuevo',
+    intro: `${quien} acaba de ingresar por primera vez a Nodo Sur.`,
+    filas,
+    boton: { texto: 'Abrir el panel para eximirla', url: `${site}/admin/` },
+    nota: 'Si es un piloto, eximí la cuenta desde el panel: al recargar Mi cuenta le aparece la descarga.',
+    sitio: site,
+  });
+  try {
+    const res = await fetchConPlazo('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${env.RESEND_API_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ from: env.MAIL_FROM, to, subject: `Nuevo registro: ${quien}${plan ? ` (${plan})` : ''}`, html, text }),
+    });
+    return res.ok;
+  } catch { return false; }
+}
