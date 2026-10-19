@@ -26,7 +26,7 @@ export async function estadoFacturacion(env, org, email) {
     const plan = await planDelNegocio(env, org, subs);
     // `sin_plan_propio`: el mail paga, pero menos planes que negocios, y a este (de los más nuevos) no le alcanza.
     const status = plan.pago ? 'authorized' : vigente(subs) ? 'sin_plan_propio' : subs.length ? 'inactive' : 'none';
-    return { ...base, status, ownHasSubscription: vigente(propias), planes: plan.planes, negocios: plan.negocios,
+    return { ...base, status, ownHasSubscription: vigente(propias), planes: plan.planes, negocios: plan.negocios, incluido: plan.incluido,
       subscriptions: subs.map((s) => ({ plan: s.plan, status: s.status, amount: s.amount, nextPayment: s.nextPayment })) };
   } catch { return { ...base, status: 'unknown', mpError: true, subscriptions: [], ownHasSubscription: false }; }
 }

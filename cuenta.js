@@ -7,6 +7,7 @@
   var STATUS = { authorized: ['Activa', 'ok'], paused: ['Pausada', 'wait'], cancelled: ['Cancelada', 'bad'], canceled: ['Cancelada', 'bad'], pending: ['Pendiente', 'wait'] };
   var PAY = { processed: 'Cobrado', scheduled: 'Programado', recycling: 'Reintentando', cancelled: 'Cancelado', canceled: 'Cancelado' };
   var ROL = { owner: 'Dueño', manager: 'Encargado', employee: 'Empleado' };
+  var PRODUCTO = { gestion: 'Nodo Gestión', estudio: 'Nodo Estudio', gastro: 'Nodo Gastro' };
   var WA = 'https://wa.me/5492944796044?text=';
   var pending = null;
   // La descarga se pide ya, a la par de /api/me (antes esperaba a que terminara). Si no le corresponde, no se usa.
@@ -65,7 +66,7 @@
       var nc = card(d.orgs.length === 1 ? 'Tu negocio' : 'Tus negocios');
       var nl = el('ul', 'pays');
       d.orgs.forEach(function (o) {
-        var li = el('li'); li.appendChild(el('span', null, o.name));
+        var li = el('li'); li.appendChild(el('span', null, o.name + (PRODUCTO[o.producto] ? ' · ' + PRODUCTO[o.producto] : '')));
         li.appendChild(el('span', null, ROL[o.role] || o.role));
         var oa = el('a', 'lnk', 'Abrir'); oa.href = '/negocio/?org=' + encodeURIComponent(o.id); li.appendChild(oa); nl.appendChild(li);
       });

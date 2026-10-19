@@ -4,6 +4,8 @@
   function el(tag, cls, txt) { var e = document.createElement(tag); if (cls) e.className = cls; if (txt != null) e.textContent = txt; return e; }
   var HDR = { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' };
   var ROLE = { owner: 'Dueño', manager: 'Encargado', employee: 'Empleado' };
+  // De qué producto es cada negocio (2026-10-19, `functions/_lib/productos.js`): lo marca la primera app que entra.
+  var PRODUCTO = { gestion: 'Nodo Gestión', estudio: 'Nodo Estudio', gastro: 'Nodo Gastro' };
   var ERR = {
     bad_email: 'Revisá el mail: no parece válido.', bad_role: 'Elegí un rol válido.', bad_branches: 'Elegí al menos una sucursal que esté activa.',
     already_member: 'Esa persona ya es parte del negocio.', too_many_pending: 'Hay demasiadas invitaciones pendientes. Cancelá algunas.',
@@ -163,9 +165,10 @@
     avisos();
     var o = org(), c = card(o.name); c.classList.add('neg-head');
     var fila = el('div', 'prow'); fila.appendChild(chip(ROLE[o.role] || o.role, o.role === 'owner' ? 'ok' : 'wait'));
+    if (PRODUCTO[o.producto]) fila.appendChild(chip(PRODUCTO[o.producto], 'prod'));
     if (me.orgs.length > 1) {
       var s = el('select'); s.setAttribute('aria-label', 'Elegir negocio');
-      me.orgs.forEach(function (x) { var op = el('option', null, x.name + ' · ' + (ROLE[x.role] || x.role)); op.value = String(x.id); if (x.id === orgId) op.selected = true; s.appendChild(op); });
+      me.orgs.forEach(function (x) { var op = el('option', null, x.name + (PRODUCTO[x.producto] ? ' · ' + PRODUCTO[x.producto] : '') + ' · ' + (ROLE[x.role] || x.role)); op.value = String(x.id); if (x.id === orgId) op.selected = true; s.appendChild(op); });
       s.addEventListener('change', function () { orgId = parseInt(s.value, 10); ultimo = null; render(); });
       var f = el('div', 'frm'); f.appendChild(s); fila.appendChild(f);
     }
@@ -455,15 +458,16 @@
         if (d.mpError) c.appendChild(note('No pudimos consultar Mercado Pago en este momento. Probá de nuevo en unos minutos.'));
         // Cada negocio paga su plan: un mail con menos planes que negocios deja sin cubrir a los más nuevos.
         if (d.status === 'sin_plan_propio') {
-          c.appendChild(note(d.billingEmail + ' paga ' + d.planes + (d.planes === 1 ? ' plan' : ' planes') + ' y tiene ' + d.negocios + ' negocios: cada negocio necesita su propio plan. Suscribite a otro para «' + o.name + '».'));
+          c.appendChild(note(d.billingEmail + ' paga ' + d.planes + (d.planes === 1 ? ' plan' : ' planes') + ' y tiene ' + d.negocios + ' negocios: cada negocio necesita un plan de su producto (el de Nodo Gestión trae incluido uno de Nodo Estudio o de Nodo Gastro). Suscribite a otro para «' + o.name + '».'));
           var sp = el('a', 'btn', 'Suscribir este negocio'); sp.href = '/pagar/'; sp.style.alignSelf = 'flex-start'; c.appendChild(sp);
         }
+        if (d.incluido) c.appendChild(note('Este negocio viene incluido en el plan de Nodo Gestión: no paga aparte, y trae el bot de WhatsApp.'));
         c.appendChild(note(d.mine
           ? 'El negocio se cobra con tu suscripción (' + d.billingEmail + '). Podés verla y cancelarla desde Mi cuenta.'
           : 'El negocio se cobra con la suscripción de ' + d.billingEmail + '. Está a nombre de otra persona: solo ella puede cancelarla, y si lo hace el negocio se queda sin cobertura.'));
         if (d.subscriptions && d.subscriptions.length) {
           var ul = el('ul', 'pays');
-          d.subscriptions.forEach(function (x) { var li = el('li'); li.appendChild(el('span', null, ({ 'Emprendedor': 'Nodo Estudio', 'Sistema POS': 'Nodo Gestión', 'Sistema + Bot': 'Nodo Gestión + Bot' })[x.plan] || x.plan)); li.appendChild(el('span', null, { authorized: 'Activa', paused: 'Pausada', cancelled: 'Cancelada', canceled: 'Cancelada', pending: 'Pendiente' }[x.status] || x.status)); li.appendChild(el('strong', null, x.amount != null ? '$ ' + Math.round(x.amount).toLocaleString('es-AR') : '')); ul.appendChild(li); });
+          d.subscriptions.forEach(function (x) { var li = el('li'); li.appendChild(el('span', null, ({ 'Emprendedor': 'Nodo Estudio', 'Sistema POS': 'Nodo Gestión', 'Sistema + Bot': 'Nodo Gestión + Bot', 'Nodo Gastro': 'Nodo Gastro' })[x.plan] || x.plan)); li.appendChild(el('span', null, { authorized: 'Activa', paused: 'Pausada', cancelled: 'Cancelada', canceled: 'Cancelada', pending: 'Pendiente' }[x.status] || x.status)); li.appendChild(el('strong', null, x.amount != null ? '$ ' + Math.round(x.amount).toLocaleString('es-AR') : '')); ul.appendChild(li); });
           c.appendChild(ul);
         }
         if (d.mine) { var l = el('a', 'btn btn-w', 'Ir a Mi cuenta'); l.href = '/cuenta/'; l.style.alignSelf = 'flex-start'; c.appendChild(l); return; }

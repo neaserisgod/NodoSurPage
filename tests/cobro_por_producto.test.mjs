@@ -3,7 +3,7 @@
 import assert from 'node:assert/strict';
 import { ensureOrgTables, createOrg } from '../functions/_lib/orgs.js';
 import { planDelNegocio, planCubreProducto, repartir } from '../functions/_lib/plan_por_negocio.js';
-import { usarMiSuscripcion } from '../functions/_lib/facturacion.js';
+import { usarMiSuscripcion, estadoFacturacion } from '../functions/_lib/facturacion.js';
 import { downloadAccess } from '../functions/_lib/access.js';
 import { listSubscriptions } from '../functions/_lib/mp.js';
 import { mkEnv, mp, mpSub, mockMP } from './helpers-nube.mjs';
@@ -84,6 +84,13 @@ await t('"usar mi suscripción" mira el producto: el incluido libre sirve para E
   paga('ana@x.com', 'pos');
   assert.deepEqual(await usarMiSuscripcion(env, otraCaja, 'ana@x.com'), { status: 409, error: 'sin_plan_libre' });
   assert.deepEqual(await usarMiSuscripcion(env, unias, 'ana@x.com'), { ok: true });
+});
+await t('Mi negocio dice cuándo el negocio viene incluido en el plan de Gestión', async () => {
+  const env = mkEnv({ MP_ACCESS_TOKEN: 'tok' }); await ensureOrgTables(env);
+  const almacen = await negocio(env, 'Almacén', 'gestion'); const roti = await negocio(env, 'Rotisería', 'gastro');
+  paga('ana@x.com', 'pos');
+  const e = await estadoFacturacion(env, roti, 'ana@x.com'); assert.equal(e.status, 'authorized'); assert.equal(e.incluido, true);
+  assert.equal((await estadoFacturacion(env, almacen, 'ana@x.com')).incluido, false);
 });
 
 console.log(`\n${pass} pruebas OK (cobro por producto)`);

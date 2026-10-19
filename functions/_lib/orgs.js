@@ -233,7 +233,7 @@ export async function describirOrgs(env, membresias) {
 export async function listOrgsOverview(env) {
   await ensureOrgTables(env);
   return (await env.DB.prepare(
-    `SELECT o.id, o.name, o.billing_email, o.created_at,
+    `SELECT o.id, o.name, o.billing_email, o.created_at, o.producto,
        (SELECT email FROM memberships WHERE org_id = o.id AND role = 'owner' AND status = 'active' ORDER BY id LIMIT 1) AS owner_email,
        (SELECT COUNT(*) FROM memberships WHERE org_id = o.id AND status = 'active') AS members,
        (SELECT COUNT(*) FROM branches WHERE org_id = o.id AND active = 1) AS branches,

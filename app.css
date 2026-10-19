@@ -83,6 +83,7 @@ td.acts{display:table-cell;margin:0}
 .chip.ok{background:#E3F4E8;color:#1B6B36}
 .chip.wait{background:var(--naranja-suave);color:var(--naranja-osc)}
 .chip.bad{background:#FDECEA;color:#B42318}
+.chip.prod{background:#F3F4F7;color:#121317}
 .prow{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
 .prow .frm{flex:1 1 220px}
 
