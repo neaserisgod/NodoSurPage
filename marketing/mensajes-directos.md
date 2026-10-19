@@ -3,6 +3,7 @@
 Meta: **10 clientes que paguen** en 2 semanas. 20 a 30 mensajes por día desde `@nodosur.brc` y el WhatsApp de Nodo Sur.
 No se publica (está en `.assetsignore`). Cómo armar la lista y mandarlos rápido: [`prospectar/LEEME.md`](./prospectar/LEEME.md).
 Cómo mostrar la app cuando dicen que sí: [`demo.md`](./demo.md).
+Qué se hace primero hasta el 31/10: [`plan-cierre-octubre.md`](./plan-cierre-octubre.md).
 
 ## Qué vendemos (en una línea)
 
