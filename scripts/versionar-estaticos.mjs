@@ -7,7 +7,8 @@ import { createHash } from 'node:crypto';
 import { join, relative } from 'node:path';
 
 const RAIZ = new URL('..', import.meta.url).pathname;
-const IGNORAR = new Set(['node_modules', '.git', 'mocks', 'tests', 'functions', 'scripts', 'migrations', '.wrangler', 'bot-whatsapp-src']);
+// Lo que no se publica (`.assetsignore`): `mocks` y `marketing` (la cola de envío corre sola, con su script en línea).
+const IGNORAR = new Set(['node_modules', '.git', 'mocks', 'marketing', 'tests', 'functions', 'scripts', 'migrations', '.wrangler', 'bot-whatsapp-src']);
 const huella = (ruta) => createHash('sha256').update(readFileSync(ruta)).digest('hex').slice(0, 10);
 
 export function paginas(dir = RAIZ) {
