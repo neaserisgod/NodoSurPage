@@ -7,6 +7,7 @@
   var ago = function (s) { var d = Math.floor((Date.now() / 1000 - s) / 86400); return d <= 0 ? 'hoy' : d === 1 ? 'ayer' : 'hace ' + d + ' días'; };
   var ST = { authorized: ['Activa', 'ok'], pending: ['Pendiente', 'wait'], paused: ['Pausada', 'wait'], cancelled: ['Cancelada', 'bad'], canceled: ['Cancelada', 'bad'] };
   var HDR = { 'Content-Type': 'application/json', 'X-Requested-With': 'fetch' };
+  var PRODUCTO = { gestion: 'Nodo Gestión', estudio: 'Nodo Estudio', gastro: 'Nodo Gastro' };
   var PLAN_NAMES = { pos: 'Nodo Gestión', 'pos-bot': 'Nodo Gestión + Bot', bot: 'Solo el bot', emprendedor: 'Nodo Estudio', gastro: 'Nodo Gastro' };
   // Mercado Pago guarda los nombres de siempre; en pantalla, los de ahora.
   var MP_NAMES = { 'Emprendedor': 'Nodo Estudio', 'Sistema POS': 'Nodo Gestión', 'Sistema + Bot': 'Nodo Gestión + Bot' };
@@ -120,7 +121,8 @@
     nh.appendChild(nr); nt.appendChild(nh);
     var nb = el('tbody');
     (d.orgs || []).forEach(function (o) {
-      var tr = el('tr'), c1 = el('td'); c1.appendChild(el('strong', null, o.name)); c1.appendChild(document.createElement('br')); c1.appendChild(el('small', null, 'desde ' + dt(o.createdAt))); tr.appendChild(c1);
+      var tr = el('tr'), c1 = el('td'); c1.appendChild(el('strong', null, o.name)); c1.appendChild(document.createElement('br'));
+      c1.appendChild(el('small', null, PRODUCTO[o.producto] || 'Sin producto todavía')); c1.appendChild(document.createElement('br')); c1.appendChild(el('small', null, 'desde ' + dt(o.createdAt))); tr.appendChild(c1);
       var c2 = el('td'); c2.appendChild(document.createTextNode(o.ownerEmail || '—'));
       if (o.billingEmail && o.billingEmail !== o.ownerEmail) { c2.appendChild(document.createElement('br')); c2.appendChild(el('small', null, 'cobra: ' + o.billingEmail)); }
       tr.appendChild(c2);

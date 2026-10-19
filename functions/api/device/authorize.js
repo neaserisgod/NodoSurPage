@@ -3,6 +3,8 @@ import { currentUser } from '../../_lib/auth.js';
 import { hasDB } from '../../_lib/db.js';
 import { createDeviceCode, validPort, validState, validChallenge, validDeviceId, cleanName } from '../../_lib/devices.js';
 import { destinoDelDispositivo } from '../../_lib/vincular.js';
+import { productoDeEdicion } from '../../_lib/productos.js';
+import { otroProducto } from './google.js';
 
 // Paso 2-3 de la vinculación: la persona, ya con sesión y tras confirmar en /vincular/, pide el código de
 // un solo uso. Se devuelve a dónde redirigir el navegador: el servidor local que escucha la app (127.0.0.1).
@@ -26,8 +28,10 @@ export async function onRequestPost({ request, env }) {
   if ((enNavegador ? b.port != null : !validPort(b.port)) || !validState(b.state) || !validChallenge(b.challenge) || !validDeviceId(b.deviceId)) return json({ error: 'bad_request' }, 400);
   const celular = enNavegador || b.tipo === 'celular';
   const bot = b.tipo === 'bot';
-  const destino = await destinoDelDispositivo(env, cu.session, { tipo: bot ? 'bot' : celular ? 'celular' : 'pc', orgId: b.orgId, branchId: b.branchId });
-  if (destino.error) return json({ error: destino.error }, destino.status);
+  // Una PC es siempre la caja del almacén (Nodo Gestión): las de Estudio y Gastro en Windows entran como celular.
+  const producto = bot ? null : celular ? productoDeEdicion(b.edicion) : 'gestion';
+  const destino = await destinoDelDispositivo(env, cu.session, { tipo: bot ? 'bot' : celular ? 'celular' : 'pc', orgId: b.orgId, branchId: b.branchId, producto });
+  if (destino.error) return json(otroProducto(destino), destino.status);
   const { org, branch } = destino;
   const sub = cu.session.sub;
   const code = await createDeviceCode(env, {

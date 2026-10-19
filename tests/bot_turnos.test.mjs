@@ -10,6 +10,8 @@ import { mkEnv, addUser, req, mp, mpSub, mockMP, nowS } from './helpers-nube.mjs
 let pass = 0; const t = async (n, f) => { await f(); pass++; console.log('ok  ', n); };
 
 const PLAN_SOLO_BOT = 'e37aac4650334685873aa8e3920de4c0', PLAN_POS = '6fe282d944ef4c018cb7904ce9e122f8';
+// Desde 2026-10-19 todos los planes traen el bot: «sin bot» es no tener plan (una suscripción que no es de Nodo Sur no cuenta).
+const PLAN_SIN_BOT = 'plan-viejo-sin-bot';
 function conPlan(plan) { mp.subs = [{ ...mpSub('duena@x.com', 'authorized'), preapproval_plan_id: plan }]; mp.fail = false; mockMP(); }
 function hubFalso() {
   const avisos = [];
@@ -120,7 +122,7 @@ await t('lo raro no entra; cada sucursal ve lo suyo; sin plan con bot, nada', as
   assert.equal((await post(bot.onRequestTurnoPost, env, '/api/bot/turno', turno('turno-0009-zzzz'), otraSucursal)).status, 201, 'otra sucursal, otra agenda');
   assert.equal((await (await get(bot.onRequestTurnosGet, env, '/api/bot/turnos?desde=0', otraSucursal)).json()).turnos.length, 1);
 
-  const x = await armar(PLAN_POS);
+  const x = await armar(PLAN_SIN_BOT);
   assert.equal((await post(bot.onRequestTurnoPost, x.env, '/api/bot/turno', turno('turno-0001-aaaa'), x.robot)).status, 403);
 });
 
@@ -145,7 +147,7 @@ await t('la app Nodo Sur Servicios pide el token de su bot sin navegador; repeti
 });
 
 await t('sin el plan con bot no hay token', async () => {
-  const { env, app } = await armar(PLAN_POS);
+  const { env, app } = await armar(PLAN_SIN_BOT);
   assert.equal((await post(bot.onRequestTokenPost, env, '/api/bot/token', { deviceId: 'bot-enlaapp-0123456789abcdef' }, app)).status, 403);
 });
 await t('más de 200 turnos de la app publicados juntos: el bot los ve todos, aunque tengan la misma hora de cambio', async () => {

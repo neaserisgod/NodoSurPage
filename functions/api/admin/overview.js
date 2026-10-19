@@ -39,7 +39,7 @@ export async function onRequestGet({ request, env }) {
   const cap = softCap(env);
   const orgs = (await listOrgsOverview(env)).map((o) => {
     const sub = byEmail.get(o.billing_email) || null;
-    return { id: o.id, name: o.name, ownerEmail: o.owner_email, billingEmail: o.billing_email, createdAt: o.created_at, members: o.members, branches: o.branches,
+    return { id: o.id, name: o.name, producto: o.producto ?? null, ownerEmail: o.owner_email, billingEmail: o.billing_email, createdAt: o.created_at, members: o.members, branches: o.branches,
       devices: o.devices, lastSeen: o.last_seen, overSoftCap: o.members > cap,
       subscription: sub && { id: sub.id, plan: sub.plan, status: sub.status, amount: sub.amount, nextPayment: sub.nextPayment } };
   });

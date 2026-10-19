@@ -3,6 +3,7 @@ import { hasDB, upsertLogin } from '../../_lib/db.js';
 import { validDeviceId, cleanName } from '../../_lib/devices.js';
 import { orgsWith, membershipsOf, describirOrgs, crearOtroNegocio } from '../../_lib/orgs.js';
 import { destinoDelDispositivo, emitirTokenDeDispositivo } from '../../_lib/vincular.js';
+import { productoDeEdicion, sirveParaProducto } from '../../_lib/productos.js';
 
 // El client ID Web que la app le pasa al selector de Google como `serverClientId` (no es secreto: viaja en cada página de
 // ingreso). Así no queda escrito en el APK y cambiarlo no pide publicar una versión nueva.
@@ -21,6 +22,8 @@ export function onRequestGet({ env }) {
 // Una cuenta puede tener varios negocios (2026-10-13). Agregando otro negocio en el celular, la app manda `elegirSiempre: true`
 // para que la lista salga aunque haya uno solo, y ofrece crear uno nuevo: `nuevoNegocio: "Barbería Juan"` lo crea (con su
 // "Sucursal principal") y entra el celular ahí.
+//
+// `edicion` (2026-10-19, `productos.js`): la app que entra. La lista y el negocio que se elige solo son de su producto.
 export async function onRequestPost({ request, env }) {
   if (!hasDB(env)) return json({ error: 'no_db' }, 503);
   if (!env.GOOGLE_CLIENT_ID) return json({ error: 'no_config' }, 503);
@@ -35,27 +38,32 @@ export async function onRequestPost({ request, env }) {
   const persona = { sub: claims.sub, email: String(claims.email).toLowerCase(), name: claims.name || claims.email };
   await upsertLogin(env, persona, now());
 
+  const producto = productoDeEdicion(b.edicion);
   let pedido = { orgId: b.orgId, branchId: b.branchId };
   if (b.nuevoNegocio != null) {
     const creado = await crearOtroNegocio(env, persona, b.nuevoNegocio);
     if (creado.error) return json({ error: creado.error }, creado.status);
     pedido = { orgId: creado.org.id, branchId: creado.branch.id };
   } else if (b.orgId == null && b.branchId == null) {
-    const orgs = await describirOrgs(env, (await orgsWith(env, persona.sub, 'vincular_celular')).map((x) => x.membership));
-    const sinSucursal = !orgs.length && (await membershipsOf(env, persona.sub)).length;
+    const todas = await describirOrgs(env, (await orgsWith(env, persona.sub, 'vincular_celular')).map((x) => x.membership));
+    const orgs = todas.filter((o) => sirveParaProducto(o, producto));
+    const sinSucursal = !todas.length && (await membershipsOf(env, persona.sub)).length;
     if (sinSucursal && b.elegirSiempre !== true) return json({ error: 'sin_sucursal', email: persona.email }, 403);
     if (orgs.length > 1 || (orgs.length === 1 && orgs[0].branches.length > 1) || (b.elegirSiempre === true && (orgs.length || sinSucursal))) {
       return json({ elegir: true, email: persona.email, name: persona.name, orgs: orgs.map((o) => ({ id: o.id, name: o.name, branches: o.branches })) });
     }
   }
-  const destino = await destinoDelDispositivo(env, persona, { tipo: 'celular', ...pedido });
-  if (destino.error) return json({ error: destino.error }, destino.status);
+  const destino = await destinoDelDispositivo(env, persona, { tipo: 'celular', ...pedido, producto });
+  if (destino.error) return json(otroProducto(destino), destino.status);
   const r = await emitirTokenDeDispositivo(env, {
     sub: persona.sub, email: persona.email, deviceId: b.deviceId, name: cleanName(b.name), orgId: destino.org.id, branchId: destino.branch.id,
     personName: persona.name, kind: 'celular',
   });
   return r.error ? json({ error: r.error }, r.status) : json(r);
 }
+
+// `otro_producto` lleva el nombre de la app que sí sirve para ese negocio, para decirlo en la pantalla.
+export const otroProducto = (d) => (d.error === 'otro_producto' ? { error: d.error, producto: d.producto, nombre: d.nombre } : { error: d.error });
 
 // El id_token viene del celular, no directo de Google: se le pregunta a Google si es válido (firma incluida) en vez de
 // leerlo a ciegas como hace el callback web. El `aud` es el client ID Web del sitio: la app lo pide con ese `serverClientId`.

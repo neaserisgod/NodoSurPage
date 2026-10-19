@@ -35,11 +35,11 @@ await t('un plan cubre un negocio: con 1 plan y 3 negocios, solo el más viejo; 
   conPlanes('ana@x.com', 3); subs = await listSubscriptions(env, 'ana@x.com');
   for (const o of Object.values(n)) assert.equal((await planDelNegocio(env, o, subs)).pago, true, o.name);
 });
-await t('el bot va solo a los negocios cubiertos por un plan con bot', async () => {
+await t('el bot va a los negocios cubiertos (viene en todos los planes desde 2026-10-19), no a los que no tienen plan', async () => {
   const env = mkEnv(); const n = await tresNegocios(env);
   conPlanes('ana@x.com', 2, { bot: 1 });
   assert.equal((await tieneBot(env, n.almacen.id)).ok, true);
-  assert.equal((await tieneBot(env, n.barberia.id)).ok, false, 'pagado, pero sin bot');
+  assert.equal((await tieneBot(env, n.barberia.id)).ok, true, 'Sistema POS también trae el bot');
   assert.equal((await tieneBot(env, n.belleza.id)).ok, false, 'ni plan');
 });
 await t('facturación: el negocio sin plan propio lo dice, y "usar mi suscripción" exige un plan libre', async () => {

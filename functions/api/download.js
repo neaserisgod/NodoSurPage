@@ -3,6 +3,7 @@ import { currentUser } from '../_lib/auth.js';
 import { downloadAccess } from '../_lib/access.js';
 import { PLATFORMS, hasR2, exactForInstall, latestForInstall, logDownload, streamRelease } from '../_lib/releases.js';
 import { hasDB } from '../_lib/db.js';
+import { productoDePlataforma } from '../_lib/productos.js';
 
 const go = (l) => new Response(null, { status: 302, headers: { Location: l, 'Cache-Control': 'no-store' } });
 
@@ -17,7 +18,7 @@ export async function onRequestGet({ request, env }) {
 
   const cu = await currentUser(request, env);
   if (!cu.session || cu.gone) return go(`${site}/api/auth/google`); // directo a Google; vuelve a Mi cuenta, donde está la descarga
-  const acc = await downloadAccess(env, cu);
+  const acc = await downloadAccess(env, cu, productoDePlataforma(platform));
   if (!acc.ok) return go(`${site}/cuenta/?e=${acc.reason}`);
 
   const channel = q.get('channel') === 'beta' && acc.privileged ? 'beta' : 'stable';

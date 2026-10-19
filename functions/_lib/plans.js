@@ -6,6 +6,7 @@ export const ALTA_URL = 'https://mpago.la/2UnGAqA';
 export const PLAN_CATALOG = {
   pos: { nombre: 'Sistema POS', precio: 35000, alta: false,
     href: 'https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=6fe282d944ef4c018cb7904ce9e122f8' },
+  // Ya no se ofrece (2026-10-19: el bot viene en todos los planes); queda para quien ya lo tiene.
   'pos-bot': { nombre: 'Sistema + Bot', precio: 60000, alta: true,
     href: 'https://www.mercadopago.com.ar/subscriptions/checkout?preapproval_plan_id=7652202c076c4cc180c72ade28d52924' },
   bot: { nombre: 'Solo el bot', precio: 35000, alta: true,
