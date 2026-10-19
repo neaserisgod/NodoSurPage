@@ -7,6 +7,8 @@ import * as me from './functions/api/me.js';
 import * as cancel from './functions/api/subscription/cancel.js';
 import * as adminOverview from './functions/api/admin/overview.js';
 import * as adminUser from './functions/api/admin/user.js';
+import * as adminPiloto from './functions/api/admin/piloto.js';
+import * as invitado from './functions/api/invitado.js';
 import * as adminSubscription from './functions/api/admin/subscription.js';
 import * as adminSweep from './functions/api/admin/sweep.js';
 import * as checkout from './functions/api/checkout.js';
@@ -65,6 +67,8 @@ const ROUTES = {
   'GET /api/admin/mp-saldo': adminMpSaldo.onRequestGet,
   'GET /api/admin/mp-reporte': adminMpReporte.onRequestGet,
   'POST /api/admin/user': adminUser.onRequestPost,
+  'POST /api/admin/piloto': adminPiloto.onRequestPost,
+  'POST /api/invitado': invitado.onRequestPost,
   'POST /api/admin/sweep': adminSweep.onRequestPost,
   'POST /api/admin/subscription': adminSubscription.onRequestPost,
   'GET /api/checkout': checkout.onRequestGet,

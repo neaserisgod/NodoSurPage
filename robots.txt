@@ -8,5 +8,6 @@ Disallow: /descargar/
 Disallow: /vincular/
 Disallow: /negocio/
 Disallow: /unirse/
+Disallow: /invitado/
 
 Sitemap: https://horsepos.com/sitemap.xml

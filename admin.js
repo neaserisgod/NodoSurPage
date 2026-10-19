@@ -146,6 +146,29 @@
       s2.appendChild(ul); root.appendChild(s2);
     }
 
+    // Link de prueba para UNA persona: ingresa con Google, queda eximida y va directo a descargar (functions/_lib/pilotos.js).
+    var sp = el('section', 'acc'); sp.appendChild(el('h2', null, 'Links de prueba'));
+    sp.appendChild(el('p', 'acc-note', 'Cada link sirve para una sola cuenta y vence en 7 días. Quien lo abre ingresa con Google, queda eximida y pasa directo a descargar Nodo Gastro.'));
+    var pb = el('button', 'btn', 'Crear link para Nodo Gastro'); pb.type = 'button'; sp.appendChild(pb);
+    var pout = el('div', 'acc-actions'); sp.appendChild(pout);
+    pb.addEventListener('click', function () {
+      pb.disabled = true; pout.textContent = '';
+      post('/api/admin/piloto', { plan: 'gastro' }).then(function (x) {
+        pb.disabled = false;
+        if (!x.ok) { pout.appendChild(el('p', 'acc-note', 'No se pudo crear el link. Probá de nuevo.')); return; }
+        var inp = el('input'); inp.id = 'piloto-link'; inp.readOnly = true; inp.value = x.j.link; inp.setAttribute('aria-label', 'Link de prueba');
+        inp.style.cssText = 'flex:1 1 260px;min-width:0;font:inherit;padding:10px';
+        var cp = el('button', 'btn btn-w', 'Copiar'); cp.type = 'button';
+        cp.addEventListener('click', function () {
+          var listo = function () { cp.textContent = 'Copiado'; };
+          if (navigator.clipboard) navigator.clipboard.writeText(inp.value).then(listo, function () { inp.select(); });
+          else inp.select();
+        });
+        pout.appendChild(inp); pout.appendChild(cp);
+      }, function () { pb.disabled = false; pout.appendChild(el('p', 'acc-note', 'No se pudo crear el link. Probá de nuevo.')); });
+    });
+    root.appendChild(sp);
+
     versiones(root);
 
     var s3 = el('section', 'acc'); s3.appendChild(el('h2', null, 'Limpieza automática'));
