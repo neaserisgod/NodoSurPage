@@ -7,7 +7,8 @@
 // suscripción se queda sin plan el más nuevo.
 //
 // Cada plan cubre su producto (El dueño, 2026-10-19, `productos.js` y `Nodo-Sur-Pos/docs/PLAN-CUENTAS.md`): Estudio y Gastro,
-// un negocio de su producto con el bot; Gestión, un negocio de Gestión y además, incluido, uno de Estudio o de Gastro con bot.
+// un negocio de su producto; Gestión, un negocio de Gestión y además, incluido, uno de Estudio o de Gastro. El bot de WhatsApp
+// viene en todos ("el bot quiero que esté incluido en los planes", el mismo día).
 // El reparto sigue siendo del más viejo al más nuevo: cada negocio toma el lugar libre más justo para él (uno de su producto
 // antes que el incluido, que puede servirle a otro). Un negocio sin producto todavía (de antes de esto) toma cualquier plan,
 // como siempre, pero no el incluido: ese es solo para Estudio o Gastro.
@@ -37,7 +38,8 @@ function lugares(subs) {
   const out = [];
   for (const s of vigentes(subs)) {
     const c = CUBRE[s.plan];
-    out.push({ acepta: c ? c.productos : null, bot: PLANES_CON_BOT.has(s.plan) || Boolean(c && !c.incluye), incluido: false });
+    // Los planes de un producto traen el bot; uno viejo que no es de ninguno, solo si era de los que lo tenían.
+    out.push({ acepta: c ? c.productos : null, bot: Boolean(c) || PLANES_CON_BOT.has(s.plan), incluido: false });
     if (c && c.incluye) out.push({ acepta: INCLUIDO, bot: true, incluido: true });
   }
   return out;

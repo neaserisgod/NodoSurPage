@@ -18,11 +18,11 @@ const negocio = async (env, nombre, producto, email = 'ana@x.com') => {
 };
 const cubre = async (env, org) => planDelNegocio(env, org, await listSubscriptions(env, org.billing_email));
 
-await t('plan de Gestión: cubre el almacén (sin bot) y, incluida, la rotisería (con bot)', async () => {
+await t('plan de Gestión: cubre el almacén y, incluida, la rotisería, los dos con bot', async () => {
   const env = mkEnv(); await ensureOrgTables(env);
   const almacen = await negocio(env, 'Almacén', 'gestion'); const roti = await negocio(env, 'Rotisería', 'gastro');
   paga('ana@x.com', 'pos');
-  assert.deepEqual(await cubre(env, almacen), { pago: true, bot: false, incluido: false, planes: 1, negocios: 2 });
+  assert.deepEqual(await cubre(env, almacen), { pago: true, bot: true, incluido: false, planes: 1, negocios: 2 });
   assert.deepEqual(await cubre(env, roti), { pago: true, bot: true, incluido: true, planes: 1, negocios: 2 });
 });
 await t('el incluido es uno solo: Estudio o Gastro, no los dos', async () => {

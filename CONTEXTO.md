@@ -54,8 +54,9 @@ en `PLANS` y `PLANES_CON_BOT` de `mp.js`, y los botones de `/gastro/` y de la ho
 `orgs.producto` = `gestion` | `estudio` | `gastro`. Cada app manda su edición al vincularse y solo entra a negocios de su
 producto; uno sin producto toma el de la primera app (los que tienen una PC quedaron de Gestión). La dueña de un almacén que
 abre Nodo Gastro recibe un negocio nuevo de Gastro, aparte. El cobro mira el producto
-(`plan_por_negocio.js`): Estudio y Gastro cubren un negocio suyo con bot; Gestión, uno de Gestión y, incluido, uno de Estudio
-o de Gastro con bot. Las descargas piden un plan que cubra el producto del instalador. `/negocio/`, `/cuenta/` y `/admin/`
+(`plan_por_negocio.js`): Estudio y Gastro cubren un negocio suyo; Gestión, uno de Gestión y, incluido, uno de Estudio o
+de Gastro. **El bot viene en todos los planes** (el dueño, 2026-10-19): «Nodo Gestión + Bot» y «Solo el bot» ya no se ofrecen,
+pero las suscripciones que existen siguen andando. Las descargas piden un plan que cubra el producto del instalador. `/negocio/`, `/cuenta/` y `/admin/`
 muestran el producto de cada negocio, y Facturación avisa cuando viene incluido en el plan de Gestión.
 
 **Rediseño 2026-10 (terminado, PR #76 a #80):** estilo claro tipo Apple, Bricolage Grotesque (títulos) + Geist (texto),

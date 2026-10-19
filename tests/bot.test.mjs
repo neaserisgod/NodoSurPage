@@ -18,6 +18,8 @@ let pass = 0; const t = async (n, f) => { await f(); pass++; console.log('ok  ',
 const one = (env, sql, ...a) => env.DB.raw.prepare(sql).get(...a);
 
 const PLAN_POS = '6fe282d944ef4c018cb7904ce9e122f8', PLAN_POS_BOT = '7652202c076c4cc180c72ade28d52924', PLAN_SOLO_BOT = 'e37aac4650334685873aa8e3920de4c0';
+// Desde 2026-10-19 todos los planes traen el bot: «sin bot» es no tener plan (una suscripción que no es de Nodo Sur no cuenta).
+const PLAN_SIN_BOT = 'plan-viejo-sin-bot';
 function conPlan(plan, status = 'authorized') { mp.subs = [{ ...mpSub('duena@x.com', status), preapproval_plan_id: plan }]; mp.fail = false; mockMP(); }
 
 function hubFalso() {
@@ -50,12 +52,13 @@ async function armar(plan = PLAN_POS_BOT) {
 const CONFIG = { rubro: 'almacen', numero_bot: '5492944111111', textos: { quien_atiende: 'Juli' }, pausa_minutos: 60 };
 const PEDIDO = { id: 'pedido-0001-abcd', cliente: { nombre: 'Sofi', telefono: '5492944555555' }, items: [{ gid: 'g-coca', nombre: 'Coca 2,25 L', cantidad: 2, precioCentavos: 350000 }], nota: 'Paso a las 19' };
 
-await t('sin un plan con bot no anda nada (y el estado lo dice); con "Sistema + Bot" o "Solo el bot", sí', async () => {
-  const { env, app } = await armar(PLAN_POS);
-  assert.deepEqual(await (await get(bot.onRequestEstado, env, '/api/bot/estado', app)).json(), { tieneBot: false });
-  const r = await get(bot.onRequestConfigGet, env, '/api/bot/config', app);
-  assert.equal(r.status, 403); assert.equal((await r.json()).error, 'sin_plan_bot');
-  for (const plan of [PLAN_POS_BOT, PLAN_SOLO_BOT]) {
+await t('sin un plan con bot no anda nada (y el estado lo dice); con Sistema POS, Sistema + Bot o Solo el bot, sí', async () => {
+  // Sin plan, el negocio no tiene nada del bot (ya no hay planes pagos sin bot).
+  const { env, app } = await armar(PLAN_SIN_BOT);
+  const sin = await get(bot.onRequestEstado, env, '/api/bot/estado', app);
+  assert.notEqual(sin.status, 200);
+  assert.equal((await get(bot.onRequestConfigGet, env, '/api/bot/config', app)).status, 403);
+  for (const plan of [PLAN_POS, PLAN_POS_BOT, PLAN_SOLO_BOT]) {
     const x = await armar(plan);
     const e = await (await get(bot.onRequestEstado, x.env, '/api/bot/estado', x.app)).json();
     assert.equal(e.tieneBot, true, plan); assert.equal(e.puedeConfigurar, true); assert.equal(e.version, 0);
@@ -64,7 +67,7 @@ await t('sin un plan con bot no anda nada (y el estado lo dice); con "Sistema + 
 });
 
 await t('un negocio de pruebas (dueño eximido) tiene el bot sin pagarlo; con Mercado Pago caído, no se decide', async () => {
-  const { env, app } = await armar(PLAN_POS);
+  const { env, app } = await armar(PLAN_SIN_BOT);
   env.DB.raw.prepare('UPDATE users SET exempt = 1 WHERE sub = ?').run('sd');
   assert.equal((await (await get(bot.onRequestEstado, env, '/api/bot/estado', app)).json()).tieneBot, true);
   const x = await armar(PLAN_POS_BOT); mp.fail = true;

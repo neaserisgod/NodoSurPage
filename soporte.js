@@ -17,8 +17,7 @@
     :/^\/gastro/.test(ruta)?'gastro'
     :/^\/(sistema-|como-|diferencias-)/.test(ruta)?'pos':null;
   var PLANES={ /* respaldo si /planes.js no cargó: los mismos datos */
-    emprendedor:{nombre:'Nodo Estudio',precio:18000,alta:false},gastro:{nombre:'Nodo Gastro',precio:18000,alta:false},pos:{nombre:'Nodo Gestión',precio:35000,alta:false},
-    'pos-bot':{nombre:'Nodo Gestión + Bot',precio:60000,alta:true}
+    emprendedor:{nombre:'Nodo Estudio',precio:18000,alta:false},gastro:{nombre:'Nodo Gastro',precio:18000,alta:false},pos:{nombre:'Nodo Gestión',precio:35000,alta:false}
   };
   var plan=function(k){return (window.NS_PLANES&&window.NS_PLANES[k])||PLANES[k]};
   var cargarPlanes=function(){if(window.NS_PLANES||d.querySelector('script[src^="/planes.js"]'))return;var s=el('script');s.src='/planes.js';s.async=true;d.head.appendChild(s)};
@@ -31,7 +30,7 @@
   var GUION=[
     {si:/\b(hola|buenas|buen dia|buenas tardes|buenas noches|que tal)\b/,no:/\b(precio|cuanto|sale|cuesta)\b/,r:function(){return {t:'¡Hola! Contame qué tenés (un salón, una barbería, una rotisería, un kiosco, un almacén…) y qué querés resolver, y te digo cómo te ayuda Nodo Sur.',ch:['¿Cuánto sale?','¿Cómo lo pruebo?','¿Anda en iPhone?']}}},
     {siempre:true,si:/\b(precio|precios|cuanto (sale|cuesta|vale)|cuesta|planes|abono|mensual|tarifa)\b/,r:function(){
-      var t=PLAN?precioDe(PLAN)+' Se prueba 7 días gratis y hoy no se paga nada.':['Una app, tres ediciones:',precioDe('emprendedor')+' (uñas, peluquería, barbería, estética), con el bot incluido',precioDe('gastro')+' (rotisería y comida para llevar), con el bot incluido',precioDe('pos')+' (kiosco, almacén, comercio)',precioDe('pos-bot'),'Todas se prueban 7 días gratis.'].join('\n');
+      var t=PLAN?precioDe(PLAN)+' Se prueba 7 días gratis y hoy no se paga nada.':['Una app, tres ediciones:',precioDe('emprendedor')+' (uñas, peluquería, barbería, estética), con el bot incluido',precioDe('gastro')+' (rotisería y comida para llevar), con el bot incluido',precioDe('pos')+' (kiosco, almacén, comercio), con el bot incluido','Todas se prueban 7 días gratis.'].join('\n');
       return {t:t,ac:[probar(PLAN||'emprendedor')],ch:PLAN?['¿Qué incluye?','¿Cómo lo pruebo?']:['Tengo un salón o barbería','Tengo una rotisería','Tengo un kiosco o almacén']};
     }},
     {si:/\b(prueba|probar|pruebo|gratis|empezar|arrancar|contratar|suscrib|me anoto|lo quiero)\b/,r:function(){
@@ -44,7 +43,7 @@
       return {t:'Nodo Estudio anda en Android, iPhone y compu: en Android se instala la app y en iPhone, Windows o Mac se usa desde el navegador en horsepos.com/app/, con los mismos datos. Solo el bot de WhatsApp necesita un celular Android prendido.',ac:[probar('emprendedor'),demo]};
     }},
     {si:/\b(bot|whatsapp|wpp|wsp|mensajes automaticos|responde solo)\b/,no:/\b(hablar|persona|humano)\b/,r:function(){
-      return {t:'El bot de WhatsApp contesta solo: da turnos, pasa precios y toma pedidos, a toda hora. Necesita un celular Android prendido con el número del negocio. En Nodo Estudio y en Nodo Gastro viene incluido; para comercios es "Nodo Gestión + Bot" o "Solo el bot".',ac:[probar(PLAN==='pos'?'pos-bot':PLAN==='bot'?'bot':PLAN==='gastro'?'gastro':'emprendedor')],ch:['¿Cuánto sale?']};
+      return {t:'El bot de WhatsApp contesta solo: da turnos, pasa precios y toma pedidos, a toda hora. Necesita un celular Android prendido con el número del negocio. Viene incluido en todos los planes, sin alta.',ac:[probar(PLAN==='pos'?'pos':PLAN==='gastro'?'gastro':'emprendedor')],ch:['¿Cuánto sale?']};
     }},
     {si:/\b(sena|senas|mercado pago|mercadopago|qr|cobrar|cobro|tarjeta|point|debito|credito)\b/,r:function(){
       if(PLAN==='gastro')return {t:'El cliente paga como elijas: link de Mercado Pago antes de cocinar, alias o al recibir.',ac:[probar('gastro')]};
