@@ -10,7 +10,7 @@
 // Todo se guarda cifrado (AES-256-GCM, BACKUP_KEY, como el token de Mercado Pago): la configuración y los pedidos tienen teléfonos
 // y nombres de clientes. Solo se usa con un plan que incluye el bot (o una cuenta de pruebas).
 import { now, once } from './util.js';
-import { cifrar, descifrar, claveValida, sha256Hex } from './backups.js';
+import { cifrar, descifrar, claveValida, sha256Hex, backupBucket } from './backups.js';
 import { getOrg } from './orgs.js';
 import { isPrivilegedOrg } from './devices.js';
 import { listSubscriptionsCached } from './mp.js';
@@ -55,6 +55,11 @@ const DDL = [
      items INTEGER NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY (org_id, branch_id))`,
   `CREATE INDEX IF NOT EXISTS idx_bot_pedidos_cambio ON bot_pedidos(org_id, branch_id, actualizado)`,
   // Qué equipos de la app leen los pedidos y si entienden gramos (`?gramos=1`, ver `pedidoConGramosPermitido`). `visto` en segundos.
+  // La foto de cada producto (El dueño, 2026-10-21: "sacar una foto y que se ponga" en el catálogo de WhatsApp). Es del negocio, no
+  // de la sucursal: el mismo plato tiene la misma foto en todas. El archivo va al bucket (`fotos/<org>/<gid>`); acá queda la
+  // versión, que el bot compara para saber si tiene que cambiarla en WhatsApp.
+  `CREATE TABLE IF NOT EXISTS bot_fotos (org_id INTEGER NOT NULL, gid TEXT NOT NULL, version TEXT NOT NULL, tipo TEXT NOT NULL,
+     bytes INTEGER NOT NULL, updated_at INTEGER NOT NULL, PRIMARY KEY (org_id, gid))`,
   `CREATE TABLE IF NOT EXISTS bot_lectores (device_id TEXT PRIMARY KEY, org_id INTEGER NOT NULL, branch_id INTEGER NOT NULL,
      gramos INTEGER NOT NULL, visto INTEGER NOT NULL)`,
 ];
@@ -139,10 +144,63 @@ export async function guardarCatalogo(env, orgId, branchId, items, t = now()) {
   return true;
 }
 
+// Cada producto con foto lleva `foto`: la versión (cambia si se saca otra), para bajarla de `/api/bot/foto?gid=`.
 export async function leerCatalogo(env, orgId, branchId) {
   await ensureBotTables(env);
   const f = await env.DB.prepare('SELECT datos_enc, updated_at FROM bot_catalogo WHERE org_id = ?1 AND branch_id = ?2').bind(orgId, branchId).first();
-  return f ? { items: await descifrarJson(env, f.datos_enc), actualizado: f.updated_at } : { items: [], actualizado: null };
+  if (!f) return { items: [], actualizado: null };
+  const fotos = await versionesDeFotos(env, orgId);
+  const items = (await descifrarJson(env, f.datos_enc)).map((x) => (fotos.has(x.gid) ? { ...x, foto: fotos.get(x.gid) } : x));
+  return { items, actualizado: f.updated_at };
+}
+
+// --- Fotos de los productos ----------------------------------------------------------------------------------------------------
+// La app las achica antes de subirlas (unos 100 KB); el tope deja margen sin dejar subir cualquier cosa.
+export const MAX_FOTO_BYTES = 1024 * 1024;
+export const gidValido = (gid) => typeof gid === 'string' && /^[\w-]{1,64}$/.test(gid);
+const claveFoto = (orgId, gid) => `fotos/${orgId}/${gid}`;
+
+// JPEG o PNG, por lo que dicen los primeros bytes (no por lo que dice quien sube): son los que acepta el catálogo de WhatsApp.
+export function tipoDeFoto(bytes) {
+  if (bytes.length > 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
+  if (bytes.length > 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return 'image/png';
+  return null;
+}
+
+export async function versionesDeFotos(env, orgId) {
+  await ensureBotTables(env);
+  const { results } = await env.DB.prepare('SELECT gid, version FROM bot_fotos WHERE org_id = ?1').bind(orgId).all();
+  return new Map((results || []).map((r) => [r.gid, r.version]));
+}
+
+// Guarda la foto y devuelve su versión (los primeros 16 caracteres del sha256: si se sube la misma, no cambia).
+export async function guardarFoto(env, orgId, gid, bytes, tipo, t = now()) {
+  await ensureBotTables(env);
+  const version = (await sha256Hex(bytes)).slice(0, 16);
+  await backupBucket(env).put(claveFoto(orgId, gid), bytes, { httpMetadata: { contentType: tipo } });
+  await env.DB.prepare(
+    `INSERT INTO bot_fotos (org_id, gid, version, tipo, bytes, updated_at) VALUES (?1, ?2, ?3, ?4, ?5, ?6)
+     ON CONFLICT(org_id, gid) DO UPDATE SET version = ?3, tipo = ?4, bytes = ?5, updated_at = ?6`
+  ).bind(orgId, gid, version, tipo, bytes.length, t).run();
+  return version;
+}
+
+// `{ bytes, tipo, version }` o null si ese producto no tiene foto.
+export async function leerFoto(env, orgId, gid) {
+  await ensureBotTables(env);
+  const f = await env.DB.prepare('SELECT version, tipo FROM bot_fotos WHERE org_id = ?1 AND gid = ?2').bind(orgId, gid).first();
+  if (!f) return null;
+  const o = await backupBucket(env).get(claveFoto(orgId, gid));
+  if (!o) return null;
+  return { bytes: new Uint8Array(await o.arrayBuffer()), tipo: f.tipo, version: f.version };
+}
+
+// Devuelve si había una.
+export async function borrarFoto(env, orgId, gid) {
+  await ensureBotTables(env);
+  const r = await env.DB.prepare('DELETE FROM bot_fotos WHERE org_id = ?1 AND gid = ?2').bind(orgId, gid).run();
+  await backupBucket(env).delete(claveFoto(orgId, gid));
+  return r.meta.changes > 0;
 }
 
 // --- Catálogo de WhatsApp Business (lo lee el bot, lo trae la app) -------------------------------------------------------------

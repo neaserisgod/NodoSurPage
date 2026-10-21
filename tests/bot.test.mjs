@@ -319,4 +319,35 @@ await t('vincular el bot sin tener un negocio no crea uno', async () => {
   assert.equal(w.canLink, false);
 });
 
+await t('fotos: la app sube la foto de un producto, el catálogo dice su versión y el bot la baja; se puede borrar', async () => {
+  const { env, n, app, robot } = await armar();
+  await post(bot.onRequestCatalogoPost, env, '/api/bot/catalogo', { items: [{ gid: 'g-mila', nombre: 'Milanesa', precioCentavos: 650000, hay: true }, { gid: 'g-flan', nombre: 'Flan', precioCentavos: 300000, hay: true }] }, app);
+  const jpeg = new Uint8Array([0xff, 0xd8, 0xff, 0xe0, 1, 2, 3, 4]);
+  const subir = (gid, raw, headers = app) => bot.onRequestFotoPost({ request: req(`/api/bot/foto?gid=${gid}`, { method: 'POST', raw, headers }), env });
+  env.SYNC_HUB.avisos.length = 0;
+  const r = await subir('g-mila', jpeg);
+  assert.equal(r.status, 200);
+  const { version } = await r.json();
+  assert.match(version, /^[0-9a-f]{16}$/);
+  assert.ok(env.SYNC_HUB.avisos.some((x) => x.cuerpo?.bot?.aviso?.catalogo), 'el bot se entera');
+  assert.ok(env.RELEASES.files.has(`fotos/${n.org.id}/g-mila`));
+  const cat = await (await get(bot.onRequestCatalogoGet, env, '/api/bot/catalogo', robot)).json();
+  assert.equal(cat.items.find((x) => x.gid === 'g-mila').foto, version);
+  assert.equal(cat.items.find((x) => x.gid === 'g-flan').foto, undefined);
+  const f = await get(bot.onRequestFotoGet, env, '/api/bot/foto?gid=g-mila', robot);
+  assert.equal(f.status, 200); assert.equal(f.headers.get('Content-Type'), 'image/jpeg');
+  assert.deepEqual(new Uint8Array(await f.arrayBuffer()), jpeg);
+  assert.equal((await get(bot.onRequestFotoGet, env, '/api/bot/foto?gid=g-flan', robot)).status, 404);
+  // Lo que no es una foto, lo grande, un gid raro o el bot subiendo: no.
+  assert.equal((await subir('g-flan', new Uint8Array([1, 2, 3, 4, 5]))).status, 400);
+  assert.equal((await subir('g-flan', new Uint8Array(1024 * 1024 + 10).fill(0xff))).status, 413);
+  assert.equal((await subir('../x', jpeg)).status, 400);
+  assert.equal((await subir('g-flan', jpeg, robot)).status, 403);
+  // Borrar.
+  const b = await (await post(bot.onRequestFotoBorrar, env, '/api/bot/foto/borrar', { gid: 'g-mila' }, app)).json();
+  assert.equal(b.habia, true);
+  assert.equal((await get(bot.onRequestFotoGet, env, '/api/bot/foto?gid=g-mila', robot)).status, 404);
+  assert.equal((await (await get(bot.onRequestCatalogoGet, env, '/api/bot/catalogo', robot)).json()).items[0].foto, undefined);
+});
+
 console.log(`\n${pass} pruebas OK (bot de WhatsApp)`);
