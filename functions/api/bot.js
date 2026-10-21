@@ -14,6 +14,7 @@ import {
   botConfigurado, tieneBot, configValida, leerConfig, guardarConfig, itemsDeCatalogo, guardarCatalogo, leerCatalogo,
   pedidoDesdeBot, crearPedido, pedidoSinLink, pedidosDesde, resolverPedido, avanzarPedidoBot, avisarBot, botsDeSucursal, MAX_CONFIG_BYTES,
   anotarLector, pedidoConGramosPermitido, pedidoTieneGramos, itemsDeCatalogoWa, guardarCatalogoWa, leerCatalogoWa,
+  MAX_FOTO_BYTES, gidValido, tipoDeFoto, guardarFoto, leerFoto, borrarFoto,
 } from '../_lib/bot.js';
 import { avisarConReintento, cuandoTexto } from '../_lib/push.js';
 import { linkDeSena, linkDePedido } from '../_lib/mp_servicios.js';
@@ -106,6 +107,43 @@ export async function onRequestCatalogoPost({ request, env, ctx }) {
 export async function onRequestCatalogoGet({ request, env }) {
   const w = await equipo(request, env); if (w.error) return w.error;
   return json(await leerCatalogo(env, w.orgId, w.branchId));
+}
+
+// POST /api/bot/foto?gid=<global_id> (la app): el cuerpo es la foto (JPEG o PNG, hasta MAX_FOTO_BYTES). Devuelve `{ version }` y
+// despierta al bot, que la pone en el catálogo de WhatsApp. La sucursal no importa: la foto es del producto en todo el negocio.
+export async function onRequestFotoPost({ request, env, ctx }) {
+  const w = await equipo(request, env, { bot: false, accion: 'operar' }); if (w.error) return w.error;
+  const gid = new URL(request.url).searchParams.get('gid');
+  if (!gidValido(gid)) return json({ error: 'bad_request' }, 400);
+  if (Number(request.headers.get('Content-Length') || 0) > MAX_FOTO_BYTES) return json({ error: 'too_large' }, 413);
+  const bytes = new Uint8Array(await request.arrayBuffer());
+  if (bytes.length > MAX_FOTO_BYTES) return json({ error: 'too_large' }, 413);
+  const tipo = tipoDeFoto(bytes);
+  if (!tipo) return json({ error: 'no_es_foto' }, 400);
+  const version = await guardarFoto(env, w.orgId, gid, bytes, tipo);
+  await esperar(ctx, avisarBot(env, w.orgId, w.branchId, { para: 'bots', aviso: { catalogo: true } }));
+  return json({ ok: true, version });
+}
+
+// GET /api/bot/foto?gid=<global_id> (el bot o la app): la foto, o 404 si ese producto no tiene.
+export async function onRequestFotoGet({ request, env }) {
+  const w = await equipo(request, env); if (w.error) return w.error;
+  const gid = new URL(request.url).searchParams.get('gid');
+  if (!gidValido(gid)) return json({ error: 'bad_request' }, 400);
+  const f = await leerFoto(env, w.orgId, gid);
+  if (!f) return json({ error: 'not_found' }, 404);
+  // La URL no cambia con la versión: que nadie guarde una vieja.
+  return new Response(f.bytes, { headers: { 'Content-Type': f.tipo, 'Cache-Control': 'private, no-cache', ETag: `"${f.version}"` } });
+}
+
+// POST /api/bot/foto/borrar (la app): `{ gid }`. El bot vuelve a la foto genérica.
+export async function onRequestFotoBorrar({ request, env, ctx }) {
+  const w = await equipo(request, env, { bot: false, accion: 'operar' }); if (w.error) return w.error;
+  const r = await cuerpo(request, 1024);
+  if (!r || r.grande || !gidValido(r.b.gid)) return json({ error: 'bad_request' }, 400);
+  const habia = await borrarFoto(env, w.orgId, r.b.gid);
+  if (habia) await esperar(ctx, avisarBot(env, w.orgId, w.branchId, { para: 'bots', aviso: { catalogo: true } }));
+  return json({ ok: true, habia });
 }
 
 // POST /api/bot/catalogo-wa (el bot): `{ items }` (`itemsDeCatalogoWa`), lo que tiene el catálogo de WhatsApp Business del local. La
