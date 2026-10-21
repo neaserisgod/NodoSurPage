@@ -77,12 +77,21 @@ const argumentos = hasGlobalWrangler
   ? ['r2', 'object', 'put', `${bucket}/${key}`, '--file', file, '--content-type', 'application/octet-stream', '--remote']
   : ['--yes', 'wrangler', 'r2', 'object', 'put', `${bucket}/${key}`, '--file', file, '--content-type', 'application/octet-stream', '--remote'];
 
-const up = spawnSync(comando, argumentos, { 
-  stdio: 'inherit',
-  shell: true 
-});
+// Cloudflare a veces contesta 502 a mitad de la subida de un APK de ~60 MB (21/10/2026, dos betas seguidas): se reintenta tres
+// veces con pausa antes de dar la publicación por fallida. Subir de nuevo la misma clave pisa la anterior, así que no duplica.
+const INTENTOS = 3;
+let subido = false;
+for (let i = 1; i <= INTENTOS && !subido; i++) {
+  const up = spawnSync(comando, argumentos, { stdio: 'inherit', shell: true });
+  subido = up.status === 0;
+  if (!subido && i < INTENTOS) {
+    console.log(`La subida a R2 falló (intento ${i} de ${INTENTOS}): reintento en ${15 * i} s...`);
+    // Con Node y no con `sleep`: el mismo script publica desde Windows.
+    spawnSync(process.execPath, ['-e', `setTimeout(() => {}, ${15000 * i})`]);
+  }
+}
 
-if (up.status !== 0) fail('no se pudo subir el archivo a R2');
+if (!subido) fail('no se pudo subir el archivo a R2');
 
 const { res, text } = await pedirAlSitio({
   method: 'POST',
