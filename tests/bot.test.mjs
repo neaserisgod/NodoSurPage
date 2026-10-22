@@ -8,6 +8,8 @@ import { createOrg, ensureOrgTables } from '../functions/_lib/orgs.js';
 import { upsertDevice, signDeviceToken } from '../functions/_lib/devices.js';
 import { SyncHub } from '../functions/_lib/sync_hub.js';
 import * as bot from '../functions/api/bot.js';
+import * as ia from '../functions/api/ia.js';
+import * as actor from '../functions/_lib/actor.js';
 import { ensureBotTables } from '../functions/_lib/bot.js';
 import * as authorize from '../functions/api/device/authorize.js';
 import * as token from '../functions/api/device/token.js';
@@ -348,6 +350,42 @@ await t('fotos: la app sube la foto de un producto, el catálogo dice su versió
   assert.equal(b.habia, true);
   assert.equal((await get(bot.onRequestFotoGet, env, '/api/bot/foto?gid=g-mila', robot)).status, 404);
   assert.equal((await (await get(bot.onRequestCatalogoGet, env, '/api/bot/catalogo', robot)).json()).items[0].foto, undefined);
+});
+
+await t('el bot usa la IA del negocio por /api/bot/ia: con la clave guardada, solo texto y sin verla', async () => {
+  const { env, n, app, robot } = await armar();
+  const CLAVE = 'AIzaSyFALSA_clave-de-prueba-0123456789';
+  const g = [];
+  const sub = globalThis.fetch;
+  globalThis.fetch = async (url, init = {}) => {
+    if (new URL(url).host !== 'generativelanguage.googleapis.com') return sub(url, init);
+    g.push({ url, headers: init.headers, body: init.body });
+    return new Response(JSON.stringify({ candidates: [{ content: { parts: [{ text: '{"entendido":true,"texto":"1 Veggie Burger"}' }] } }] }), { status: 200 });
+  };
+  try {
+    const cuerpo = JSON.stringify({ contents: [{ role: 'user', parts: [{ text: '{"mensaje":"la verde"}' }] }], generationConfig: { responseMimeType: 'application/json' } });
+    // Sin clave cargada, el bot se entera (y sigue sin IA).
+    assert.equal((await post(bot.onRequestIa, env, '/api/bot/ia', { modelo: 'gemini-3.5-flash-lite', cuerpo }, robot)).status, 409);
+    await post(ia.onRequestClave, env, '/api/ia/clave', { clave: CLAVE, modelo: 'gemini-3.5-flash-lite' }, app);
+    const r = await post(bot.onRequestIa, env, '/api/bot/ia', { modelo: 'gemini-3.5-flash-lite', cuerpo }, robot);
+    assert.equal(r.status, 200);
+    const texto = await r.text();
+    assert.ok(texto.includes('Veggie Burger') && !texto.includes(CLAVE));
+    assert.equal(g.at(-1).headers['x-goog-api-key'], CLAVE); assert.equal(g.at(-1).body, cuerpo, 'llega a Google tal cual');
+    // Solo texto: ni archivos ni herramientas, ni cuerpos grandes.
+    const conArchivo = JSON.stringify({ contents: [{ role: 'user', parts: [{ inlineData: { mimeType: 'image/png', data: 'AAAA' } }] }] });
+    assert.equal((await post(bot.onRequestIa, env, '/api/bot/ia', { modelo: 'gemini-3.5-flash-lite', cuerpo: conArchivo }, robot)).status, 400);
+    const conHerramientas = JSON.stringify({ contents: [{ role: 'user', parts: [{ text: 'x' }] }], tools: [{ googleSearch: {} }] });
+    assert.equal((await post(bot.onRequestIa, env, '/api/bot/ia', { modelo: 'gemini-3.5-flash-lite', cuerpo: conHerramientas }, robot)).status, 400);
+    assert.equal((await post(bot.onRequestIa, env, '/api/bot/ia', { modelo: 'gemini-3.5-flash-lite', cuerpo: 'x'.repeat(70 * 1024) }, robot)).status, 413);
+    assert.equal((await post(bot.onRequestIa, env, '/api/bot/ia', { modelo: '../otra', cuerpo }, robot)).status, 400);
+    // Es del bot: la app usa /api/ia/generar.
+    assert.equal((await post(bot.onRequestIa, env, '/api/bot/ia', { modelo: 'gemini-3.5-flash-lite', cuerpo }, app)).status, 403);
+    // Y el token del bot sigue sin poder usar /api/ia/generar (ni ninguna ruta que no sea suya).
+    assert.ok(actor.rutaDelBot('/api/bot/ia') && !actor.rutaDelBot('/api/ia/generar'));
+    assert.equal(g.length, 1, 'a Google llegó solo el pedido válido');
+    void n;
+  } finally { globalThis.fetch = sub; }
 });
 
 console.log(`\n${pass} pruebas OK (bot de WhatsApp)`);

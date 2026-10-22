@@ -150,6 +150,7 @@ const ROUTES = {
   'POST /api/bot/foto': bot.onRequestFotoPost,
   'POST /api/bot/foto/borrar': bot.onRequestFotoBorrar,
   'POST /api/bot/pedido': bot.onRequestPedidoPost,
+  'POST /api/bot/ia': bot.onRequestIa,
   'GET /api/bot/pedidos': bot.onRequestPedidosGet,
   'POST /api/bot/pedido/resolver': bot.onRequestResolver,
   'POST /api/bot/pedido/estado': bot.onRequestEstadoPedido,
