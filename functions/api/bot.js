@@ -18,6 +18,7 @@ import {
 } from '../_lib/bot.js';
 import { avisarConReintento, cuandoTexto } from '../_lib/push.js';
 import { linkDeSena, linkDePedido } from '../_lib/mp_servicios.js';
+import { iaConfigurada, generarConIa, modeloConForma } from '../_lib/ia.js';
 import { estadoConexion } from '../_lib/mp_conexion.js';
 import { upsertDevice, signDeviceToken, getDevice, validDeviceId, DEVICE_TTL } from '../_lib/devices.js';
 import { turnoDesdeBot, reservarTurno, ocupadosDesdeApp, publicarOcupados, cambiarTurno, turnosDesde, turnoIdValido, horarioValido, ESTADOS_TURNO } from '../_lib/bot_turnos.js';
@@ -171,6 +172,28 @@ export async function onRequestCatalogoWaPedir({ request, env, ctx }) {
   const avisado = await avisarBot(env, w.orgId, w.branchId, { para: 'bots', aviso: { catalogoWa: true } });
   void ctx;
   return json({ ok: true, avisado });
+}
+
+// POST /api/bot/ia (el bot): la IA de Google con la clave del negocio (`_lib/ia.js`), para lo que el bot no entiende: le pide que
+// reescriba el mensaje del cliente como una frase que sus reglas entienden (`botdemo/src/ia.js`). El bot no puede usar
+// `/api/ia/generar` (su token solo abre `/api/bot/*`, ver `_lib/actor.js`); esta ruta le da lo mismo, acotado a lo que necesita:
+// texto chico, sin archivos ni herramientas. Cuerpo: `{ modelo, cuerpo }` como `/api/ia/generar`; devuelve lo de Google tal cual.
+const MAX_PEDIDO_IA_BOT = 64 * 1024;
+const conAdjuntos = (pedido) => Boolean(pedido.tools || pedido.toolConfig || pedido.cachedContent)
+  || (Array.isArray(pedido.contents) && pedido.contents.some((c) => (c && Array.isArray(c.parts) ? c.parts : []).some((p) => !p || typeof p.text !== 'string')));
+export async function onRequestIa({ request, env }) {
+  const w = await equipo(request, env, { bot: true }); if (w.error) return w.error;
+  if (!iaConfigurada(env)) return json({ error: 'ia_no_configurada' }, 503);
+  const r = await cuerpo(request, MAX_PEDIDO_IA_BOT);
+  if (r && r.grande) return json({ error: 'too_large' }, 413);
+  const b = r && r.b;
+  if (!b || !modeloConForma(b.modelo) || typeof b.cuerpo !== 'string' || !b.cuerpo) return json({ error: 'bad_request' }, 400);
+  let pedido = null;
+  try { pedido = JSON.parse(b.cuerpo); } catch { /* abajo */ }
+  if (!pedido || typeof pedido !== 'object' || !Array.isArray(pedido.contents) || conAdjuntos(pedido)) return json({ error: 'bad_request' }, 400);
+  const g = await generarConIa(env, w.orgId, { modelo: b.modelo, cuerpo: b.cuerpo });
+  if (!g) return json({ error: 'ia_sin_clave' }, 409);
+  return new Response(g.body, { status: g.status, headers: { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' } });
 }
 
 // POST /api/bot/pedido (el bot): `{ id, cliente: { nombre, telefono }, items: [{ gid?, nombre, cantidad | gramos, precioCentavos? }],
