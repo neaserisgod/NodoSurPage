@@ -96,7 +96,8 @@ await t('un turno nuevo del bot le llega al celular de la sucursal, firmado con 
 
   // Un pedido (comercio) también, y el token de acceso se reusa.
   await post(bot.onRequestPedidoPost, env, '/api/bot/pedido', { id: 'pedido-0001-abcd', cliente: { nombre: 'Sofi', telefono: '5492944555555' }, items: [{ nombre: 'Coca', cantidad: 2 }] }, robot);
-  assert.equal(google.enviados.at(-1).notification.body, 'Sofi: 2 × Coca');
+  assert.equal(google.enviados.at(-1).notification.title, '🛒 Sofi');
+  assert.equal(google.enviados.at(-1).notification.body, '2 × Coca');
   assert.equal(google.tokens, 1, 'un solo token de acceso para los dos');
 });
 

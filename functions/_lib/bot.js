@@ -296,6 +296,26 @@ export function totalPedidoCentavos(datos) {
   return total + (datos.entrega?.costoEnvioCentavos ?? 0);
 }
 
+// La notificación de un pedido nuevo en el celular del local (El dueño, 2026-10-23: "mejoremos la notificación"): quién y cuánto
+// arriba; abajo qué pidió (sin lo de entre paréntesis, que describe), cómo se entrega, qué día si es para otro y cómo paga.
+export function avisoDePedido(datos, { pagadoMp = false } = {}) {
+  const plata = (c) => `$${Math.round(c / 100).toLocaleString('es-AR')}`;
+  const nombre = (x) => x.nombre.replace(/\s*\((?!\s*por kg)[^)]*\)/gi, '').trim() || x.nombre;
+  const items = datos.items.map((x) => (x.gramos ? `${x.gramos} g ${nombre(x)}` : `${x.cantidad} × ${nombre(x)}`)).join(', ');
+  const e = datos.entrega;
+  const entrega = !e ? null : e.forma === 'RETIRO' ? '🍽️ Retira' : `🛵 ${e.direccion}`;
+  const dia = datos.programado && datos.horaEstimada
+    ? `🗓️ Para el ${new Intl.DateTimeFormat('es-AR', { timeZone: 'America/Argentina/Buenos_Aires', weekday: 'long', day: 'numeric' }).format(new Date(datos.horaEstimada))}`
+    : null;
+  const total = totalPedidoCentavos(datos);
+  const pago = pagadoMp ? '💳 Pagado con Mercado Pago' : { alias: '💸 Transferencia: fijate que llegue', al_entregar: '💵 Paga al recibir' }[datos.pago] ?? null;
+  return {
+    // Sin precios (el bot de un almacén puede no mandarlos), sin monto: "$0" confunde.
+    titulo: `🛒 ${datos.cliente.nombre}${total ? ` · ${plata(total)}` : ''}${pagadoMp ? ' (pagado)' : ''}`,
+    cuerpo: [items, entrega, dia, pago].filter(Boolean).join(' · '),
+  };
+}
+
 // Inserta el pedido "por confirmar" (o "esperando el pago", si paga por Mercado Pago). Si el bot reintenta con el mismo id, devuelve
 // el que ya estaba (`repetido`) con su estado.
 export async function crearPedido(env, orgId, branchId, { pedidoId, datos }, tMs = Date.now()) {
