@@ -16,7 +16,7 @@
 import { now, once, siteUrl } from './util.js';
 import { mpFetch, estadoConexion, anotarOrden, VENCIMIENTO_ORDEN } from './mp_conexion.js';
 import { cifrar, descifrar } from './backups.js';
-import { avisarBot, totalPedidoCentavos } from './bot.js';
+import { avisarBot, avisoDePedido, totalPedidoCentavos } from './bot.js';
 import { avisarConReintento, cuandoTexto } from './push.js';
 
 const decimal = (centavos) => `${Math.trunc(centavos / 100)}.${String(centavos % 100).padStart(2, '0')}`;
@@ -209,7 +209,7 @@ export async function pedidoPagado(env, orgId, { referencia, pagoId, montoCentav
   await avisarBot(env, orgId, f.branch_id, { para: 'equipos', aviso: { pedido: id } });
   const plata = `$${Math.round((montoCentavos || 0) / 100).toLocaleString('es-AR')}`;
   await avisarConReintento(env, orgId, f.branch_id, `pedido:${id}`, esperaba
-    ? { titulo: '🛒 Pedido por WhatsApp (pagado)', cuerpo: `${datos.cliente.nombre} pagó ${plata} por Mercado Pago`, datos: { tipo: 'pedido', id } }
+    ? { ...avisoDePedido(datos, { pagadoMp: true }), datos: { tipo: 'pedido', id } }
     : { titulo: '⚠️ Pago de un pedido', cuerpo: `${datos.cliente.nombre} pagó ${plata} de un pedido que ya no esperaba el pago. Revisalo.`, datos: { tipo: 'pedido', id } });
   return { branchId: f.branch_id };
 }

@@ -10,7 +10,7 @@ import { SyncHub } from '../functions/_lib/sync_hub.js';
 import * as bot from '../functions/api/bot.js';
 import * as ia from '../functions/api/ia.js';
 import * as actor from '../functions/_lib/actor.js';
-import { ensureBotTables } from '../functions/_lib/bot.js';
+import { ensureBotTables, avisoDePedido } from '../functions/_lib/bot.js';
 import * as authorize from '../functions/api/device/authorize.js';
 import * as token from '../functions/api/device/token.js';
 import * as whoami from '../functions/api/device/whoami.js';
@@ -386,6 +386,21 @@ await t('el bot usa la IA del negocio por /api/bot/ia: con la clave guardada, so
     assert.equal(g.length, 1, 'a Google llegó solo el pedido válido');
     void n;
   } finally { globalThis.fetch = sub; }
+});
+
+await t('la notificación del pedido: quién y cuánto arriba; qué, dónde, qué día y cómo paga abajo (sin la descripción del plato)', async () => {
+  const datos = {
+    cliente: { nombre: 'Bruno', telefono: '5492944000000' },
+    items: [{ nombre: 'Bacon Cheese (medallón, cheddar y panceta, con papas fritas)', cantidad: 1, precioCentavos: 1400000 }],
+    entrega: { forma: 'CADETE', direccion: 'Rio minero 443', zona: 'Bariloche', costoEnvioCentavos: 250000 },
+    pago: 'al_entregar',
+  };
+  assert.deepEqual(avisoDePedido(datos), { titulo: '🛒 Bruno · $16.500', cuerpo: '1 × Bacon Cheese · 🛵 Rio minero 443 · 💵 Paga al recibir' });
+  const sabado = Date.UTC(2026, 9, 24, 23, 0); // sábado 24, 20:00 en Bariloche
+  const mp = avisoDePedido({ ...datos, pago: 'mp', programado: true, horaEstimada: sabado }, { pagadoMp: true });
+  assert.equal(mp.titulo, '🛒 Bruno · $16.500 (pagado)');
+  assert.equal(mp.cuerpo, '1 × Bacon Cheese · 🛵 Rio minero 443 · 🗓️ Para el sábado 24 · 💳 Pagado con Mercado Pago');
+  assert.equal(avisoDePedido({ ...datos, entrega: { forma: 'RETIRO' }, pago: 'alias' }).cuerpo, '1 × Bacon Cheese · 🍽️ Retira · 💸 Transferencia: fijate que llegue');
 });
 
 console.log(`\n${pass} pruebas OK (bot de WhatsApp)`);

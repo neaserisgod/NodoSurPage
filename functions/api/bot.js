@@ -12,7 +12,7 @@ import { puede } from '../_lib/permisos.js';
 import { syncAccess } from '../_lib/sync.js';
 import {
   botConfigurado, tieneBot, configValida, leerConfig, guardarConfig, itemsDeCatalogo, guardarCatalogo, leerCatalogo,
-  pedidoDesdeBot, crearPedido, pedidoSinLink, pedidosDesde, resolverPedido, avanzarPedidoBot, avisarBot, botsDeSucursal, MAX_CONFIG_BYTES,
+  pedidoDesdeBot, avisoDePedido, crearPedido, pedidoSinLink, pedidosDesde, resolverPedido, avanzarPedidoBot, avisarBot, botsDeSucursal, MAX_CONFIG_BYTES,
   anotarLector, pedidoConGramosPermitido, pedidoTieneGramos, itemsDeCatalogoWa, guardarCatalogoWa, leerCatalogoWa,
   MAX_FOTO_BYTES, gidValido, tipoDeFoto, guardarFoto, leerFoto, borrarFoto,
 } from '../_lib/bot.js';
@@ -222,12 +222,7 @@ export async function onRequestPedidoPost({ request, env, ctx }) {
   if (!p.repetido && estado === 'por_confirmar') {
     await esperar(ctx, avisarBot(env, w.orgId, w.branchId, { para: 'equipos', aviso: { pedido: p.id } }));
     // Con la app cerrada también: la notificación del celular (si el negocio configuró Firebase).
-    const d = pedido.datos;
-    await esperar(ctx, avisarConReintento(env, w.orgId, w.branchId, `pedido:${p.id}`, {
-      titulo: '🛒 Pedido por WhatsApp',
-      cuerpo: `${d.cliente.nombre}: ${d.items.map((x) => (x.gramos ? `${x.gramos} g ${x.nombre}` : `${x.cantidad} × ${x.nombre}`)).join(', ')}`,
-      datos: { tipo: 'pedido', id: p.id },
-    }));
+    await esperar(ctx, avisarConReintento(env, w.orgId, w.branchId, `pedido:${p.id}`, { ...avisoDePedido(pedido.datos), datos: { tipo: 'pedido', id: p.id } }));
   }
   return json({ ok: true, id: p.id, repetido: p.repetido, estado, ...(pago ? { pago } : {}), ...(pedido.datos.pago ? { formaPago: pedido.datos.pago } : {}) }, p.repetido ? 200 : 201);
 }
